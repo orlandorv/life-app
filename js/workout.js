@@ -344,7 +344,25 @@ function carriedNote(entry) {
     return banner;
 }
 
-function setRow(entry, set, index, label, refreshSets, refreshProgress) {
+/**
+ * The first weight typed onto a brand-new exercise fills the rest of the
+ * working sets, which are all still sitting at zero and would otherwise each
+ * need the same number typed again.
+ *
+ * Only ever fills blanks: a set that already has a weight — seeded from last
+ * time, or typed by hand — is left alone, as is anything already ticked off.
+ * Warm-ups are skipped in both directions: they neither trigger this nor
+ * receive it, since their whole point is being lighter than the work sets.
+ */
+function fillBlankWorkingWeights(source, weightControls, unit) {
+    weightControls.forEach(({ set, control }) => {
+        if (set === source || set.warmup || set.done || set.weightKg > 0) return;
+        set.weightKg = source.weightKg;
+        control.setValue(toDisplay(set.weightKg, unit));
+    });
+}
+
+function setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls) {
     const unit = getUnit();
 
     const repsStepper = stepper({
@@ -365,8 +383,23 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress) {
         precision: weightPrecision(unit),
         className: 'stepper-set',
         onStep: (base, direction) => stepWeight(base, direction, false, unit),
-        onChange: (value) => { set.weightKg = fromDisplay(value, unit); updateBanner(); persist(); },
+        onChange: (value, fromButton) => {
+            const hadWeight = set.weightKg > 0;
+            set.weightKg = fromDisplay(value, unit);
+
+            // Only on a typed entry, never on a +/- tap: stepping up from zero
+            // would otherwise splash 1.25 kg across every set on the first tap
+            // and then never correct itself.
+            if (!fromButton && !hadWeight && !set.warmup && set.weightKg > 0) {
+                fillBlankWorkingWeights(set, weightControls, unit);
+            }
+
+            updateBanner();
+            persist();
+        },
     });
+
+    weightControls.push({ set, control: weightStepper });
 
     // RIR ("approximate RIR" per set, per the plan) doesn't apply to warm-ups
     // — they're a ramp-up, not a working set — so that column stays a plain
@@ -649,13 +682,17 @@ function exerciseBlock(entry, entryIndex) {
     // Rebuilt in place rather than via a full render(), so removing a set
     // doesn't reset scroll position or drop you out of edit mode.
     const setList = el('div', { class: 'set-list' });
+    // Lets one row write into its siblings' inputs directly, rather than
+    // rebuilding the list mid-edit and yanking the field out from under you.
+    const weightControls = [];
     const refreshSets = () => {
         clear(setList);
+        weightControls.length = 0;
         let workingCount = 0;
         let warmupCount = 0;
         entry.sets.forEach((set, index) => {
             const label = set.warmup ? `W${++warmupCount}` : String(++workingCount);
-            setList.append(setRow(entry, set, index, label, refreshSets, refreshProgress));
+            setList.append(setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls));
         });
         refreshProgress();
     };
