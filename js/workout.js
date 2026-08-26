@@ -406,8 +406,8 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress) {
 
     const row = el('div', { class: `set-row${set.done ? ' done' : ''}${set.warmup ? ' set-row-warmup' : ''}` }, [
         indexCell,
-        repsStepper,
         weightStepper,
+        repsStepper,
         rirCell,
         check,
     ]);
@@ -710,8 +710,8 @@ function exerciseBlock(entry, entryIndex) {
 
         el('div', { class: 'stepper-head' }, [
             el('span', { text: '#' }),
-            el('span', { text: 'Reps' }),
             el('span', { text: `Weight (${getUnit()})` }),
+            el('span', { text: 'Reps' }),
             el('span', { text: 'RIR' }),
             el('span', { text: '' }),
         ]),
