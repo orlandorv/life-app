@@ -1324,16 +1324,20 @@ form.modal-body .modal-actions {
     margin-top: 10px;
 }
 
-/* Derived from the exercise's programmed RIR, so it sits with the template
-   note without being editable text that could drift from the actual target. */
-.rir-hint {
+/* Derived from the exercise's programmed rep range and RIR, so it sits with
+   the template note without being editable text that could drift from the
+   actual targets. */
+.guidance-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
     font-size: 12px;
     line-height: 1.45;
     color: var(--text-secondary);
     padding: 0 12px 10px;
 }
 
-.template-row .rir-hint {
+.template-row .guidance-hint {
     padding: 10px 0 0;
 }
 

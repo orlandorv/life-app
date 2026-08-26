@@ -4,7 +4,7 @@ import { $, $$, el, clear, openModal, closeModal, confirmSheet, toast, noteField
 import { labelledStepper } from './stepper.js';
 import { openPicker } from './picker.js';
 import { formatRest } from './units.js';
-import { rirGuidance } from './rir.js';
+import { rirGuidance, repRangeGuidance } from './guidance.js';
 
 // Working copy of the template being edited. Nothing touches IndexedDB until
 // Save, so backing out of the sheet discards cleanly.
@@ -33,14 +33,19 @@ function renderRows() {
             max: 20,
             onChange: (value) => { entry.sets = value; },
         });
-        const rirHint = el('div', { class: 'rir-hint', text: rirGuidance(entry.rir ?? DEFAULTS.rir) });
+        // Both lines are derived, so each one follows its own stepper as it
+        // moves rather than waiting for a re-render.
+        const repsLine = el('div', { text: repRangeGuidance(entry.reps ?? DEFAULTS.reps) });
+        const rirLine = el('div', { text: rirGuidance(entry.rir ?? DEFAULTS.rir) });
+        const guidanceHint = el('div', { class: 'guidance-hint' }, [repsLine, rirLine]);
+
         const rirField = labelledStepper('RIR', {
             value: entry.rir ?? DEFAULTS.rir,
             min: 0,
             max: 10,
             onChange: (value) => {
                 entry.rir = value;
-                rirHint.textContent = rirGuidance(value);
+                rirLine.textContent = rirGuidance(value);
             },
         });
         // The ceiling of the rep range, not a literal per-set target — double
@@ -50,7 +55,10 @@ function renderRows() {
             value: entry.reps ?? DEFAULTS.reps,
             min: 1,
             max: 100,
-            onChange: (value) => { entry.reps = value; },
+            onChange: (value) => {
+                entry.reps = value;
+                repsLine.textContent = repRangeGuidance(value);
+            },
         });
         const restField = labelledStepper('Rest', {
             value: entry.restSeconds,
@@ -128,7 +136,7 @@ function renderRows() {
                 ]),
                 el('div', { class: 'stepper-grid' }, [setsField, rirField, targetRepsField, restField]),
                 exerciseNoteField,
-                rirHint,
+                guidanceHint,
                 templateNoteField,
             ]),
         );
