@@ -1513,6 +1513,22 @@ body.resting-room #app {
     margin-top: 0;
 }
 
+.records-group-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-secondary);
+    margin: 20px 0 8px;
+}
+
+.records-group-label:first-child {
+    margin-top: 0;
+}
+
 .summary-row {
     display: flex;
     gap: 10px;

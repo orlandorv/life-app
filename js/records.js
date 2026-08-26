@@ -1,6 +1,22 @@
 import { state, findExercise } from './store.js';
+import { MUSCLE_GROUPS } from './seed.js';
 import { $, el, clear } from './dom.js';
 import { formatWeight, getUnit, toDisplay } from './units.js';
+
+/** Bucket for records whose workout never recorded a muscle group. */
+const OTHER = 'Other';
+
+/**
+ * Only sets that were actually performed count anywhere in Records: ticked
+ * off, carrying real weight, and not a warm-up.
+ *
+ * Finishing a workout already strips unticked sets and warm-ups before
+ * saving, so this is belt-and-braces for anything that arrives by another
+ * route — a restored backup, or a workout logged before warm-ups existed.
+ */
+function isLoggedWork(set) {
+    return Boolean(set.done) && !set.warmup && set.weightKg > 0;
+}
 
 /**
  * Heaviest logged set per exercise, across every completed workout. Ties on
@@ -13,12 +29,16 @@ export function computeRecords() {
     for (const workout of state.workouts) {
         for (const entry of workout.entries || []) {
             for (const set of entry.sets) {
-                if (!set.done || !(set.weightKg > 0)) continue;
+                if (!isLoggedWork(set)) continue;
 
                 const current = best.get(entry.exerciseId);
                 const candidate = {
                     exerciseId: entry.exerciseId,
                     exerciseName: entry.exerciseName,
+                    // Off the workout's own snapshot rather than the library,
+                    // so a record still files under the right muscle for an
+                    // exercise that's since been deleted or recategorised.
+                    muscleGroup: entry.muscleGroup || '',
                     weightKg: set.weightKg,
                     reps: set.reps,
                     date: workout.startedAt,
@@ -73,7 +93,7 @@ export function computeOneRepMaxes() {
     for (const workout of state.workouts) {
         for (const entry of workout.entries || []) {
             for (const set of entry.sets) {
-                if (!set.done) continue;
+                if (!isLoggedWork(set)) continue;
 
                 const estimateKg = estimateOneRepMax(set);
                 if (estimateKg === null) continue;
@@ -102,9 +122,10 @@ function recordCard(record, estimate) {
         el('div', { class: 'pr-card-top' }, [
             el('div', {}, [
                 el('div', { class: 'card-title', text: record.exerciseName }),
+                // No muscle badge — the group heading above already carries
+                // it, and repeating it on every card is just noise.
                 exercise
                     ? el('div', { class: 'badge-row' }, [
-                          el('span', { class: 'badge badge-muscle', text: exercise.muscleGroup, dataset: { muscle: exercise.muscleGroup } }),
                           el('span', { class: 'badge badge-equipment', text: exercise.equipment }),
                       ])
                     : el('div', { class: 'card-meta', text: 'Exercise removed from library' }),
@@ -132,7 +153,7 @@ function recordCard(record, estimate) {
 
 export function renderRecords() {
     const container = clear($('#prs-body'));
-    const records = [...computeRecords().values()].sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
+    const records = [...computeRecords().values()];
     const estimates = computeOneRepMaxes();
 
     if (!records.length) {
@@ -145,7 +166,30 @@ export function renderRecords() {
         return;
     }
 
-    container.append(
-        el('div', { class: 'stack' }, records.map((record) => recordCard(record, estimates.get(record.exerciseId)))),
+    const byMuscle = new Map();
+    records.forEach((record) => {
+        const muscle = record.muscleGroup || OTHER;
+        if (!byMuscle.has(muscle)) byMuscle.set(muscle, []);
+        byMuscle.get(muscle).push(record);
+    });
+
+    // The library's own order first, then anything filed under a group the
+    // library no longer defines, with the unlabelled bucket last.
+    const known = MUSCLE_GROUPS.filter((muscle) => byMuscle.has(muscle));
+    const stragglers = [...byMuscle.keys()].filter(
+        (muscle) => muscle !== OTHER && !MUSCLE_GROUPS.includes(muscle),
     );
+    const order = [...known, ...stragglers, ...(byMuscle.has(OTHER) ? [OTHER] : [])];
+
+    order.forEach((muscle) => {
+        const group = byMuscle.get(muscle).sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
+
+        container.append(
+            el('div', { class: 'records-group-label' }, [
+                muscle === OTHER ? null : el('span', { class: 'muscle-dot', dataset: { muscle } }),
+                muscle,
+            ]),
+            el('div', { class: 'stack' }, group.map((record) => recordCard(record, estimates.get(record.exerciseId)))),
+        );
+    });
 }
