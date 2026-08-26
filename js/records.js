@@ -14,7 +14,7 @@ const OTHER = 'Other';
  * saving, so this is belt-and-braces for anything that arrives by another
  * route — a restored backup, or a workout logged before warm-ups existed.
  */
-function isLoggedWork(set) {
+export function isLoggedWork(set) {
     return Boolean(set.done) && !set.warmup && set.weightKg > 0;
 }
 
@@ -76,7 +76,7 @@ function formatEstimate(kg) {
     return `${Math.round(toDisplay(kg))} ${getUnit()}`;
 }
 
-function estimateOneRepMax(set) {
+export function estimateOneRepMax(set) {
     const effectiveReps = set.reps + (set.rir ?? 0);
     if (!(set.weightKg > 0) || effectiveReps < 1 || effectiveReps > MAX_EFFECTIVE_REPS) return null;
     return set.weightKg * (1 + effectiveReps / 30);

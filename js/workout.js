@@ -1,11 +1,12 @@
 import { database, DEFAULTS, uid } from './db.js';
-
 import { state, loadWorkouts, findExercise, lastPerformance, lastNote } from './store.js';
 import { $, el, clear, confirmSheet, toast, noteField } from './dom.js';
 import { stepper } from './stepper.js';
 import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
+import { computeProgress, syncProgressLedger } from './progress.js';
+import { showWorkoutSummary } from './rewards.js';
 import { startRest, stopRest, isResting } from './timer.js';
 import { canVibrate, playSetComplete, playWorkoutFinished } from './sfx.js';
 import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNumber, formatWeight, formatDuration, formatStopwatch } from './units.js';
@@ -197,15 +198,25 @@ async function finishWorkout() {
     session.status = 'completed';
     session.finishedAt = new Date().toISOString();
 
+    // Snapshotted before the save, while `state.workouts` still excludes this
+    // session — diffing the two derived snapshots is what tells the summary
+    // sheet what this workout actually earned.
+    const finished = session;
+    const before = computeProgress();
+
     await database.saveWorkout(session);
     session = null;
     stopRest();
     releaseWakeLock();
     await loadWorkouts();
+    await syncProgressLedger();
     render();
-    onFinished?.();
     playWorkoutFinished();
-    toast('Workout saved');
+
+    await showWorkoutSummary(before, computeProgress(), finished);
+    // After the summary, so the Progress tab redraws with the newly earned
+    // badges already marked as seen.
+    onFinished?.();
 }
 
 async function discardWorkout(skipConfirm = false) {

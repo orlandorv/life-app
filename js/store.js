@@ -11,6 +11,7 @@ export const state = {
     workouts: [],
     checkins: [],
     activeWorkout: null,
+    progressLedger: null,
 };
 
 const listeners = new Map();
@@ -50,6 +51,29 @@ export async function loadCheckins() {
     state.checkins = await database.getCheckins();
     emit('checkins');
     return state.checkins;
+}
+
+/**
+ * The one piece of progress state that isn't derived: what's already been
+ * celebrated, plus each week's sealed session target and drawn quests. Kept
+ * as a single row in `settings` rather than its own store, so it needs no
+ * schema version bump and rides along in the existing backup export for free.
+ */
+const EMPTY_LEDGER = { version: 1, seenBadges: [], seenLevel: 0, weekTargets: {}, quests: {} };
+
+export async function loadProgressLedger() {
+    const stored = await database.getSetting('progress', null);
+    state.progressLedger = { ...EMPTY_LEDGER, ...(stored || {}) };
+    emit('progress');
+    return state.progressLedger;
+}
+
+/** Shallow-merges a patch into the ledger and writes it back. */
+export async function saveProgressLedger(patch) {
+    state.progressLedger = { ...(state.progressLedger || EMPTY_LEDGER), ...patch };
+    await database.setSetting('progress', state.progressLedger);
+    emit('progress');
+    return state.progressLedger;
 }
 
 export function findExercise(id) {
@@ -93,5 +117,5 @@ export async function bootstrap() {
     await database.excludeExampleTemplatesOnce();
     setUnit(await database.getSetting('unit', 'kg'));
     await loadBarWeights();
-    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins()]);
+    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger()]);
 }

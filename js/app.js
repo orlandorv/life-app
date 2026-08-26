@@ -10,6 +10,8 @@ import { renderRecords } from './records.js';
 import { initHistory, renderHistory } from './history.js';
 import { initCheckin } from './checkin.js';
 import { initSettings } from './settings.js';
+import { initRewards, renderRewards } from './rewards.js';
+import { syncProgressLedger } from './progress.js';
 
 function switchTab(tab) {
     $$('.tab-content').forEach((section) => section.classList.toggle('active', section.id === `${tab}-tab`));
@@ -63,6 +65,7 @@ function renderAll() {
     renderWorkout();
     renderHistory();
     renderRecords();
+    renderRewards();
 }
 
 async function start() {
@@ -74,10 +77,12 @@ async function start() {
     initPicker();
     initTimer();
     initSfx();
+    initRewards();
     initWorkout({
         onWorkoutFinished: () => {
             renderHistory();
             renderRecords();
+            renderRewards();
         },
     });
     initTemplates({
@@ -92,6 +97,9 @@ async function start() {
     initSettings({ onDataChanged: renderAll, onUnitChanged: renderAll });
 
     await resumeActive();
+    // Seals this week's session target and draws its quests before anything
+    // renders, so the tab never shows a week with neither.
+    await syncProgressLedger();
 
     renderAll();
 }

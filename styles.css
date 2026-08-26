@@ -131,9 +131,10 @@ body.modal-open {
     justify-content: center;
     gap: 3px;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     font-family: inherit;
+    letter-spacing: -0.1px;
     transition: color 0.15s;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1893,4 +1894,302 @@ body.modal-open .toast.visible {
     .picker-row:hover {
         opacity: 0.92;
     }
+}
+
+/* --- Progress: level -------------------------------------------------- */
+
+.level-card {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--primary) 16%, var(--bg-secondary)),
+        var(--bg-secondary));
+    border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.level-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.level-rank {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--primary);
+}
+
+.level-number {
+    font-size: 28px;
+    font-weight: 750;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+}
+
+.level-total {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.level-total-value {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.4px;
+}
+
+.level-total-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.level-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 7px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Progress: streak ------------------------------------------------- */
+
+.streak-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.streak-value {
+    font-size: 34px;
+    font-weight: 750;
+    letter-spacing: -1px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.streak-unit {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.streak-flame {
+    font-size: 20px;
+    margin-left: auto;
+}
+
+.streak-card .hint {
+    margin-top: 9px;
+}
+
+/* --- Progress: quests ------------------------------------------------- */
+
+.quest-row + .quest-row {
+    margin-top: 12px;
+}
+
+.quest-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.quest-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.quest-tick {
+    color: var(--text-secondary);
+    font-size: 12px;
+    width: 12px;
+}
+
+.quest-row.done .quest-tick {
+    color: var(--success);
+}
+
+.quest-row.done .quest-label {
+    color: var(--text-secondary);
+}
+
+/* --- Progress: day grid ----------------------------------------------- */
+
+/* Columns are weeks, rows are weekdays, so cells are appended week by week. */
+.heatmap {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(7, 1fr);
+    grid-template-columns: repeat(12, 1fr);
+    gap: 3px;
+}
+
+/* An untrained day reads as recessed in both themes — `--bg-raised` is white
+   in light mode, which would make empty squares brighter than the card. */
+.heat-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.heat-cell[data-level="1"] {
+    background: color-mix(in srgb, var(--primary) 32%, transparent);
+}
+
+.heat-cell[data-level="2"] {
+    background: color-mix(in srgb, var(--primary) 62%, transparent);
+}
+
+.heat-cell[data-level="3"] {
+    background: var(--primary);
+}
+
+.heat-cell.future {
+    opacity: 0.35;
+}
+
+/* --- Progress: badges ------------------------------------------------- */
+
+.badge-group-label {
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 16px 0 8px;
+}
+
+.badge-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.badge-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 12px 6px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    color: inherit;
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button.badge-tile:active {
+    transform: scale(0.97);
+}
+
+/* Locked badges stay legible — they're the goals, not decoration — but
+   clearly sit behind the earned ones. */
+.badge-tile.locked {
+    opacity: 0.45;
+}
+
+.badge-tile.locked .badge-icon {
+    filter: grayscale(1);
+}
+
+.badge-tile.unseen::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.badge-icon {
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.badge-name {
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 1.25;
+}
+
+.badge-sub {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+/* --- Post-workout summary sheet --------------------------------------- */
+
+.xp-total {
+    font-size: 38px;
+    font-weight: 750;
+    letter-spacing: -1.2px;
+    text-align: center;
+    color: var(--primary);
+    margin-bottom: 14px;
+}
+
+.xp-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+}
+
+.xp-line.bonus {
+    color: var(--success);
+}
+
+.xp-line-value {
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.xp-level {
+    margin-top: 16px;
+}
+
+.xp-level-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.summary-highlight {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--success) 12%, transparent);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.summary-badges {
+    margin-top: 14px;
 }

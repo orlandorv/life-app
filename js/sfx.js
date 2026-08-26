@@ -78,6 +78,29 @@ export function playWorkoutFinished() {
     tone(783.99, 0.24, 0.34, 0.3);
 }
 
+/**
+ * Levelling up. Rarer than finishing a workout and meant to feel like it — the
+ * same triad carried an octave higher with a fourth note on top, so it reads
+ * as a continuation of the finish sound rather than a competing jingle.
+ */
+export function playLevelUp() {
+    if (!ensureRunning()) return;
+    tone(523.25, 0, 0.16, 0.26);
+    tone(659.25, 0.1, 0.16, 0.26);
+    tone(783.99, 0.2, 0.16, 0.28);
+    tone(1046.5, 0.3, 0.45, 0.3);
+}
+
+/**
+ * A badge unlocking. Fires alongside the level sound sometimes, so it sits in
+ * a different register — a bright two-note ping rather than another chord.
+ */
+export function playBadgeEarned() {
+    if (!ensureRunning()) return;
+    tone(880, 0, 0.12, 0.22);
+    tone(1318.5, 0.09, 0.26, 0.24);
+}
+
 export function initSfx() {
     document.addEventListener('pointerdown', unlockAudio, { once: true });
 }
