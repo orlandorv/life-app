@@ -5,6 +5,7 @@ import { $, el, clear, confirmSheet, toast, noteField } from './dom.js';
 import { stepper } from './stepper.js';
 import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
+import { rirGuidance } from './rir.js';
 import { startRest, stopRest, isResting } from './timer.js';
 import { canVibrate, playSetComplete, playWorkoutFinished } from './sfx.js';
 import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNumber, formatWeight, formatDuration, formatStopwatch } from './units.js';
@@ -652,6 +653,12 @@ function exerciseBlock(entry, entryIndex) {
         if (templateEntry) saveBack.hidden = templateEntry.restSeconds === entry.restSeconds;
     };
 
+    // Sits with the template note, reading the RIR this exercise is actually
+    // programmed at — the reminder is worth more mid-set than in the builder.
+    const rirHint = templateEntry
+        ? el('div', { class: 'rir-hint', text: rirGuidance(entry.targetRir ?? DEFAULTS.rir) })
+        : null;
+
     // Scoped to the template, not the session — bound straight to the
     // template's own copy so it stays in sync with the builder, and only
     // shows up for exercises still actually in this template (not one added
@@ -800,6 +807,7 @@ function exerciseBlock(entry, entryIndex) {
                 : null,
         ]),
 
+        rirHint,
         templateNoteField,
         noteSection(entry),
     ]);

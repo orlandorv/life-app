@@ -4,6 +4,7 @@ import { $, $$, el, clear, openModal, closeModal, confirmSheet, toast, noteField
 import { labelledStepper } from './stepper.js';
 import { openPicker } from './picker.js';
 import { formatRest } from './units.js';
+import { rirGuidance } from './rir.js';
 
 // Working copy of the template being edited. Nothing touches IndexedDB until
 // Save, so backing out of the sheet discards cleanly.
@@ -32,11 +33,15 @@ function renderRows() {
             max: 20,
             onChange: (value) => { entry.sets = value; },
         });
+        const rirHint = el('div', { class: 'rir-hint', text: rirGuidance(entry.rir ?? DEFAULTS.rir) });
         const rirField = labelledStepper('RIR', {
             value: entry.rir ?? DEFAULTS.rir,
             min: 0,
             max: 10,
-            onChange: (value) => { entry.rir = value; },
+            onChange: (value) => {
+                entry.rir = value;
+                rirHint.textContent = rirGuidance(value);
+            },
         });
         // The ceiling of the rep range, not a literal per-set target — double
         // progression only adds weight once every working set reaches this
@@ -123,6 +128,7 @@ function renderRows() {
                 ]),
                 el('div', { class: 'stepper-grid' }, [setsField, rirField, targetRepsField, restField]),
                 exerciseNoteField,
+                rirHint,
                 templateNoteField,
             ]),
         );
