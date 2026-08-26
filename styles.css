@@ -1089,6 +1089,26 @@ form.modal-body .modal-actions {
     cursor: grabbing;
 }
 
+/* Reorder mode: while a drag is in progress every block shrinks to its name
+   so the whole list is on screen at once. Deliberately un-animated — a height
+   transition would fight the drag's own position maths, which measures real
+   rects on every pointermove. */
+.stack.reordering .exercise-block > *:not(.exercise-block-head),
+.stack.reordering .exercise-block-meta,
+.stack.reordering .row-controls {
+    display: none;
+}
+
+.stack.reordering .exercise-block-head {
+    align-items: center;
+    padding: 4px 14px 4px 6px;
+    border-bottom: none;
+}
+
+.stack.reordering .exercise-block-title {
+    padding-top: 0;
+}
+
 .exercise-block.dragging {
     position: relative;
     z-index: 30;

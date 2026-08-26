@@ -582,6 +582,7 @@ function initDragHandle(handle, block) {
         handle.removeEventListener('pointercancel', finish);
 
         const container = block.parentElement;
+        container?.classList.remove('reordering');
         if (container && session) {
             const order = [...container.children].map((el) => el.dataset.entryKey);
             session.entries.sort((a, b) => order.indexOf(a.exerciseId) - order.indexOf(b.exerciseId));
@@ -594,7 +595,17 @@ function initDragHandle(handle, block) {
         if (event.button !== undefined && event.button !== 0) return;
         event.preventDefault();
         dragging = true;
-        grabOffset = event.clientY - block.getBoundingClientRect().top;
+
+        // Collapse every block to just its name for the length of the drag.
+        // A full block runs most of a screen, so reordering otherwise meant
+        // hauling one past a lot of scrolling; collapsed, the whole list fits
+        // and any position is one gesture away.
+        block.parentElement?.classList.add('reordering');
+
+        // Measured after the collapse — reading the rect forces the relayout
+        // through — and centred rather than kept at the original grab point,
+        // which would now sit far below a block a fraction of its old height.
+        grabOffset = block.getBoundingClientRect().height / 2;
         block.classList.add('dragging');
         try {
             // Keeps the drag alive even if the finger slides off the small
