@@ -20,6 +20,10 @@ let elapsedInterval = null;
 let timerPaused = false;
 let exercisesStack = null;
 
+// How long a +/- weight ramp has to be still before it counts as settled.
+// Comfortably longer than bindHold's 90ms repeat, short enough not to lag.
+const WEIGHT_SETTLE_MS = 700;
+
 // --- Wake lock -----------------------------------------------------------
 
 async function acquireWakeLock() {
@@ -377,6 +381,28 @@ function fillBlankWorkingWeights(source, weightControls, unit) {
 function setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls) {
     const unit = getUnit();
 
+    // Ramping a weight with +/- arrives as a burst of small changes, so the
+    // fill waits for it to settle. Without this, the first tap up from zero
+    // splashes one increment across every set and then never corrects itself,
+    // because those sets are no longer blank.
+    let fillTimer = null;
+    let fillPending = false;
+
+    const scheduleFill = (fromButton) => {
+        clearTimeout(fillTimer);
+        if (!fromButton) {
+            // A typed value is a finished decision — no reason to wait.
+            fillPending = false;
+            fillBlankWorkingWeights(set, weightControls, unit);
+            return;
+        }
+        fillPending = true;
+        fillTimer = setTimeout(() => {
+            fillPending = false;
+            fillBlankWorkingWeights(set, weightControls, unit);
+        }, WEIGHT_SETTLE_MS);
+    };
+
     const repsStepper = stepper({
         value: set.reps,
         min: 1, // a logged set can't have zero reps
@@ -399,11 +425,11 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress, weightCo
             const hadWeight = set.weightKg > 0;
             set.weightKg = fromDisplay(value, unit);
 
-            // Only on a typed entry, never on a +/- tap: stepping up from zero
-            // would otherwise splash 1.25 kg across every set on the first tap
-            // and then never correct itself.
-            if (!fromButton && !hadWeight && !set.warmup && set.weightKg > 0) {
-                fillBlankWorkingWeights(set, weightControls, unit);
+            // Filling starts when a blank set first gets a weight, and keeps
+            // deferring while that same interaction is still running, so a
+            // ramp lands once on its final value rather than on its first step.
+            if ((!hadWeight || fillPending) && !set.warmup && set.weightKg > 0) {
+                scheduleFill(fromButton);
             }
 
             updateBanner();
