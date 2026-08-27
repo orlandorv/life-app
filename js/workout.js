@@ -650,13 +650,13 @@ function exerciseBlock(entry, entryIndex) {
     const saveBack = el('button', {
         class: 'link-btn',
         type: 'button',
-        text: 'Save to template',
+        text: 'Save to plan',
         hidden: true,
         onclick: async () => {
             templateEntry.restSeconds = entry.restSeconds;
             await database.saveTemplate(template);
             saveBack.hidden = true;
-            toast('Template rest updated');
+            toast('Plan rest updated');
         },
     });
 
@@ -680,7 +680,7 @@ function exerciseBlock(entry, entryIndex) {
     // ad hoc mid-workout, or a workout with no template at all).
     const templateNoteField = templateEntry
         ? noteField({
-              label: 'Template note',
+              label: 'Plan note',
               placeholder: 'e.g. this week: pause reps',
               value: templateEntry.note || '',
               onSave: async (value) => {
@@ -970,51 +970,6 @@ function addExercise() {
 
 // --- Views ---------------------------------------------------------------
 
-function idleView() {
-    const body = el('div', {});
-
-    body.append(
-        el('button', {
-            class: 'btn btn-primary btn-block',
-            type: 'button',
-            text: 'Start Empty Workout',
-            onclick: () => startWorkout(null),
-        }),
-    );
-
-    if (state.templates.length) {
-        body.append(el('div', { class: 'history-group-label', text: 'Start from a template' }));
-        const list = el('div', { class: 'stack' });
-        state.templates.forEach((template) => {
-            const totalSets = template.exercises.reduce((sum, e) => sum + e.sets, 0);
-            list.append(
-                el('button', { class: 'card', type: 'button', onclick: () => startWorkout(template.id) }, [
-                    el('div', { class: 'card-title', text: template.name }),
-                    el('div', {
-                        class: 'card-meta',
-                        text: `${template.exercises.length} exercises · ${totalSets} sets`,
-                    }),
-                ]),
-            );
-        });
-        body.append(list);
-    } else {
-        body.append(
-            el('div', { class: 'empty-state' }, [
-                el('p', { class: 'hint', text: 'Build a template and starting a workout pre-fills every set for you.' }),
-            ]),
-        );
-    }
-
-    if (!canVibrate()) {
-        body.append(
-            el('p', { class: 'hint footnote', text: 'Rest alerts use sound — iPhone Safari can’t vibrate from a web app. Keep the volume up, or watch the timer bar.' }),
-        );
-    }
-
-    return body;
-}
-
 function summaryText() {
     const doneSets = session.entries.reduce((sum, e) => sum + e.sets.filter((s) => !s.warmup && s.done).length, 0);
     const totalSets = session.entries.reduce((sum, e) => sum + e.sets.filter((s) => !s.warmup).length, 0);
@@ -1083,10 +1038,28 @@ export function render() {
     exercisesStack = null;
     stopElapsedTicker();
     elapsedEl = null;
+
     const container = clear($('#today-body'));
-    $('#today-title').textContent = session ? 'Workout' : 'Today';
-    container.append(session ? activeView() : idleView());
+    $('#today-title').textContent = session ? 'Workout' : 'Start a Workout';
+
+    // The launcher is static markup rather than rebuilt DOM, so the template
+    // list and its buttons keep the listeners bound once at boot — the live
+    // session just takes the screen over while it's running.
+    $('#today-idle').hidden = Boolean(session);
+    if (session) container.append(activeView());
+    else refreshIdleFootnote();
+
     document.body.classList.toggle('resting-room', Boolean(session));
+}
+
+/** iOS Safari can't vibrate from a web app, so rest alerts lean on sound. */
+function refreshIdleFootnote() {
+    const footnote = $('#today-footnote');
+    footnote.hidden = canVibrate();
+    if (!footnote.hidden) {
+        footnote.textContent =
+            'Rest alerts use sound — iPhone Safari can\u2019t vibrate from a web app. Keep the volume up, or watch the timer bar.';
+    }
 }
 
 export function hasActiveSession() {
@@ -1095,6 +1068,8 @@ export function hasActiveSession() {
 
 export function initWorkout({ onWorkoutFinished } = {}) {
     onFinished = onWorkoutFinished;
+
+    $('#start-empty-btn').addEventListener('click', () => startWorkout(null));
 
     // Re-request the lock after the phone is unlocked or the tab is refocused —
     // the browser drops it whenever the page loses visibility.

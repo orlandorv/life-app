@@ -118,8 +118,8 @@ export function renderVolume(container) {
             el('p', {
                 class: 'hint',
                 text: excluded
-                    ? `No templates are counting toward the weekly plan (${excluded} opted out). Open one from Templates and switch “Counts toward weekly plan” to Yes.`
-                    : 'Build a template — the sets it prescribes become this week’s target.',
+                    ? `No plans are counting toward the weekly plan (${excluded} opted out). Open one from Workout and switch “Counts toward weekly plan” to Yes.`
+                    : 'Build a plan — the sets it prescribes become this week’s target.',
             }),
         );
     } else {

@@ -19,12 +19,23 @@
 </head>
 <body>
     <main id="app">
-        <!-- Today -->
+        <!-- Workout: the live session, or the launcher when nothing is running -->
         <section id="today-tab" class="tab-content active">
             <header class="tab-header">
-                <h1 id="today-title">Today</h1>
+                <h1 id="today-title">Workout</h1>
             </header>
             <div id="today-body"></div>
+            <div id="today-idle">
+                <button id="start-empty-btn" class="btn btn-primary btn-block" type="button">
+                    Start Empty Workout
+                </button>
+                <div id="templates-heading" class="history-group-label">Your plans</div>
+                <div id="templates-list" class="stack"></div>
+                <button id="create-template-btn" class="btn btn-outline btn-block spaced" type="button">
+                    + New Plan
+                </button>
+                <p id="today-footnote" class="hint footnote" hidden></p>
+            </div>
         </section>
 
         <!-- Exercise Library -->
@@ -46,17 +57,6 @@
 
             <button id="add-exercise-btn" class="btn btn-outline btn-block spaced" type="button">
                 + Add Custom Exercise
-            </button>
-        </section>
-
-        <!-- Templates -->
-        <section id="templates-tab" class="tab-content">
-            <header class="tab-header">
-                <h1>Templates</h1>
-            </header>
-            <div id="templates-list" class="stack"></div>
-            <button id="create-template-btn" class="btn btn-outline btn-block spaced" type="button">
-                + New Template
             </button>
         </section>
 
@@ -101,10 +101,7 @@
 
     <nav class="bottom-nav">
         <button class="nav-btn active" type="button" data-tab="today">
-            <span class="nav-icon">🏋️</span><span class="nav-label">Today</span>
-        </button>
-        <button class="nav-btn" type="button" data-tab="templates">
-            <span class="nav-icon">📋</span><span class="nav-label">Plans</span>
+            <span class="nav-icon">🏋️</span><span class="nav-label">Workout</span>
         </button>
         <button class="nav-btn" type="button" data-tab="library">
             <span class="nav-icon">📚</span><span class="nav-label">Library</span>
@@ -185,12 +182,12 @@
     <div id="template-form-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="template-form-title">New Template</h2>
+                <h2 id="template-form-title">New Plan</h2>
                 <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
             </div>
             <form id="template-form" class="modal-body">
                 <label>
-                    <span class="label-text">Template name</span>
+                    <span class="label-text">Plan name</span>
                     <input type="text" id="template-name" class="form-input" placeholder="e.g. Push Day" required>
                 </label>
 

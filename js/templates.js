@@ -87,7 +87,7 @@ function renderRows() {
         // Scoped to this template only — part of the draft, so it's only
         // persisted when the template itself is saved.
         const templateNoteField = noteField({
-            label: 'Template note',
+            label: 'Plan note',
             placeholder: 'e.g. this week: pause reps',
             value: entry.note || '',
             onSave: (value) => { entry.note = value; },
@@ -170,7 +170,7 @@ export function openTemplateForm(templateId = null) {
         ? { ...existing, exercises: existing.exercises.map((entry) => ({ ...entry })) }
         : { name: '', exercises: [] };
 
-    $('#template-form-title').textContent = existing ? 'Edit Template' : 'New Template';
+    $('#template-form-title').textContent = existing ? 'Edit Plan' : 'New Plan';
     $('#template-name').value = draft.name;
     $('#delete-template-btn').hidden = !existing;
     syncPlanToggle();
@@ -180,7 +180,7 @@ export function openTemplateForm(templateId = null) {
 
 function addExerciseToDraft() {
     openPicker({
-        title: 'Add to Template',
+        title: 'Add to Plan',
         exclude: draft.exercises.map((entry) => entry.exerciseId),
         onSelect: (exerciseId) => {
             draft.exercises.push({ exerciseId, ...DEFAULTS });
@@ -205,13 +205,13 @@ async function submitTemplate(event) {
     renderTemplates();
     onChange?.();
     closeModal('template-form-modal');
-    toast('Template saved');
+    toast('Plan saved');
 }
 
 async function deleteTemplate() {
     const ok = await confirmSheet({
-        title: 'Delete template',
-        message: `Delete “${draft.name || 'this template'}”? Workouts already logged from it are kept.`,
+        title: 'Delete plan',
+        message: `Delete “${draft.name || 'this plan'}”? Workouts already logged from it are kept.`,
         confirmLabel: 'Delete',
         danger: true,
     });
@@ -222,16 +222,19 @@ async function deleteTemplate() {
     renderTemplates();
     onChange?.();
     closeModal('template-form-modal');
-    toast('Template deleted');
+    toast('Plan deleted');
 }
 
 export function renderTemplates() {
     const container = clear($('#templates-list'));
+    // The heading is static markup now that the list lives on the workout
+    // tab, so it has to be hidden explicitly rather than simply not rendered.
+    $('#templates-heading').hidden = !state.templates.length;
 
     if (!state.templates.length) {
         container.append(
             el('div', { class: 'empty-state' }, [
-                el('p', { text: 'No templates yet.' }),
+                el('p', { text: 'No plans yet.' }),
                 el('p', { class: 'hint', text: 'Build one — “Push Day”, “Legs” — and starting a workout pre-fills every set.' }),
             ]),
         );
