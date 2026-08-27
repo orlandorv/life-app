@@ -1,5 +1,19 @@
 export const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Legs', 'Core'];
 
+/**
+ * Form notes that have since been rewritten, keyed by exercise id and holding
+ * the exact superseded text.
+ *
+ * Prescription that the app now derives and displays itself — rep ranges, RIR,
+ * set counts — reads as duplication sitting in a form-cue field, so it gets
+ * retired here. Only a copy still byte-identical to this is replaced, so notes
+ * edited by hand are left alone.
+ */
+export const SUPERSEDED_NOTES = {
+    'flat-dumbbell-press':
+        'Press dumbbells up and slightly together at the top. Lower with control to chest level, keeping wrists stacked over elbows. Stay in the 8-12 rep range with a controlled tempo.',
+};
+
 export const EQUIPMENT = ['Barbell', 'Dumbbell', 'Cable Machine', 'Bodyweight', 'Machine', 'Kettlebell', 'Bands'];
 
 // ORV's 5-Day Gym Routine (Upper/Lower/Push/Pull/Legs+Arms) — every movement
@@ -29,7 +43,7 @@ export const DEFAULT_EXERCISES = [
         muscleGroup: 'Chest',
         equipment: 'Dumbbell',
         attachment: 'Flat bench',
-        notes: 'Press dumbbells up and slightly together at the top. Lower with control to chest level, keeping wrists stacked over elbows. Stay in the 8-12 rep range with a controlled tempo.',
+        notes: 'Press dumbbells up and slightly together at the top. Lower with control to chest level, keeping wrists stacked over elbows. Keep the tempo controlled rather than bouncing out of the bottom.',
     },
     {
         id: 'cable-chest-fly',

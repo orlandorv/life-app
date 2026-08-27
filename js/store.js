@@ -1,5 +1,5 @@
 import { database } from './db.js';
-import { DEFAULT_EXERCISES } from './seed.js';
+import { DEFAULT_EXERCISES, SUPERSEDED_NOTES } from './seed.js';
 import { setUnit } from './units.js';
 import { loadBarWeights } from './plates.js';
 
@@ -114,6 +114,7 @@ export async function bootstrap() {
     await database.init();
     await database.seedExercises(DEFAULT_EXERCISES);
     await database.pruneStockExercises(new Set(DEFAULT_EXERCISES.map((exercise) => exercise.id)));
+    await database.replaceSupersededNotes(DEFAULT_EXERCISES, SUPERSEDED_NOTES);
     await database.excludeExampleTemplatesOnce();
     setUnit(await database.getSetting('unit', 'kg'));
     await loadBarWeights();

@@ -189,6 +189,33 @@ class Database {
     }
 
     /**
+     * Brings a stock exercise's form notes up to the current seed text, but
+     * only where the stored copy is still byte-identical to the superseded
+     * one — so notes edited by hand are never overwritten.
+     *
+     * Naturally idempotent: once rewritten, the old text no longer matches.
+     */
+    async replaceSupersededNotes(defaults, superseded) {
+        const exercises = await this._getAll('exercises');
+        const stale = exercises.filter(
+            (exercise) => superseded[exercise.id] && exercise.notes === superseded[exercise.id],
+        );
+        if (!stale.length) return 0;
+
+        const current = new Map(defaults.map((exercise) => [exercise.id, exercise.notes]));
+
+        await this._run('exercises', 'readwrite', (tx) => {
+            const store = tx.objectStore('exercises');
+            stale.forEach((exercise) => {
+                const replacement = current.get(exercise.id);
+                if (replacement) store.put({ ...exercise, notes: replacement });
+            });
+        });
+
+        return stale.length;
+    }
+
+    /**
      * Removes stock exercises (isCustom: false) that are no longer in the
      * current default set — e.g. after swapping in a different routine's
      * exercise list — and strips them out of any template that referenced
