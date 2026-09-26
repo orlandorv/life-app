@@ -27,3 +27,13 @@ export function dayLabel(dayId, today = localDayId()) {
     if (dayId === addDays(today, -1)) return 'Yesterday';
     return parseDayId(dayId).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 }
+
+/** Monday=0 … Sunday=6, matching how Gym starts its weeks. */
+export function weekdayIndex(dayId) {
+    return (parseDayId(dayId).getDay() + 6) % 7;
+}
+
+/** The Monday of the week containing `dayId`. */
+export function weekStartId(dayId) {
+    return addDays(dayId, -weekdayIndex(dayId));
+}

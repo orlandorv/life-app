@@ -146,3 +146,29 @@ a.life-card:active {
     font-weight: 600;
     text-decoration: none;
 }
+
+/* --- Shared section pieces --------------------------------------------- */
+
+.life-main {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+/* The ‹ label › switcher (days, weeks) used by Nutrition and Habits. */
+.life-daybar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.life-daybar .icon-btn {
+    font-size: 26px;
+}
+
+.life-daybar-label {
+    font-size: 17px;
+    font-weight: 650;
+}

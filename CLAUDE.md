@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Life — a mobile-first, offline-capable personal app, installable as a home-screen PWA on iOS via GitHub Pages. Life is the shell (home screen + routing); each area of life is a **section** inside it. Built sections: **Gym** (exercise library, templates, live workout logging, rest timer, history, personal records, XP/levels/badges) and **Nutrition** (daily calories and protein against targets, quick entry with remembered foods). Habits and Body are placeholder cards on the home screen.
+Life — a mobile-first, offline-capable personal app, installable as a home-screen PWA on iOS via GitHub Pages. Life is the shell (home screen + routing); each area of life is a **section** inside it. Built sections: **Gym** (exercise library, templates, live workout logging, rest timer, history, personal records, XP/levels/badges), **Nutrition** (daily calories and protein against targets, quick entry with remembered foods) and **Habits** (recurring habits on every day or chosen weekdays, with streaks, a Today checklist and a Week grid, and backfilling past days). Body is a placeholder card on the home screen.
 
 ### Layout
 
@@ -12,6 +12,8 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/life.js` + `life/life.css` — router, home grid, service-worker registration, and the modal chrome shared by every section (close buttons, backdrop tap, Escape, delegated from `document`); `life.css` also holds the shared foundation (reset, `:root` design tokens, body rules).
 - `life/dom.js`, `life/stepper.js` — shared UI primitives used by every section (element builder, modal stack, toast, `confirmSheet`, −/+ stepper). Import these, don't copy them.
 - `life/db.js` + `life/dates.js` — **LifeDB** (see below) and local-day helpers (`localDayId`, `addDays`, `dayLabel`). Use local days, never `toISOString().slice(0,10)`, which is UTC.
+- `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
+- `habits/` — the Habits section: `habits.js` (Today/Week views + sheet), `store.js`, `streaks.js` (pure schedule/streak maths, unit-testable in Node), `habits.css`.
 - `nutrition/` — the Nutrition section: `nutrition.js` (screen + sheets), `store.js` (state and writes), `totals.js` (pure arithmetic), `nutrition.css`.
 - `gym/js/*.js` + `gym/gym.css` — the Gym section. Its entry point is `bootGym()` in `gym/js/app.js`.
 
@@ -49,9 +51,9 @@ Static hosting on GitHub Pages; see `DEPLOY.md` for the full walkthrough. The im
 
 ### LifeDB (`life/db.js`)
 
-Storage for every section **except Gym**, which keeps its own `GymTrackerDB` (its data and backups predate Life, so it was deliberately left alone). Stores: `foods`, `nutritionEntries` (index `day`, a local `YYYY-MM-DD`), `settings`. A generic get/getAll/byIndex/put/delete wrapper; each section keeps its record shapes and helpers in its own `store.js`. Call `await lifeDb.init()` before use (idempotent).
+Storage for every section **except Gym**, which keeps its own `GymTrackerDB` (its data and backups predate Life, so it was deliberately left alone). Stores: `foods`, `nutritionEntries` (index `day`, a local `YYYY-MM-DD`), `settings` (v1, Nutrition); `habits` and `habitLogs` (v2, Habits — a log's id is `habitId|day` and its presence means done; a habit's `days` are Monday=0…Sunday=6). Upgrades are additive (`contains` guards in `onupgradeneeded`), so existing data survives a version bump. A generic get/getAll/byIndex/put/delete wrapper; each section keeps its record shapes and helpers in its own `store.js`. Call `await lifeDb.init()` before use (idempotent).
 
-**Backup gap:** Gym's JSON export (`gym/js/settings.js`) does not include LifeDB, so Nutrition data has no export yet.
+**Backup gap:** Gym's JSON export (`gym/js/settings.js`) does not include LifeDB, so Nutrition and Habits data have no export yet.
 
 ### Gym section internals
 

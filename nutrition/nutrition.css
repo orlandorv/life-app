@@ -8,24 +8,6 @@
     padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
 }
 
-/* --- Day switcher ------------------------------------------------------ */
-
-.nutrition-daybar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-}
-
-.nutrition-daybar .icon-btn {
-    font-size: 26px;
-}
-
-.nutrition-day {
-    font-size: 17px;
-    font-weight: 650;
-}
-
 /* --- Targets card ------------------------------------------------------ */
 
 .nutrition-summary {

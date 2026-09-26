@@ -10,7 +10,7 @@
  */
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -54,6 +54,19 @@ class LifeDatabase {
 
                 if (!db.objectStoreNames.contains('settings')) {
                     db.createObjectStore('settings', { keyPath: 'key' });
+                }
+
+                // v2 — Habits. `days` is the weekdays a habit is due (Monday=0
+                // … Sunday=6); a log's presence means "done that day", so a
+                // toggle is put/delete and can never double-count.
+                if (!db.objectStoreNames.contains('habits')) {
+                    db.createObjectStore('habits', { keyPath: 'id' });
+                }
+
+                if (!db.objectStoreNames.contains('habitLogs')) {
+                    const store = db.createObjectStore('habitLogs', { keyPath: 'id' });
+                    store.createIndex('day', 'day', { unique: false });
+                    store.createIndex('habitId', 'habitId', { unique: false });
                 }
             };
         }).catch((error) => {

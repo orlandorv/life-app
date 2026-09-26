@@ -2,6 +2,7 @@ import { bootGym } from '../gym/js/app.js';
 import { computeProgress } from '../gym/js/progress.js';
 import { closeModal } from './dom.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
+import { enterHabits } from '../habits/habits.js';
 
 /**
  * Life: the shell that hosts every section. It owns routing (a hash, so a
@@ -26,7 +27,13 @@ const SECTIONS = [
         blurb: 'Meals, calories and protein',
         enter: enterNutrition,
     },
-    { id: 'habits', title: 'Habits', icon: '✅', blurb: 'Daily habits and to-dos', soon: true },
+    {
+        id: 'habits',
+        title: 'Habits',
+        icon: '✅',
+        blurb: 'Daily habits and streaks',
+        enter: enterHabits,
+    },
     { id: 'body', title: 'Body', icon: '😴', blurb: 'Weight, sleep and steps', soon: true },
 ];
 

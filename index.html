@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="life/life.css">
     <link rel="stylesheet" href="gym/gym.css">
     <link rel="stylesheet" href="nutrition/nutrition.css">
+    <link rel="stylesheet" href="habits/habits.css">
 </head>
 <body>
     <!-- Life home: one card per section, rendered by life/life.js -->
@@ -134,6 +135,17 @@
     </nav>
     </div><!-- /#gym-section -->
 
+    <!-- Habits section -->
+    <div id="habits-section" hidden>
+        <a class="life-back" href="#/">&lsaquo; Life</a>
+        <main class="life-main">
+            <header class="tab-header">
+                <h1>Habits</h1>
+            </header>
+            <div id="habits-body"></div>
+        </main>
+    </div>
+
     <!-- Nutrition section -->
     <div id="nutrition-section" hidden>
         <a class="life-back" href="#/">&lsaquo; Life</a>
@@ -143,6 +155,17 @@
             </header>
             <div id="nutrition-body"></div>
         </main>
+    </div>
+
+    <!-- Modal: habits — add / edit habit -->
+    <div id="habit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="habit-modal-title">New habit</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="habit-body" class="modal-body"></div>
+        </div>
     </div>
 
     <!-- Modal: nutrition — log food / edit entry -->

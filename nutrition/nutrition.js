@@ -2,6 +2,7 @@ import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../lif
 import { labelledStepper } from '../life/stepper.js';
 import { lifeDb } from '../life/db.js';
 import { localDayId, addDays, dayLabel } from '../life/dates.js';
+import { dayBar } from '../life/daybar.js';
 import {
     state,
     loadDay,
@@ -59,7 +60,7 @@ export function renderNutrition() {
     const totals = dayTotals(state.entries);
 
     body.append(
-        dayBar(),
+        nutritionDayBar(),
         el('div', { class: 'nutrition-summary' }, [
             el('div', { class: 'nutrition-summary-head' }, [
                 el('span', { class: 'nutrition-summary-title', text: 'Targets' }),
@@ -79,26 +80,14 @@ export function renderNutrition() {
     );
 }
 
-function dayBar() {
+function nutritionDayBar() {
     const today = localDayId();
-    return el('div', { class: 'nutrition-daybar' }, [
-        el('button', {
-            class: 'icon-btn',
-            type: 'button',
-            'aria-label': 'Previous day',
-            text: '‹',
-            onclick: () => refresh(addDays(state.day, -1)),
-        }),
-        el('span', { class: 'nutrition-day', text: dayLabel(state.day, today) }),
-        el('button', {
-            class: 'icon-btn',
-            type: 'button',
-            'aria-label': 'Next day',
-            text: '›',
-            disabled: state.day >= today,
-            onclick: () => refresh(addDays(state.day, 1)),
-        }),
-    ]);
+    return dayBar({
+        label: dayLabel(state.day, today),
+        canNext: state.day < today,
+        onPrev: () => refresh(addDays(state.day, -1)),
+        onNext: () => refresh(addDays(state.day, 1)),
+    });
 }
 
 /** A bar toward a target, or just the running total when none is set. */
