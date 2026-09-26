@@ -1,7 +1,7 @@
 {
-    "name": "Gym Tracker",
-    "short_name": "Gym Tracker",
-    "description": "Offline workout tracker — templates, live logging, rest timer, history, and personal records.",
+    "name": "Life",
+    "short_name": "Life",
+    "description": "Your life in one offline app — starting with a workout tracker.",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",

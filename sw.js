@@ -1,8 +1,8 @@
 // Bump this on every deploy that changes any cached file. Old caches are
 // dropped automatically on activate, so this one line is the whole release
 // process — nothing else in here needs to change per deploy.
-const CACHE_VERSION = 'v34';
-const CACHE_NAME = `gym-tracker-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v36';
+const CACHE_NAME = `life-${CACHE_VERSION}`;
 
 // Registered as a relative path from index.html, so these resolve under
 // wherever the app is actually hosted (e.g. /repo-name/ on GitHub Pages)
@@ -10,32 +10,34 @@ const CACHE_NAME = `gym-tracker-${CACHE_VERSION}`;
 const APP_SHELL = [
     './',
     './index.html',
-    './styles.css',
+    './life/life.css',
+    './life/life.js',
+    './gym/gym.css',
     './manifest.webmanifest',
-    './js/app.js',
-    './js/db.js',
-    './js/seed.js',
-    './js/units.js',
-    './js/dom.js',
-    './js/store.js',
-    './js/library.js',
-    './js/picker.js',
-    './js/stepper.js',
-    './js/templates.js',
-    './js/workout.js',
-    './js/timer.js',
-    './js/sfx.js',
-    './js/records.js',
-    './js/history.js',
-    './js/volume.js',
-    './js/plates.js',
-    './js/guidance.js',
-    './js/checkin.js',
-    './js/settings.js',
-    './js/progress.js',
-    './js/badges.js',
-    './js/quests.js',
-    './js/rewards.js',
+    './gym/js/app.js',
+    './gym/js/db.js',
+    './gym/js/seed.js',
+    './gym/js/units.js',
+    './gym/js/dom.js',
+    './gym/js/store.js',
+    './gym/js/library.js',
+    './gym/js/picker.js',
+    './gym/js/stepper.js',
+    './gym/js/templates.js',
+    './gym/js/workout.js',
+    './gym/js/timer.js',
+    './gym/js/sfx.js',
+    './gym/js/records.js',
+    './gym/js/history.js',
+    './gym/js/volume.js',
+    './gym/js/plates.js',
+    './gym/js/guidance.js',
+    './gym/js/checkin.js',
+    './gym/js/settings.js',
+    './gym/js/progress.js',
+    './gym/js/badges.js',
+    './gym/js/quests.js',
+    './gym/js/rewards.js',
     './icons/icon-180.png',
     './icons/icon-192.png',
     './icons/icon-512.png',
@@ -61,7 +63,7 @@ self.addEventListener('install', (event) => {
             );
             const failed = results.filter((r) => r.status === 'rejected');
             if (failed.length) {
-                console.warn('gym-tracker sw: some app-shell files failed to precache', failed.map((r) => r.reason?.message));
+                console.warn('life sw: some app-shell files failed to precache', failed.map((r) => r.reason?.message));
             }
             // Don't wait for old tabs to close before this version takes
             // over installing — see the note by clients.claim() below for

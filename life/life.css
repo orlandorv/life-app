@@ -1,0 +1,148 @@
+/* Shared foundation for every Life section: reset, design tokens, page base.
+   Section-specific styling lives beside its section (e.g. gym/gym.css). */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #007AFF;
+    --primary-dark: #0051D5;
+    --accent: #5AC8FA;
+    --danger: #FF3B30;
+    --success: #34C759;
+    --warning: #FF9500;
+
+    --text-primary: #000;
+    --text-secondary: #6B6B70;
+    --bg: #FFFFFF;
+    --bg-secondary: #F4F4F7;
+    --bg-raised: #FFFFFF;
+    --border: #E2E2E7;
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+
+    --nav-height: 64px;
+    --radius: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #FFFFFF;
+        --text-secondary: #9E9EA5;
+        --bg: #121214;
+        --bg-secondary: #1E1E21;
+        --bg-raised: #26262A;
+        --border: #35353A;
+        --shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    }
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Components below set display explicitly, which would otherwise win over the
+   hidden attribute's UA `display: none`. */
+[hidden] {
+    display: none !important;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    /* Stops the whole page rubber-banding under the fixed nav on iOS. */
+    overscroll-behavior-y: contain;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+/* --- Life home ---------------------------------------------------------- */
+
+.life-home {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.life-home-header {
+    padding: 8px 0 20px;
+}
+
+.life-home-header h1 {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.6px;
+}
+
+.life-sections {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.life-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 132px;
+    padding: 16px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    color: var(--text-primary);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s ease;
+}
+
+a.life-card:active {
+    transform: scale(0.97);
+}
+
+.life-card-soon {
+    opacity: 0.5;
+    box-shadow: none;
+}
+
+.life-card-icon {
+    font-size: 30px;
+    line-height: 1.1;
+}
+
+.life-card-title {
+    margin-top: auto;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.life-card-blurb {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Back link pinned above a section, so Life is always one tap away. */
+.life-back {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    display: block;
+    padding: 12px 16px 8px;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: var(--primary);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+}

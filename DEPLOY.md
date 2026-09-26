@@ -1,4 +1,4 @@
-# Getting Gym Tracker onto your phone
+# Getting Life onto your phone
 
 This turns the app into something you tap from your Home Screen like any other app — no App Store, no laptop needed once it's set up. It works by putting the code on GitHub, having GitHub host it as a website (GitHub Pages), then installing that website as an app via Safari.
 
@@ -27,15 +27,15 @@ From the project folder (the one with `index.html` in it):
 ```bash
 git init
 git add .
-git commit -m "Gym Tracker"
+git commit -m "Life"
 ```
 
 ## 2. Create the GitHub repo and push
 
-**Option A — on github.com:** go to [github.com/new](https://github.com/new), name it (e.g. `gym-tracker`), leave it **public** (Pages needs a public repo unless you're on a paid plan), don't initialize it with a README, then click **Create repository**. It'll show you commands — use the "…or push an existing repository" block, which looks like:
+**Option A — on github.com:** go to [github.com/new](https://github.com/new), name it (e.g. `life-app`), leave it **public** (Pages needs a public repo unless you're on a paid plan), don't initialize it with a README, then click **Create repository**. It'll show you commands — use the "…or push an existing repository" block, which looks like:
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/gym-tracker.git
+git remote add origin https://github.com/YOUR_USERNAME/life-app.git
 git branch -M main
 git push -u origin main
 ```
@@ -43,7 +43,7 @@ git push -u origin main
 **Option B — with the `gh` CLI**, if you have it installed:
 
 ```bash
-gh repo create gym-tracker --public --source=. --push
+gh repo create life-app --public --source=. --push
 ```
 
 ## 3. Turn on GitHub Pages
@@ -52,7 +52,7 @@ gh repo create gym-tracker --public --source=. --push
 2. Click **Pages** in the left sidebar.
 3. Under **Source**, choose **Deploy from a branch**.
 4. Branch: **main**, folder: **/ (root)**. Click **Save**.
-5. Wait about a minute, then refresh the page — a box near the top will show your live URL: `https://YOUR_USERNAME.github.io/gym-tracker/`.
+5. Wait about a minute, then refresh the page — a box near the top will show your live URL: `https://YOUR_USERNAME.github.io/life-app/`.
 
 Open that URL in any browser first to confirm it loads before moving to your phone.
 

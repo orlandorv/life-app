@@ -1,5 +1,5 @@
 import { bootstrap } from './store.js';
-import { $$, el, closeModal } from './dom.js';
+import { $$, closeModal } from './dom.js';
 import { initLibrary, renderLibrary, releaseMediaUrls } from './library.js';
 import { initTemplates, renderTemplates } from './templates.js';
 import { initPicker } from './picker.js';
@@ -14,13 +14,13 @@ import { initRewards, renderRewards } from './rewards.js';
 import { syncProgressLedger } from './progress.js';
 
 function switchTab(tab) {
-    $$('.tab-content').forEach((section) => section.classList.toggle('active', section.id === `${tab}-tab`));
-    $$('.nav-btn').forEach((button) => button.classList.toggle('active', button.dataset.tab === tab));
+    $$('#gym-section .tab-content').forEach((section) => section.classList.toggle('active', section.id === `${tab}-tab`));
+    $$('#gym-section .nav-btn').forEach((button) => button.classList.toggle('active', button.dataset.tab === tab));
     window.scrollTo(0, 0);
 }
 
 function initChrome() {
-    $$('.nav-btn').forEach((button) => {
+    $$('#gym-section .nav-btn').forEach((button) => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
 
@@ -44,20 +44,6 @@ function initChrome() {
     });
 }
 
-/**
- * Registered relative ('./sw.js'), not '/sw.js' — GitHub Pages serves this
- * from /<repo>/, not the domain root, so an absolute path would 404 there
- * even though it works fine in local dev at the root. Fire-and-forget: a
- * registration failure shouldn't block the app from working, it just means
- * no offline support this session.
- */
-function registerServiceWorker() {
-    if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('./sw.js').catch((error) => {
-        console.warn('Service worker registration failed:', error);
-    });
-}
-
 /** Every weight-displaying view, refreshed after a unit toggle or a backup import. */
 function renderAll() {
     renderLibrary();
@@ -68,8 +54,8 @@ function renderAll() {
     renderRewards();
 }
 
-async function start() {
-    registerServiceWorker();
+/** Boots the Gym section once; Life keeps it mounted and only hides/shows it. */
+export async function bootGym() {
     await bootstrap();
 
     initChrome();
@@ -103,10 +89,3 @@ async function start() {
 
     renderAll();
 }
-
-start().catch((error) => {
-    console.error(error);
-    document.body.prepend(
-        el('div', { class: 'fatal-error', text: `Could not start: ${error.message}` }),
-    );
-});

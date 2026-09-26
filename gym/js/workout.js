@@ -156,7 +156,7 @@ export async function startWorkout(templateId = null) {
     await persist();
     acquireWakeLock();
     render();
-    document.querySelector('[data-tab="today"]').click();
+    document.querySelector('#gym-section [data-tab="today"]').click();
 }
 
 export async function resumeActive() {

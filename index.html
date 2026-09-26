@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
     <meta name="theme-color" content="#007AFF">
-    <title>Gym Tracker</title>
+    <title>Life</title>
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon-192.png">
@@ -13,11 +13,26 @@
          needing extra safe-area-inset-top padding through the rest of the app. -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Gym Tracker">
+    <meta name="apple-mobile-web-app-title" content="Life">
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="life/life.css">
+    <link rel="stylesheet" href="gym/gym.css">
 </head>
 <body>
+    <!-- Life home: one card per section, rendered by life/life.js -->
+    <div id="life-home" class="life-home">
+        <header class="life-home-header">
+            <h1>Life</h1>
+            <p class="life-home-sub" id="life-home-sub"></p>
+        </header>
+        <div id="life-sections" class="life-sections"></div>
+    </div>
+
+    <!-- Gym section. Hidden as a whole (main, rest bar and nav are all inside)
+         when Life is showing another view; it stays booted so an active
+         workout and rest timer survive a trip back to Life. -->
+    <div id="gym-section" hidden>
+    <a class="life-back" href="#/">&lsaquo; Life</a>
     <main id="app">
         <!-- Workout: the live session, or the launcher when nothing is running -->
         <section id="today-tab" class="tab-content active">
@@ -116,6 +131,7 @@
             <span class="nav-icon">⚡</span><span class="nav-label">Level</span>
         </button>
     </nav>
+    </div><!-- /#gym-section -->
 
     <!-- Modal: add / edit exercise -->
     <div id="exercise-form-modal" class="modal">
@@ -320,6 +336,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="life/life.js"></script>
 </body>
 </html>
