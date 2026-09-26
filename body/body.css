@@ -1,0 +1,192 @@
+/* Body section. Tokens, .btn, .segmented, .stepper-*, .modal* and .life-main
+   come from life/life.css and gym/gym.css. */
+
+.body-card {
+    padding: 16px;
+    margin-bottom: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.body-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.body-title {
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.body-range button {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* --- Stat tiles ---------------------------------------------------------- */
+
+.body-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.body-card > .body-tiles:last-child,
+.body-week .body-tiles {
+    margin-bottom: 0;
+}
+
+.body-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.body-tile-label {
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.body-tile-value {
+    font-size: 17px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.body-tile-value.empty {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.body-tile-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.body-another {
+    margin: 12px auto 0;
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
+/* --- Chart ------------------------------------------------------------------ */
+
+.body-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.body-grid {
+    stroke: var(--border);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+}
+
+.body-tick,
+.body-axis {
+    fill: var(--text-secondary);
+    font-size: 10px;
+    font-family: inherit;
+}
+
+.body-dot {
+    fill: var(--text-secondary);
+    opacity: 0.55;
+}
+
+.body-trend {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.body-legend {
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+/* --- Weekly / recent ------------------------------------------------------------- */
+
+.body-week {
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+}
+
+.body-week:first-of-type {
+    padding-top: 0;
+    border-top: none;
+}
+
+.body-week:last-child {
+    padding-bottom: 0;
+}
+
+.body-week-label {
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.body-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 10px 14px;
+    text-align: left;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.body-entry:active {
+    background: var(--bg);
+}
+
+.body-entry-day {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.body-entry-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* --- Sheet ------------------------------------------------------------------------ */
+
+.body-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.body-form .stepper-grid {
+    margin-top: 0;
+}
+
+.body-form .modal-actions {
+    padding: 0;
+    border: none;
+}

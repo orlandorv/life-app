@@ -37,3 +37,8 @@ export function weekdayIndex(dayId) {
 export function weekStartId(dayId) {
     return addDays(dayId, -weekdayIndex(dayId));
 }
+
+/** Whole days from `a` to `b` (negative if `b` is earlier). DST-safe: both parse at noon. */
+export function daysBetween(a, b) {
+    return Math.round((parseDayId(b) - parseDayId(a)) / 86400000);
+}

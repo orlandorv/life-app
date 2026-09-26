@@ -10,7 +10,7 @@
  */
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -67,6 +67,13 @@ class LifeDatabase {
                     const store = db.createObjectStore('habitLogs', { keyPath: 'id' });
                     store.createIndex('day', 'day', { unique: false });
                     store.createIndex('habitId', 'habitId', { unique: false });
+                }
+
+                // v3 — Body. One record per local day, keyed by the day itself,
+                // so logging a day twice replaces it. Any of the numbers may be
+                // null: "not recorded" is different from zero.
+                if (!db.objectStoreNames.contains('bodyEntries')) {
+                    db.createObjectStore('bodyEntries', { keyPath: 'day' });
                 }
             };
         }).catch((error) => {

@@ -3,6 +3,7 @@ import { computeProgress } from '../gym/js/progress.js';
 import { closeModal } from './dom.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
 import { enterHabits } from '../habits/habits.js';
+import { enterBody } from '../body/body.js';
 
 /**
  * Life: the shell that hosts every section. It owns routing (a hash, so a
@@ -34,10 +35,18 @@ const SECTIONS = [
         blurb: 'Daily habits and streaks',
         enter: enterHabits,
     },
-    { id: 'body', title: 'Body', icon: '😴', blurb: 'Weight, sleep and steps', soon: true },
+    {
+        id: 'body',
+        title: 'Body',
+        icon: '⚖️',
+        blurb: 'Weight, sleep and steps',
+        // Weight follows Gym's kg/lb setting, which Gym loads while booting.
+        enter: () => gymBoot.then(enterBody),
+    },
 ];
 
 let gymReady = false;
+let gymBoot = null;
 
 function h(tag, props = {}, children = []) {
     const node = document.createElement(tag);
@@ -137,10 +146,14 @@ function showFatal(error) {
 async function start() {
     registerServiceWorker();
     initModalChrome();
+
+    // Started before the first route so a section that needs Gym's data (Body
+    // reads its weight unit) can wait on it, even on a direct load of its URL.
+    gymBoot = bootGym();
     window.addEventListener('hashchange', route);
     route();
 
-    await bootGym();
+    await gymBoot;
     gymReady = true;
     if (location.hash !== '#/gym') renderHome();
 }
