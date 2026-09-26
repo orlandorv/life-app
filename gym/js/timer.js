@@ -1,4 +1,4 @@
-import { $ } from './dom.js';
+import { $ } from '../../life/dom.js';
 import { formatClock } from './units.js';
 import { playRestOver } from './sfx.js';
 

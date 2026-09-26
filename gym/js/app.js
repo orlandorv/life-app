@@ -1,5 +1,5 @@
 import { bootstrap } from './store.js';
-import { $$, closeModal } from './dom.js';
+import { $$ } from '../../life/dom.js';
 import { initLibrary, renderLibrary, releaseMediaUrls } from './library.js';
 import { initTemplates, renderTemplates } from './templates.js';
 import { initPicker } from './picker.js';
@@ -24,23 +24,12 @@ function initChrome() {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
 
-    // Close buttons resolve their own modal, so nested sheets close one layer
-    // at a time instead of collapsing the whole stack.
-    $$('.modal-close, .modal-cancel').forEach((button) => {
-        button.addEventListener('click', () => closeModal(button.closest('.modal').id));
-    });
-
+    // Gym-only: modals close generically (see life/life.js), but the library's
+    // object URLs are Gym's to release once a sheet has finished closing.
     $$('.modal').forEach((modal) => {
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) closeModal(modal.id);
-        });
         modal.addEventListener('transitionend', () => {
             if (!modal.classList.contains('active')) releaseMediaUrls();
         });
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeModal();
     });
 }
 

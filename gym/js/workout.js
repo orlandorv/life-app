@@ -1,7 +1,7 @@
 import { database, DEFAULTS, uid } from './db.js';
 import { state, loadWorkouts, findExercise, lastPerformance, lastNote } from './store.js';
-import { $, el, clear, confirmSheet, toast, noteField } from './dom.js';
-import { stepper } from './stepper.js';
+import { $, el, clear, confirmSheet, toast, noteField } from '../../life/dom.js';
+import { stepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';

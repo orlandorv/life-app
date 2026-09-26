@@ -1,5 +1,5 @@
 import { state } from './store.js';
-import { $, el, clear, openModal, closeModal, onModalClosed } from './dom.js';
+import { $, el, clear, openModal, closeModal, onModalClosed } from '../../life/dom.js';
 
 // One picker sheet shared by the template builder and mid-workout "add
 // exercise", opened with a callback rather than each caller rebuilding a list.

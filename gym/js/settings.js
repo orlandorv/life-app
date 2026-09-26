@@ -1,6 +1,6 @@
 import { database } from './db.js';
 import { loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger } from './store.js';
-import { $, el, clear, openModal, confirmSheet, toast } from './dom.js';
+import { $, el, clear, openModal, confirmSheet, toast } from '../../life/dom.js';
 import { getUnit, setUnit } from './units.js';
 
 let onDataChanged = null;

@@ -1,6 +1,6 @@
 import { MUSCLE_GROUPS } from './seed.js';
 import { state, findExercise } from './store.js';
-import { el } from './dom.js';
+import { el } from '../../life/dom.js';
 
 /**
  * Weekly set volume per muscle group, measured against what the templates

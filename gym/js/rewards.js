@@ -1,5 +1,5 @@
 import { state } from './store.js';
-import { $, el, clear, toast, openModal } from './dom.js';
+import { $, el, clear, toast, openModal } from '../../life/dom.js';
 import { weekStart } from './volume.js';
 import { toDisplay, getUnit } from './units.js';
 import { playLevelUp, playBadgeEarned } from './sfx.js';

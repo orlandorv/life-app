@@ -1,6 +1,6 @@
 import { database } from './db.js';
 import { state, loadWorkouts } from './store.js';
-import { $, el, clear, openModal, closeModal, confirmSheet, toast } from './dom.js';
+import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../../life/dom.js';
 import { formatWeight, formatDuration } from './units.js';
 import { computeRecords } from './records.js';
 import { renderVolume } from './volume.js';

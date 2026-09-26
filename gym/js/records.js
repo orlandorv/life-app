@@ -1,6 +1,6 @@
 import { state, findExercise } from './store.js';
 import { MUSCLE_GROUPS } from './seed.js';
-import { $, el, clear } from './dom.js';
+import { $, el, clear } from '../../life/dom.js';
 import { formatWeight, getUnit, toDisplay } from './units.js';
 
 /** Bucket for records whose workout never recorded a muscle group. */

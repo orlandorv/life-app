@@ -1,5 +1,6 @@
 import { bootGym } from '../gym/js/app.js';
 import { computeProgress } from '../gym/js/progress.js';
+import { closeModal } from './dom.js';
 
 /**
  * Life: the shell that hosts every section. It owns routing (a hash, so a
@@ -84,6 +85,28 @@ function registerServiceWorker() {
     });
 }
 
+/**
+ * Modal chrome shared by every section: the close/cancel buttons, a tap on
+ * the backdrop, and Escape. Delegated from the document, so a section's
+ * static modal markup is covered without it wiring anything itself.
+ * Close buttons resolve their own modal, so nested sheets close one layer at
+ * a time instead of collapsing the whole stack.
+ */
+function initModalChrome() {
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('.modal-close, .modal-cancel');
+        if (button) {
+            closeModal(button.closest('.modal').id);
+            return;
+        }
+        if (event.target.classList?.contains('modal')) closeModal(event.target.id);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeModal();
+    });
+}
+
 function showFatal(error) {
     console.error(error);
     document.body.prepend(h('div', { class: 'fatal-error', text: `Could not start: ${error.message}` }));
@@ -91,6 +114,7 @@ function showFatal(error) {
 
 async function start() {
     registerServiceWorker();
+    initModalChrome();
     window.addEventListener('hashchange', route);
     route();
 

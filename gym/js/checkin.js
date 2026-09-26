@@ -1,7 +1,7 @@
 import { database } from './db.js';
 import { state, loadCheckins } from './store.js';
-import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from './dom.js';
-import { stepper } from './stepper.js';
+import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
+import { stepper } from '../../life/stepper.js';
 import { weekStart } from './volume.js';
 import { computeRecords } from './records.js';
 import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNumber, formatWeight } from './units.js';

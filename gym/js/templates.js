@@ -1,7 +1,7 @@
 import { database, DEFAULTS } from './db.js';
 import { state, loadTemplates, loadExercises, findExercise } from './store.js';
-import { $, $$, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from './dom.js';
-import { labelledStepper } from './stepper.js';
+import { $, $$, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
+import { labelledStepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
 import { formatRest } from './units.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';

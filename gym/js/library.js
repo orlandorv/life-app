@@ -1,7 +1,7 @@
 import { database } from './db.js';
 import { MUSCLE_GROUPS, EQUIPMENT } from './seed.js';
 import { state, loadExercises, findExercise } from './store.js';
-import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from './dom.js';
+import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 
 let pendingMediaFile = null;
 let pendingMediaCleared = false;

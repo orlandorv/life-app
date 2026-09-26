@@ -1,6 +1,6 @@
 import { database } from './db.js';
-import { $, el, clear, openModal } from './dom.js';
-import { stepper } from './stepper.js';
+import { $, el, clear, openModal } from '../../life/dom.js';
+import { stepper } from '../../life/stepper.js';
 import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNumber } from './units.js';
 
 /**
