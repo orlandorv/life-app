@@ -17,6 +17,7 @@
 
     <link rel="stylesheet" href="life/life.css">
     <link rel="stylesheet" href="gym/gym.css">
+    <link rel="stylesheet" href="nutrition/nutrition.css">
 </head>
 <body>
     <!-- Life home: one card per section, rendered by life/life.js -->
@@ -132,6 +133,46 @@
         </button>
     </nav>
     </div><!-- /#gym-section -->
+
+    <!-- Nutrition section -->
+    <div id="nutrition-section" hidden>
+        <a class="life-back" href="#/">&lsaquo; Life</a>
+        <main class="nutrition-main">
+            <header class="tab-header">
+                <h1>Nutrition</h1>
+            </header>
+            <div id="nutrition-body"></div>
+        </main>
+    </div>
+
+    <!-- Modal: nutrition — log food / edit entry -->
+    <div id="food-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 id="food-modal-title">Log food</h2>
+                    <div id="food-modal-day" class="modal-subtitle"></div>
+                </div>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="food-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal: nutrition — daily targets -->
+    <div id="nutrition-targets-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Daily targets</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="nutrition-targets-body" class="modal-body"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="nutrition-targets-save">Save</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: add / edit exercise -->
     <div id="exercise-form-modal" class="modal">

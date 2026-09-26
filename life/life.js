@@ -1,6 +1,7 @@
 import { bootGym } from '../gym/js/app.js';
 import { computeProgress } from '../gym/js/progress.js';
 import { closeModal } from './dom.js';
+import { enterNutrition } from '../nutrition/nutrition.js';
 
 /**
  * Life: the shell that hosts every section. It owns routing (a hash, so a
@@ -18,7 +19,13 @@ const SECTIONS = [
         blurb: 'Workouts, plans and records',
         summary: gymSummary,
     },
-    { id: 'nutrition', title: 'Nutrition', icon: '🥗', blurb: 'Meals, calories and protein', soon: true },
+    {
+        id: 'nutrition',
+        title: 'Nutrition',
+        icon: '🥗',
+        blurb: 'Meals, calories and protein',
+        enter: enterNutrition,
+    },
     { id: 'habits', title: 'Habits', icon: '✅', blurb: 'Daily habits and to-dos', soon: true },
     { id: 'body', title: 'Body', icon: '😴', blurb: 'Weight, sleep and steps', soon: true },
 ];
@@ -62,12 +69,20 @@ function renderHome() {
 }
 
 function route() {
-    const inGym = location.hash === '#/gym';
-    document.getElementById('life-home').hidden = inGym;
-    document.getElementById('gym-section').hidden = !inGym;
+    const id = location.hash.replace(/^#\//, '');
+    const section = SECTIONS.find((candidate) => candidate.id === id && !candidate.soon);
 
-    // Gym's state can change while you're in it, so refresh the summary on the way out.
-    if (!inGym) renderHome();
+    // Each section lives in `#<id>-section`; exactly one view is showing.
+    document.getElementById('life-home').hidden = Boolean(section);
+    SECTIONS.forEach(({ id: sectionId }) => {
+        const container = document.getElementById(`${sectionId}-section`);
+        if (container) container.hidden = sectionId !== section?.id;
+    });
+
+    // Sections keep their own state, so refresh one on the way in (Gym is
+    // booted up front and needs nothing); the home summary on the way out.
+    if (section) Promise.resolve(section.enter?.()).catch(showFatal);
+    else renderHome();
     window.scrollTo(0, 0);
 }
 

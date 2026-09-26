@@ -1,0 +1,172 @@
+/* Nutrition section. Tokens, .btn, .form-input, .stepper-*, .modal* and
+   .history-group-label come from life/life.css and gym/gym.css. */
+
+.nutrition-main {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+/* --- Day switcher ------------------------------------------------------ */
+
+.nutrition-daybar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.nutrition-daybar .icon-btn {
+    font-size: 26px;
+}
+
+.nutrition-day {
+    font-size: 17px;
+    font-weight: 650;
+}
+
+/* --- Targets card ------------------------------------------------------ */
+
+.nutrition-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.nutrition-summary-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.nutrition-summary-title {
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.nutrition-summary-head .link-btn {
+    padding: 0;
+    font-size: 14px;
+}
+
+.nutrition-meter-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.nutrition-meter-label {
+    font-size: 16px;
+    font-weight: 650;
+}
+
+.nutrition-meter-value {
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+}
+
+.nutrition-track {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.nutrition-fill {
+    height: 100%;
+    border-radius: 5px;
+    background: var(--primary);
+    transition: width 0.25s ease-out;
+}
+
+.nutrition-fill.done { background: var(--success); }
+.nutrition-fill.over { background: var(--warning); }
+
+.nutrition-meter-note {
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* --- Entries and saved foods ------------------------------------------- */
+
+.nutrition-entry,
+.nutrition-food-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 12px 16px;
+    text-align: left;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nutrition-entry:active,
+.nutrition-food-main:active {
+    background: var(--bg-secondary);
+}
+
+.nutrition-entry-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.nutrition-entry-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.nutrition-food-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* --- Log / edit sheet -------------------------------------------------- */
+
+.nutrition-newfood:not(:empty) {
+    margin-top: 12px;
+}
+
+.nutrition-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.nutrition-form .modal-actions {
+    padding: 0;
+    border: none;
+}
+
+/* Gym's bare `label` rule stacks children in a column; a checkbox wants a row. */
+.nutrition-check {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+}
+
+.nutrition-check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+}
