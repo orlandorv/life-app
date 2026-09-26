@@ -1,4 +1,4 @@
-import { addDays, daysBetween, weekStartId } from '../life/dates.js';
+import { addDays, daysBetween, weekStartId, localDayId, weekdayIndex } from '../life/dates.js';
 
 /**
  * Numbers for the Body screen — pure, so they can be checked without a DOM or
@@ -127,4 +127,32 @@ export function chartLayout(series, { from, to, width, height, padX = 8, padTop 
     const ticks = [lo + pad, (lo + hi) / 2, hi - pad].map((kg) => ({ kg, y: y(kg) }));
 
     return { dots, line, ticks };
+}
+
+// --- Weekly reminder ---------------------------------------------------------
+
+/** Saturday (Monday=0 … Sunday=6) at noon: when the weekly weigh-in reminder starts. */
+export const REMINDER_WEEKDAY = 5;
+export const REMINDER_HOUR = 12;
+
+/**
+ * Whether to remind you to log this week's weight and steps, and which is
+ * still missing. It starts Saturday at noon and runs through Sunday; an entry
+ * on either day counts, so logging a day late still clears it. Weight and
+ * steps can come from different entries.
+ */
+export function weeklyLogReminder(entries, now = new Date()) {
+    const today = localDayId(now);
+    const weekday = weekdayIndex(today);
+    const started = weekday > REMINDER_WEEKDAY || (weekday === REMINDER_WEEKDAY && now.getHours() >= REMINDER_HOUR);
+    if (!started) return { due: false, missing: [] };
+
+    const weekend = new Set([addDays(weekStartId(today), 5), addDays(weekStartId(today), 6)]);
+    const logged = entries.filter((entry) => weekend.has(entry.day));
+    const missing = [
+        logged.some((entry) => present(entry.weightKg)) ? null : 'weight',
+        logged.some((entry) => present(entry.steps)) ? null : 'steps',
+    ].filter(Boolean);
+
+    return { due: missing.length > 0, missing };
 }

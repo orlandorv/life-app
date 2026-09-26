@@ -4,3 +4,4 @@
 # Personal data: backups and routine import files stay on this machine.
 *-backup-*.json
 life-routines*.json
+life-*.ics

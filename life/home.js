@@ -12,7 +12,7 @@ import { isScheduled, currentStreak } from '../habits/streaks.js';
 import { isRoutine, routineProgress } from '../habits/routine.js';
 import { openRoutine } from '../habits/routine-sheet.js';
 import { state as bodyState, loadEntries, entryFor } from '../body/store.js';
-import { trendSeries } from '../body/stats.js';
+import { trendSeries, weeklyLogReminder } from '../body/stats.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -72,6 +72,7 @@ export async function renderHome() {
     if (token !== renderToken) return;
 
     document.getElementById('life-today').replaceChildren(
+        ...[weighInReminder()].filter(Boolean),
         gymBlock(today),
         nutritionBlock(),
         habitsBlock(today),
@@ -105,6 +106,24 @@ function action(label, href, quiet = false) {
 }
 
 const fmt = (n) => Math.round(n).toLocaleString();
+
+// --- Weekly weigh-in reminder -------------------------------------------------------
+
+/** Saturday noon to Sunday night, until that weekend has a weight and a steps entry. */
+function weighInReminder() {
+    const { due, missing } = weeklyLogReminder(bodyState.entries);
+    if (!due) return null;
+
+    const text = missing.length === 2
+        ? 'Log this week’s weight and steps.'
+        : `Just your ${missing[0]} left for this week.`;
+
+    return el('section', { class: 'life-reminder', dataset: { tone: 'body' } }, [
+        el('span', { class: 'life-chip' }, [icon('scale', { size: 19 })]),
+        el('p', { class: 'life-reminder-text' }, [el('strong', { text: 'Weekly weigh-in' }), text]),
+        el('a', { class: 'btn btn-small life-reminder-action', href: '#/body/log', text: 'Log now' }),
+    ]);
+}
 
 // --- Gym ----------------------------------------------------------------------
 

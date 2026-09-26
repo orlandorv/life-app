@@ -664,3 +664,33 @@ body.modal-open {
 .life-habit-open {
     color: var(--text-secondary);
 }
+
+/* Weekly weigh-in reminder on Today: a slim Body-toned card above the blocks. */
+.life-reminder {
+    --tone: var(--body);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px 14px 16px;
+    background: color-mix(in srgb, var(--tone) 10%, var(--bg-raised));
+    border: 1px solid color-mix(in srgb, var(--tone) 28%, transparent);
+    border-radius: var(--radius);
+    animation: lifeRise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.life-reminder-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.life-reminder-text strong {
+    display: block;
+    font-weight: 650;
+}
+
+.life-reminder-action {
+    flex-shrink: 0;
+    background: var(--tone);
+    color: var(--on-accent);
+}
