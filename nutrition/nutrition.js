@@ -39,10 +39,11 @@ export function initNutrition() {
     return ready;
 }
 
-/** Called each time the section is opened; always starts on today. */
-export async function enterNutrition() {
+/** Called each time the section is opened; always starts on today. `'log'` opens the food sheet. */
+export async function enterNutrition(action = null) {
     await initNutrition();
     await refresh(localDayId());
+    if (action === 'log') openFoodModal();
 }
 
 async function refresh(day = state.day) {
@@ -119,12 +120,14 @@ function meter(label, value, target, unit, overIsBad) {
 
 function entryList() {
     if (!state.entries.length) {
-        return el('p', { class: 'hint', text: 'Nothing logged for this day yet.' });
+        return el('div', { class: 'life-list nutrition-empty' }, [
+            el('p', { class: 'hint', text: 'Nothing logged for this day yet. Tap Log food to add a meal or snack.' }),
+        ]);
     }
 
     return el(
         'div',
-        { class: 'stack' },
+        { class: 'life-list' },
         state.entries.map((entry) =>
             el('button', { class: 'nutrition-entry', type: 'button', onclick: () => openFoodModal(entry) }, [
                 el('span', { class: 'nutrition-entry-name', text: entry.name }),
@@ -170,7 +173,7 @@ function pickerContent() {
         placeholder: 'Search saved foods…',
         autocomplete: 'off',
     });
-    const list = el('div', { class: 'stack' });
+    const list = el('div', { class: 'life-list' });
 
     const renderList = () => {
         const query = search.value.trim().toLowerCase();

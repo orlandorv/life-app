@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
-    <meta name="theme-color" content="#007AFF">
+    <meta name="theme-color" content="#F6F3EE" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#151311" media="(prefers-color-scheme: dark)">
     <title>Life</title>
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-180.png">
-    <!-- Opaque (not translucent) status bar — matches the dark theme without
-         needing extra safe-area-inset-top padding through the rest of the app. -->
+    <!-- Opaque status bar that follows the system light/dark look, so it
+         sits calmly above the paper background instead of a black strip. -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Life">
 
     <link rel="stylesheet" href="life/life.css">
@@ -22,21 +23,24 @@
     <link rel="stylesheet" href="body/body.css">
 </head>
 <body>
-    <!-- Life home: one card per section, rendered by life/life.js -->
+    <!-- Today: the home screen, a live summary of the day rendered by life/home.js -->
     <div id="life-home" class="life-home">
         <header class="life-home-header">
-            <h1>Life</h1>
-            <button id="life-settings-btn" class="icon-btn" type="button" aria-label="Backup and restore">⚙️</button>
+            <div>
+                <div id="life-date" class="life-eyebrow life-date"></div>
+                <h1 id="life-greeting" class="life-greeting">Today</h1>
+            </div>
+            <button id="life-settings-btn" class="icon-btn" type="button" aria-label="Backup and restore"><span data-icon="settings"></span></button>
         </header>
         <div id="life-backup-banner" class="life-banner" hidden></div>
-        <div id="life-sections" class="life-sections"></div>
+        <div id="life-today" class="life-today"></div>
     </div>
 
     <!-- Gym section. Hidden as a whole (main, rest bar and nav are all inside)
          when Life is showing another view; it stays booted so an active
          workout and rest timer survive a trip back to Life. -->
     <div id="gym-section" hidden>
-    <a class="life-back" href="#/">&lsaquo; Life</a>
+    <a class="life-back" href="#/"><span data-icon="back" data-icon-size="24"></span>Today</a>
     <main id="app">
         <!-- Workout: the live session, or the launcher when nothing is running -->
         <section id="today-tab" class="tab-content active">
@@ -83,7 +87,7 @@
         <section id="history-tab" class="tab-content">
             <header class="tab-header">
                 <h1>History</h1>
-                <button id="settings-btn" class="icon-btn" type="button" aria-label="Settings">⚙️</button>
+                <button id="settings-btn" class="icon-btn" type="button" aria-label="Gym settings"><span data-icon="settings"></span></button>
             </header>
             <div id="history-body"></div>
         </section>
@@ -120,26 +124,26 @@
 
     <nav class="bottom-nav">
         <button class="nav-btn active" type="button" data-tab="today">
-            <span class="nav-icon">🏋️</span><span class="nav-label">Workout</span>
+            <span class="nav-icon" data-icon="gym"></span><span class="nav-label">Workout</span>
         </button>
         <button class="nav-btn" type="button" data-tab="library">
-            <span class="nav-icon">📚</span><span class="nav-label">Library</span>
+            <span class="nav-icon" data-icon="library"></span><span class="nav-label">Library</span>
         </button>
         <button class="nav-btn" type="button" data-tab="history">
-            <span class="nav-icon">📊</span><span class="nav-label">History</span>
+            <span class="nav-icon" data-icon="history"></span><span class="nav-label">History</span>
         </button>
         <button class="nav-btn" type="button" data-tab="prs">
-            <span class="nav-icon">🏆</span><span class="nav-label">PRs</span>
+            <span class="nav-icon" data-icon="trophy"></span><span class="nav-label">PRs</span>
         </button>
         <button class="nav-btn" type="button" data-tab="rewards">
-            <span class="nav-icon">⚡</span><span class="nav-label">Level</span>
+            <span class="nav-icon" data-icon="level"></span><span class="nav-label">Level</span>
         </button>
     </nav>
     </div><!-- /#gym-section -->
 
     <!-- Body section -->
     <div id="body-section" hidden>
-        <a class="life-back" href="#/">&lsaquo; Life</a>
+        <a class="life-back" href="#/"><span data-icon="back" data-icon-size="24"></span>Today</a>
         <main class="life-main">
             <header class="tab-header">
                 <h1>Body</h1>
@@ -150,7 +154,7 @@
 
     <!-- Habits section -->
     <div id="habits-section" hidden>
-        <a class="life-back" href="#/">&lsaquo; Life</a>
+        <a class="life-back" href="#/"><span data-icon="back" data-icon-size="24"></span>Today</a>
         <main class="life-main">
             <header class="tab-header">
                 <h1>Habits</h1>
@@ -161,7 +165,7 @@
 
     <!-- Nutrition section -->
     <div id="nutrition-section" hidden>
-        <a class="life-back" href="#/">&lsaquo; Life</a>
+        <a class="life-back" href="#/"><span data-icon="back" data-icon-size="24"></span>Today</a>
         <main class="nutrition-main">
             <header class="tab-header">
                 <h1>Nutrition</h1>

@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 
 /**
  * The ‹ label › switcher shared by sections that step through time (a day in
@@ -7,15 +8,14 @@ import { el } from './dom.js';
  */
 export function dayBar({ label, canNext, onPrev, onNext }) {
     return el('div', { class: 'life-daybar' }, [
-        el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Previous', text: '‹', onclick: onPrev }),
+        el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Previous', onclick: onPrev }, [icon('back')]),
         el('span', { class: 'life-daybar-label', text: label }),
         el('button', {
             class: 'icon-btn',
             type: 'button',
             'aria-label': 'Next',
-            text: '›',
             disabled: !canNext,
             onclick: onNext,
-        }),
+        }, [icon('chevron')]),
     ]);
 }

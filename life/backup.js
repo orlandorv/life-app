@@ -3,6 +3,7 @@ import { lifeDb } from './db.js';
 import { localDayId } from './dates.js';
 import { database as gymDb } from '../gym/js/db.js';
 import { state as gymState } from '../gym/js/store.js';
+import { icon } from './icons.js';
 import { buildBackup, inspectBackup, summarize, describeAge, backupAgeDays, needsNudge } from './backup-format.js';
 
 /**
@@ -42,14 +43,12 @@ export async function renderBackupBanner() {
 
         const days = backupAgeDays(last);
         clear(banner).append(
-            el('p', {
-                class: 'life-banner-text',
-                text:
-                    days === null
-                        ? 'You haven’t backed up yet. Everything here lives only on this phone.'
-                        : `Your last backup was ${days} days ago. Everything here lives only on this phone.`,
-            }),
-            el('button', { class: 'btn btn-primary btn-small', type: 'button', text: 'Back up', onclick: openBackupSheet }),
+            icon('shield', { size: 22 }),
+            el('p', { class: 'life-banner-text' }, [
+                el('strong', { text: days === null ? 'Back up your data' : `Last backup ${days} days ago` }),
+                'Everything here lives only on this phone.',
+            ]),
+            el('button', { class: 'btn btn-small', type: 'button', text: 'Back up', onclick: openBackupSheet }),
         );
         banner.hidden = false;
     } catch (error) {
@@ -100,8 +99,11 @@ async function renderSheet() {
 
     clear($('#backup-body')).append(
         el('div', { class: 'backup-age' }, [
-            el('span', { class: 'backup-age-label', text: 'Last backup' }),
-            el('span', { class: 'backup-age-value', text: describeAge(last) }),
+            el('span', { class: 'life-chip' }, [icon('shield', { size: 19 })]),
+            el('span', { class: 'backup-age-text' }, [
+                el('span', { class: 'backup-age-label', text: 'Last backup' }),
+                el('span', { class: 'backup-age-value', text: describeAge(last) }),
+            ]),
         ]),
         el('button', { class: 'btn btn-primary btn-block', type: 'button', text: 'Export backup', onclick: exportBackup }),
         el('label', { class: 'btn btn-outline btn-block file-btn' }, ['Import backup', fileInput]),

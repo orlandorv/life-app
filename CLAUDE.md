@@ -19,7 +19,7 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `nutrition/` — the Nutrition section: `nutrition.js` (screen + sheets), `store.js` (state and writes), `totals.js` (pure arithmetic), `nutrition.css`.
 - `gym/js/*.js` + `gym/gym.css` — the Gym section. Its entry point is `bootGym()` in `gym/js/app.js`.
 
-**Routing** is a hash: `#/` is home, `#/gym` is Gym, `#/nutrition` is Nutrition. `route()` shows the one `#<id>-section` matching the hash and calls that section's optional `enter()` (Nutrition uses it to open LifeDB and reload today). Gym is booted once at startup and only hidden/shown, so an active workout, stopwatch and rest timer keep running while you're on the home screen. Gym's selectors are scoped to `#gym-section` — keep new Gym code from using bare global selectors.
+**Routing** is a hash: `#/` is Today (home), `#/<section>` a section, `#/<section>/<action>` a section opened straight into something (see Today below). `route()` shows the one `#<id>-section` matching the hash, sets `body[data-section]`, and calls that section's optional `enter(action)`. Gym is booted once at startup and only hidden/shown, so an active workout, stopwatch and rest timer keep running while you're on the home screen. Gym's selectors are scoped to `#gym-section` — keep new Gym code from using bare global selectors.
 
 **Adding a section:** add an entry to `SECTIONS` in `life/life.js` (with an `enter` function if it needs to load data), add its container (`<div id="x-section" hidden>`) and any modals as static markup to `index.html`, add its stylesheet `<link>`, and add its files to `APP_SHELL` in `sw.js`. Store its data in LifeDB by adding stores and bumping `DB_VERSION` in `life/db.js`. Life-owned classes are `life-` prefixed; Gym's generic classes (`.btn`, `.modal`, tokens) are reusable as the shared design system.
 
@@ -50,6 +50,21 @@ There is no test suite, linter, or build step in this repo.
 Static hosting on GitHub Pages; see `DEPLOY.md` for the full walkthrough. The important constraint for any code change: **every asset reference must stay relative** (`life/life.js`, not `/life/life.js`) because Pages serves the site from a repo subpath (`/repo-name/`), not the domain root. This applies to script/link tags in `index.html`, paths inside `sw.js`, and the manifest's icon paths.
 
 ## Architecture
+
+### Design system (`life/life.css`, `life/icons.js`)
+
+Warm and calm: paper background, white cards, ink text, one colour per section. **Change colours as tokens in `life/life.css`, never in a section's CSS.**
+
+- **Tokens:** surfaces `--bg` (paper) / `--bg-raised` (cards) / `--bg-secondary` (wells, tracks); `--text-primary` / `--text-secondary`; section colours `--gym`, `--nutrition`, `--habits`, `--body`; `--card-border` / `--card-shadow` for anything card-like; `--radius` / `--radius-sm`. Dark mode redefines them all under `prefers-color-scheme: dark`.
+- **`--primary` follows the section.** `route()` sets `body[data-section]`, which maps `--primary` to that section's colour, so buttons, links, steppers, progress and modals (which sit outside the section container) all take it. On Today it's `--ink`.
+- **Text on a coloured fill uses `--on-accent`,** not `#fff`: white in light mode, dark ink in dark mode where the fills are lighter. Every section colour was chosen to keep ≥4.5:1 either way.
+- **Type:** `--font-sans` for UI; `--font-display` (New York serif on Apple devices) for page and sheet titles and the greeting; `--font-rounded` for big figures. System fonts only, so it works fully offline.
+- **Icons:** `life/icons.js` — 24px line icons, one stroke weight, `currentColor`. Build with `icon(name)`; in static HTML use `<span data-icon="name">`, swapped in by `hydrateIcons()` at start. No emoji in UI chrome.
+- **Shared pieces:** `.life-surface` (card), `.life-list` (grouped list with hairlines — rows inside drop their own box), `.life-empty` (icon + title + line), `.life-eyebrow`, `.life-daybar`. Gym's `.btn`, `.card`, `.modal*`, `.stepper*`, `.segmented`, `.form-input` in `gym/gym.css` are the shared form controls.
+
+### Today (`life/home.js`)
+
+The home screen is a live summary of the day, one block per section, each with its most likely next action. It reads through the sections' own stores and maths (`nutrition/store.js`, `habits/streaks.js`, `body/stats.js`, `computeProgress()`), so its numbers always match the sections. Habits can be ticked in place. Buttons deep-link with a route action — `#/gym/workout`, `#/nutrition/log`, `#/body/log`, `#/habits/new` — handled by each section's `enter(action)`; the action is dropped from the URL once used. Today re-renders when the app comes back to the foreground, so it rolls over to a new day.
 
 ### LifeDB (`life/db.js`)
 

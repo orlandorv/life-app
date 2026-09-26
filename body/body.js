@@ -29,11 +29,15 @@ export function initBody() {
     return ready;
 }
 
-/** Called each time the section is opened. The caller has already waited for Gym, which owns the unit. */
-export async function enterBody() {
+/**
+ * Called each time the section is opened. The caller has already waited for
+ * Gym, which owns the unit. `'log'` opens today's entry sheet.
+ */
+export async function enterBody(action = null) {
     await initBody();
     await loadEntries();
     renderBody();
+    if (action === 'log') openEntryModal(localDayId());
 }
 
 async function refresh() {
@@ -215,7 +219,7 @@ function recentCard(today) {
     card.append(
         el(
             'div',
-            { class: 'stack' },
+            { class: 'life-list' },
             recent.map((entry) =>
                 el('button', { class: 'body-entry', type: 'button', onclick: () => openEntryModal(entry.day) }, [
                     el('span', { class: 'body-entry-day', text: dayLabel(entry.day, today) }),

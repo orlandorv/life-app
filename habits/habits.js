@@ -2,6 +2,7 @@ import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../lif
 import { lifeDb } from '../life/db.js';
 import { localDayId, addDays, dayLabel, weekStartId } from '../life/dates.js';
 import { dayBar } from '../life/daybar.js';
+import { icon } from '../life/icons.js';
 import {
     state,
     loadHabits,
@@ -36,8 +37,8 @@ export function initHabits() {
     return ready;
 }
 
-/** Called each time the section is opened; always starts on today's checklist. */
-export async function enterHabits() {
+/** Called each time the section is opened; always starts on today's checklist. `'new'` opens the add sheet. */
+export async function enterHabits(action = null) {
     await initHabits();
     await Promise.all([loadHabits(), loadLogs()]);
 
@@ -46,6 +47,7 @@ export async function enterHabits() {
     state.day = today;
     state.week = weekStartId(today);
     renderHabits();
+    if (action === 'new') openHabitModal();
 }
 
 /** Runs a write, then redraws either way. Returns whether it worked. */
@@ -99,13 +101,18 @@ function viewSwitch() {
 }
 
 function emptyState() {
-    return el('div', { class: 'habits-empty' }, [
-        el('p', { class: 'habits-empty-title', text: 'No habits yet' }),
-        el('p', { class: 'hint', text: 'Add something you want to do regularly — every day, or just certain days.' }),
+    return el('div', { class: 'life-empty' }, [
+        el('span', { class: 'life-empty-icon' }, [icon('habits', { size: 26 })]),
+        el('p', { class: 'life-empty-title', text: 'Start small' }),
+        el('p', { class: 'life-empty-text', text: 'Add something you want to do regularly: every day, or just on certain days.' }),
     ]);
 }
 
-const streakText = (n) => (n > 0 ? `🔥 ${n} in a row` : '');
+/** "3 in a row" with a flame, or nothing for a streak that hasn't started. */
+function streakBadge(n) {
+    if (n < 1) return null;
+    return el('span', { class: 'habit-streak' }, [icon('flame', { size: 14 }), `${n} in a row`]);
+}
 
 // --- Today ------------------------------------------------------------------
 
@@ -141,7 +148,7 @@ function todayView() {
                 }),
             ]),
         ]),
-        el('div', { class: 'stack' }, due.map((habit) => habitRow(habit, today))),
+        el('div', { class: 'life-list' }, due.map((habit) => habitRow(habit, today))),
     );
     return view;
 }
@@ -154,7 +161,7 @@ function shiftDay(direction) {
 function habitRow(habit, today) {
     const done = doneDays(habit.id).has(state.day);
     // A streak is "as of now", so it only belongs on today's checklist, not on a past day.
-    const streak = state.day === today ? streakText(currentStreak(habit, doneDays(habit.id), today)) : '';
+    const streak = state.day === today ? streakBadge(currentStreak(habit, doneDays(habit.id), today)) : null;
 
     return el('div', { class: `habit-row${done ? ' done' : ''}` }, [
         el(
@@ -167,11 +174,8 @@ function habitRow(habit, today) {
                 onclick: () => save(() => toggleDone(habit.id, state.day)),
             },
             [
-                el('span', { class: 'habit-circle', text: done ? '✓' : '' }),
-                el('span', { class: 'habit-text' }, [
-                    el('span', { class: 'habit-name', text: habit.name }),
-                    streak ? el('span', { class: 'habit-streak', text: streak }) : null,
-                ]),
+                el('span', { class: 'habit-circle' }, [done ? icon('check', { size: 17 }) : null]),
+                el('span', { class: 'habit-text' }, [el('span', { class: 'habit-name', text: habit.name }), streak]),
             ],
         ),
         el('button', {
@@ -228,8 +232,6 @@ function weekCard(habit, today) {
     ]);
 }
 
-const CELL_MARK = { done: '✓', off: '', future: '', open: '', missed: '' };
-
 function weekCell(habit, cell, index) {
     // Off and future days can't be ticked; a due day up to today can, which
     // is how a forgotten one gets filled in.
@@ -242,9 +244,8 @@ function weekCell(habit, cell, index) {
             type: 'button',
             disabled: !tappable,
             'aria-label': `${habit.name}, ${DAY_NAMES[index]}, ${cell.state === 'off' ? 'not scheduled' : cell.state}`,
-            text: CELL_MARK[cell.state],
             onclick: () => save(() => toggleDone(habit.id, cell.day)),
-        }),
+        }, [cell.state === 'done' ? icon('check', { size: 16 }) : null]),
     ]);
 }
 

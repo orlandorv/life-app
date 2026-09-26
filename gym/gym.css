@@ -9,7 +9,7 @@
 
 .tab-content {
     display: none;
-    padding: 16px;
+    padding: 4px 16px 16px;
 }
 
 .tab-content.active {
@@ -27,13 +27,12 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 8px 0 20px;
+    padding: 10px 0 18px;
 }
 
 .tab-header h1 {
-    font-size: 30px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
+    font-size: 32px;
+    line-height: 1.15;
 }
 
 .header-count {
@@ -50,10 +49,10 @@
     right: 0;
     height: calc(var(--nav-height) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
-    background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid var(--card-border);
     display: flex;
     z-index: 100;
 }
@@ -67,9 +66,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     color: var(--text-secondary);
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 600;
     font-family: inherit;
     letter-spacing: -0.1px;
@@ -82,8 +81,16 @@
 }
 
 .nav-icon {
-    font-size: 21px;
-    line-height: 1;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 26px;
+    border-radius: 13px;
+    transition: background 0.18s ease;
+}
+
+.nav-btn.active .nav-icon {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
 /* --- Layout helpers --------------------------------------------------- */
@@ -127,7 +134,7 @@
 
 .fatal-error {
     background: var(--danger);
-    color: #fff;
+    color: var(--on-accent);
     padding: 14px 16px;
     font-size: 14px;
 }
@@ -138,10 +145,11 @@
     display: block;
     width: 100%;
     text-align: left;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
-    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    padding: 16px 18px;
     font-family: inherit;
     color: inherit;
     transition: transform 0.12s ease, opacity 0.12s ease;
@@ -261,12 +269,14 @@ button.card:active {
 .btn {
     padding: 13px 16px;
     border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 650;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
     font-family: inherit;
+    letter-spacing: -0.1px;
+    text-decoration: none;
     cursor: pointer;
-    min-height: 48px;
+    min-height: 50px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -285,13 +295,13 @@ button.card:active {
     pointer-events: none;
 }
 
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-success { background: var(--success); color: #fff; }
-.btn-danger { background: var(--danger); color: #fff; }
+.btn-primary { background: var(--primary); color: var(--on-accent); }
+.btn-success { background: var(--success); color: var(--on-accent); }
+.btn-danger { background: var(--danger); color: var(--on-accent); }
 
 .btn-outline {
-    background: transparent;
-    border: 1.5px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
     color: var(--text-primary);
 }
 
@@ -305,6 +315,7 @@ button.card:active {
 .btn-small {
     min-height: 38px;
     padding: 8px 14px;
+    border-radius: 12px;
     font-size: 14px;
 }
 
@@ -317,7 +328,7 @@ button.card:active {
     cursor: pointer;
     width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -355,10 +366,10 @@ label {
 
 .form-input {
     width: 100%;
-    padding: 12px;
+    padding: 13px 14px;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
     color: var(--text-primary);
     /* 16px keeps iOS Safari from zooming the viewport on focus. */
     font-size: 16px;
@@ -379,6 +390,7 @@ select.form-input {
 .form-input:focus {
     outline: none;
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 textarea.form-input {
@@ -406,7 +418,7 @@ textarea.form-input {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(24, 16, 8, 0.38);
     z-index: 200;
     align-items: flex-end;
     justify-content: center;
@@ -421,7 +433,8 @@ textarea.form-input {
     max-width: 640px;
     max-height: 92vh;
     background: var(--bg);
-    border-radius: 20px 20px 0 0;
+    border-radius: 26px 26px 0 0;
+    box-shadow: 0 -12px 40px rgba(24, 16, 8, 0.18);
     display: flex;
     flex-direction: column;
     animation: slideUp 0.24s cubic-bezier(0.32, 0.72, 0, 1);
@@ -431,7 +444,7 @@ textarea.form-input {
 .modal-content.narrow {
     max-width: 420px;
     margin: auto;
-    border-radius: 20px;
+    border-radius: 24px;
 }
 
 @keyframes slideUp {
@@ -444,19 +457,27 @@ textarea.form-input {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
+    padding: 20px 20px 10px;
     flex-shrink: 0;
 }
 
 .modal-header h2 {
-    font-size: 18px;
-    font-weight: 650;
-    letter-spacing: -0.2px;
+    font-family: var(--font-display);
+    font-size: 23px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+}
+
+.modal-header .modal-close {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 22px;
+    width: 32px;
+    height: 32px;
 }
 
 .modal-body {
-    padding: 16px;
+    padding: 10px 20px 20px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     flex: 1;
@@ -465,9 +486,9 @@ textarea.form-input {
 .modal-actions {
     display: flex;
     gap: 10px;
-    padding: 16px;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--card-border);
     flex-shrink: 0;
 }
 
@@ -478,11 +499,11 @@ textarea.form-input {
 /* A form is the scroll container in some sheets, so its actions bar needs the
    same treatment without a nested wrapper. */
 form.modal-body .modal-actions {
-    margin: 8px -16px -16px;
-    border-top: 1px solid var(--border);
+    margin: 8px -20px -20px;
+    border-top: 1px solid var(--card-border);
     background: var(--bg);
     position: sticky;
-    bottom: -16px;
+    bottom: -20px;
 }
 
 .detail-field + .detail-field {
@@ -585,13 +606,13 @@ form.modal-body .modal-actions {
     align-items: stretch;
     background: var(--bg-raised);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
 }
 
 .stepper-btn {
-    width: 36px;
-    min-height: 44px;
+    width: 40px;
+    min-height: 46px;
     flex-shrink: 0;
     background: none;
     border: none;
@@ -680,9 +701,10 @@ form.modal-body .modal-actions {
 /* --- Template builder ------------------------------------------------- */
 
 .template-row {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
     padding: 12px 14px;
 }
 
@@ -735,9 +757,9 @@ form.modal-body .modal-actions {
     width: 100%;
     text-align: left;
     padding: 12px 14px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
     font-family: inherit;
     color: inherit;
     cursor: pointer;
@@ -801,7 +823,7 @@ form.modal-body .modal-actions {
     bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
     z-index: 120;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-accent);
     padding: 10px 14px;
     display: flex;
     align-items: center;
@@ -874,9 +896,10 @@ form.modal-body .modal-actions {
 /* --- Workout logging -------------------------------------------------- */
 
 .workout-banner {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
     padding: 14px 16px;
     margin-bottom: 16px;
     display: flex;
@@ -940,9 +963,10 @@ form.modal-body .modal-actions {
 }
 
 .exercise-block {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
     overflow: hidden;
 }
 
@@ -1181,7 +1205,7 @@ form.modal-body .modal-actions {
 .set-check.done {
     background: var(--success);
     border-color: var(--success);
-    color: #fff;
+    color: var(--on-accent);
     animation: setCheckPop 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -1378,7 +1402,7 @@ form.modal-body .modal-actions {
     border: none;
     padding: 2px 0 0;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 650;
     color: var(--primary);
     cursor: pointer;
@@ -1519,9 +1543,10 @@ body.resting-room #app {
 
 .summary-tile {
     flex: 1;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
     padding: 12px;
     text-align: center;
 }
@@ -1576,9 +1601,10 @@ body.resting-room #app {
 /* --- Weekly check-in --------------------------------------------------- */
 
 .checkin-section {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
     padding: 14px;
     margin-bottom: 16px;
 }
@@ -1669,7 +1695,7 @@ body.resting-room #app {
     padding: 12px 10px;
     border-radius: 10px;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-accent);
     font-size: 17px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -1695,9 +1721,10 @@ body.resting-room #app {
 /* --- Weekly volume ---------------------------------------------------- */
 
 .volume-section {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
     padding: 14px;
     margin-bottom: 16px;
 }
@@ -1804,10 +1831,9 @@ body.resting-room #app {
 .segmented {
     display: flex;
     background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 3px;
-    gap: 3px;
+    gap: 2px;
     flex-shrink: 0;
 }
 
@@ -1819,14 +1845,15 @@ body.resting-room #app {
     font-weight: 650;
     color: var(--text-secondary);
     padding: 8px 18px;
-    border-radius: 8px;
+    border-radius: 9px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
 
 .segmented button.active {
-    background: var(--primary);
-    color: #fff;
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(24, 16, 8, 0.12);
 }
 
 /* --- Toast ------------------------------------------------------------ */
@@ -2068,9 +2095,10 @@ body.modal-open .toast.visible {
     align-items: center;
     gap: 3px;
     padding: 12px 6px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
     font-family: inherit;
     color: inherit;
     text-align: center;

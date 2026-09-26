@@ -10,25 +10,15 @@
     flex: 1;
 }
 
-.habits-empty {
-    padding: 32px 8px 8px;
-    text-align: center;
-}
-
-.habits-empty-title {
-    font-size: 18px;
-    font-weight: 650;
-    margin-bottom: 4px;
-}
-
 /* --- Today ------------------------------------------------------------- */
 
 .habits-summary {
-    padding: 14px 16px;
+    padding: 16px 18px;
     margin-bottom: 16px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
 }
 
 .habits-summary-head {
@@ -50,29 +40,24 @@
 }
 
 .habits-track {
-    height: 10px;
-    border-radius: 5px;
-    background: var(--border);
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg-secondary);
     overflow: hidden;
 }
 
 .habits-fill {
     height: 100%;
-    border-radius: 5px;
+    border-radius: 4px;
     background: var(--primary);
-    transition: width 0.25s ease-out;
+    transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-
-.habits-fill.complete { background: var(--success); }
 
 .habit-row {
     display: flex;
     align-items: center;
     gap: 4px;
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding-right: 4px;
+    padding-right: 8px;
 }
 
 .habit-check {
@@ -99,16 +84,14 @@
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    border: 2px solid var(--border);
-    font-size: 17px;
-    font-weight: 700;
-    color: #fff;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    border: 2px solid color-mix(in srgb, var(--primary) 40%, var(--border));
+    color: var(--on-accent);
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
 .habit-row.done .habit-circle {
-    background: var(--success);
-    border-color: var(--success);
+    background: var(--primary);
+    border-color: var(--primary);
 }
 
 .habit-check:active .habit-circle {
@@ -130,20 +113,27 @@
 
 .habit-row.done .habit-name {
     color: var(--text-secondary);
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in srgb, var(--text-secondary) 50%, transparent);
 }
 
 .habit-streak {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 13px;
-    color: var(--text-secondary);
+    font-weight: 600;
+    color: var(--primary);
 }
 
 /* --- Week -------------------------------------------------------------- */
 
 .habit-week {
-    padding: 14px 16px;
+    padding: 16px 18px;
     background: var(--bg-raised);
-    border: 1px solid var(--border);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
 }
 
 .habit-week-head {
@@ -192,19 +182,21 @@
     border: 2px solid var(--border);
     background: none;
     font-family: inherit;
-    font-size: 16px;
-    font-weight: 700;
-    color: #fff;
+    color: var(--on-accent);
     -webkit-tap-highlight-color: transparent;
 }
 
 .habit-cell:not(:disabled) { cursor: pointer; }
 .habit-cell:not(:disabled):active { transform: scale(0.92); }
 
-.habit-cell.done { background: var(--success); border-color: var(--success); }
+.habit-cell.done { background: var(--primary); border-color: var(--primary); }
 .habit-cell.open { border-color: var(--primary); }
-.habit-cell.missed { border-color: var(--danger); opacity: 0.55; }
-.habit-cell.future { opacity: 0.45; }
+/* Missed is noted, not shouted: a soft tint rather than a red ring. */
+.habit-cell.missed {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--danger) 12%, var(--bg-secondary));
+}
+.habit-cell.future { opacity: 0.4; }
 .habit-cell.off { border: none; background: var(--bg-secondary); }
 
 .habit-week-best {
@@ -248,7 +240,7 @@
 .habit-chip.on {
     background: var(--primary);
     border-color: var(--primary);
-    color: #fff;
+    color: var(--on-accent);
 }
 
 .habit-presets {

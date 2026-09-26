@@ -1,6 +1,7 @@
 import { bootGym, reloadGym } from '../gym/js/app.js';
-import { computeProgress } from '../gym/js/progress.js';
 import { closeModal } from './dom.js';
+import { hydrateIcons } from './icons.js';
+import { initHome, renderHome } from './home.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
 import { enterHabits } from '../habits/habits.js';
 import { enterBody } from '../body/body.js';
@@ -8,86 +9,30 @@ import { initBackup, renderBackupBanner } from './backup.js';
 
 /**
  * Life: the shell that hosts every section. It owns routing (a hash, so a
- * reload or the iOS back gesture lands where you were), the home screen, and
- * the service worker. Each section is a self-contained app inside its own
- * container; adding one means a registry entry here plus its container in
- * index.html.
+ * reload or the iOS back gesture lands where you were), the Today home screen
+ * (life/home.js), and the service worker. Each section is a self-contained app
+ * inside its own `#<id>-section` container.
+ *
+ * A route is `#/<section>` or `#/<section>/<action>`: the action lets Today
+ * open a section straight into what you tapped (`#/nutrition/log` opens the
+ * food sheet). Each section's `enter(action)` handles its own actions.
  */
 
 const SECTIONS = [
-    {
-        id: 'gym',
-        title: 'Gym',
-        icon: '🏋️',
-        blurb: 'Workouts, plans and records',
-        summary: gymSummary,
-    },
-    {
-        id: 'nutrition',
-        title: 'Nutrition',
-        icon: '🥗',
-        blurb: 'Meals, calories and protein',
-        enter: enterNutrition,
-    },
-    {
-        id: 'habits',
-        title: 'Habits',
-        icon: '✅',
-        blurb: 'Daily habits and streaks',
-        enter: enterHabits,
-    },
-    {
-        id: 'body',
-        title: 'Body',
-        icon: '⚖️',
-        blurb: 'Weight, sleep and steps',
-        // Weight follows Gym's kg/lb setting, which Gym loads while booting.
-        enter: () => gymBoot.then(enterBody),
-    },
+    // Gym is booted once up front, so entering it only needs to pick a tab.
+    { id: 'gym', enter: (action) => action === 'workout' && document.querySelector('#gym-section [data-tab="today"]').click() },
+    { id: 'nutrition', enter: enterNutrition },
+    { id: 'habits', enter: enterHabits },
+    // Weight follows Gym's kg/lb setting, which Gym loads while booting.
+    { id: 'body', enter: (action) => gymBoot.then(() => enterBody(action)) },
 ];
 
 let gymReady = false;
 let gymBoot = null;
 
-function h(tag, props = {}, children = []) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-        if (key === 'text') node.textContent = value;
-        else node.setAttribute(key, value);
-    }
-    node.append(...children.filter(Boolean));
-    return node;
-}
-
-/** A live line for the Gym card; blank until Gym has loaded its data. */
-function gymSummary() {
-    if (!gymReady) return '';
-    const week = computeProgress().currentWeek;
-    if (!week) return '';
-    return `${week.sessions}/${week.target} sessions this week`;
-}
-
-function sectionCard(section) {
-    const summary = section.summary?.() || '';
-    const body = [
-        h('span', { class: 'life-card-icon', text: section.icon }),
-        h('span', { class: 'life-card-title', text: section.title }),
-        h('span', { class: 'life-card-blurb', text: section.soon ? 'Coming soon' : summary || section.blurb }),
-    ];
-
-    return section.soon
-        ? h('div', { class: 'life-card life-card-soon', 'aria-disabled': 'true' }, body)
-        : h('a', { class: 'life-card', href: `#/${section.id}` }, body);
-}
-
-function renderHome() {
-    const grid = document.getElementById('life-sections');
-    grid.replaceChildren(...SECTIONS.map(sectionCard));
-}
-
 function route() {
-    const id = location.hash.replace(/^#\//, '');
-    const section = SECTIONS.find((candidate) => candidate.id === id && !candidate.soon);
+    const [id = '', action = null] = location.hash.replace(/^#\/?/, '').split('/');
+    const section = SECTIONS.find((candidate) => candidate.id === id);
 
     // Each section lives in `#<id>-section`; exactly one view is showing.
     document.getElementById('life-home').hidden = Boolean(section);
@@ -96,10 +41,16 @@ function route() {
         if (container) container.hidden = sectionId !== section?.id;
     });
 
-    // Sections keep their own state, so refresh one on the way in (Gym is
-    // booted up front and needs nothing); the home summary on the way out.
-    if (section) Promise.resolve(section.enter?.()).catch(showFatal);
-    else {
+    // The section's colour becomes --primary for everything, modals included.
+    if (section) document.body.dataset.section = section.id;
+    else delete document.body.dataset.section;
+
+    if (section) {
+        // An action is a one-shot: drop it from the URL so a reload or coming
+        // back doesn't reopen the sheet. replaceState doesn't fire hashchange.
+        if (action) history.replaceState(null, '', `#/${section.id}`);
+        Promise.resolve(section.enter?.(action)).catch(showFatal);
+    } else {
         renderHome();
         if (gymReady) renderBackupBanner();
     }
@@ -144,7 +95,10 @@ function initModalChrome() {
 
 function showFatal(error) {
     console.error(error);
-    document.body.prepend(h('div', { class: 'fatal-error', text: `Could not start: ${error.message}` }));
+    const banner = document.createElement('div');
+    banner.className = 'fatal-error';
+    banner.textContent = `Could not start: ${error.message}`;
+    document.body.prepend(banner);
 }
 
 async function start() {
@@ -153,14 +107,15 @@ async function start() {
 
     // Started before the first route so a section that needs Gym's data (Body
     // reads its weight unit) can wait on it, even on a direct load of its URL.
+    hydrateIcons();
     gymBoot = bootGym();
     initBackup({ gymReady: () => gymBoot, reloadGym });
+    initHome({ gymReady: () => gymBoot });
     window.addEventListener('hashchange', route);
     route();
 
     await gymBoot;
     gymReady = true;
-    if (location.hash !== '#/gym') renderHome();
     renderBackupBanner();
 }
 
