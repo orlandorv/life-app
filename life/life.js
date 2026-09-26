@@ -1,9 +1,10 @@
-import { bootGym } from '../gym/js/app.js';
+import { bootGym, reloadGym } from '../gym/js/app.js';
 import { computeProgress } from '../gym/js/progress.js';
 import { closeModal } from './dom.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
 import { enterHabits } from '../habits/habits.js';
 import { enterBody } from '../body/body.js';
+import { initBackup, renderBackupBanner } from './backup.js';
 
 /**
  * Life: the shell that hosts every section. It owns routing (a hash, so a
@@ -98,7 +99,10 @@ function route() {
     // Sections keep their own state, so refresh one on the way in (Gym is
     // booted up front and needs nothing); the home summary on the way out.
     if (section) Promise.resolve(section.enter?.()).catch(showFatal);
-    else renderHome();
+    else {
+        renderHome();
+        if (gymReady) renderBackupBanner();
+    }
     window.scrollTo(0, 0);
 }
 
@@ -150,12 +154,14 @@ async function start() {
     // Started before the first route so a section that needs Gym's data (Body
     // reads its weight unit) can wait on it, even on a direct load of its URL.
     gymBoot = bootGym();
+    initBackup({ gymReady: () => gymBoot, reloadGym });
     window.addEventListener('hashchange', route);
     route();
 
     await gymBoot;
     gymReady = true;
     if (location.hash !== '#/gym') renderHome();
+    renderBackupBanner();
 }
 
 start().catch(showFatal);

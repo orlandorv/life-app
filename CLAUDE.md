@@ -12,6 +12,7 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/life.js` + `life/life.css` — router, home grid, service-worker registration, and the modal chrome shared by every section (close buttons, backdrop tap, Escape, delegated from `document`); `life.css` also holds the shared foundation (reset, `:root` design tokens, body rules).
 - `life/dom.js`, `life/stepper.js` — shared UI primitives used by every section (element builder, modal stack, toast, `confirmSheet`, −/+ stepper). Import these, don't copy them.
 - `life/db.js` + `life/dates.js` — **LifeDB** (see below) and local-day helpers (`localDayId`, `addDays`, `dayLabel`). Use local days, never `toISOString().slice(0,10)`, which is UTC.
+- `life/backup.js` + `life/backup-format.js` — Life-wide backup and restore (see Backup below). `backup-format.js` is pure and unit-testable in Node.
 - `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
 - `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry maths, unit-testable in Node), `chart.js` (hand-built SVG), `body.css`.
 - `habits/` — the Habits section: `habits.js` (Today/Week views + sheet), `store.js`, `streaks.js` (pure schedule/streak maths, unit-testable in Node), `habits.css`.
@@ -54,7 +55,16 @@ Static hosting on GitHub Pages; see `DEPLOY.md` for the full walkthrough. The im
 
 Storage for every section **except Gym**, which keeps its own `GymTrackerDB` (its data and backups predate Life, so it was deliberately left alone). Stores: `foods`, `nutritionEntries` (index `day`, a local `YYYY-MM-DD`), `settings` (v1, Nutrition); `habits` and `habitLogs` (v2, Habits — a log's id is `habitId|day` and its presence means done; a habit's `days` are Monday=0…Sunday=6); `bodyEntries` (v3, Body — keyPath is the local `day`, so one record per day; any of `weightKg`, `sleepHours`, `steps` may be `null` = not recorded, never a fake 0). Upgrades are additive (`contains` guards in `onupgradeneeded`), so existing data survives a version bump. A generic get/getAll/byIndex/put/delete wrapper; each section keeps its record shapes and helpers in its own `store.js`. Call `await lifeDb.init()` before use (idempotent).
 
-**Backup gap:** Gym's JSON export (`gym/js/settings.js`) does not include LifeDB, so Nutrition, Habits and Body data have no export yet.
+### Backup (`life/backup.js`, `life/backup-format.js`)
+
+Opened from the ⚙️ on the Life home. One `life-backup` file wraps the Gym export whole (`gym`, exactly what Gym's own Export writes) plus every LifeDB store (`life`); `lifeDb.exportAll()` / `importAll()` do the Life side. Gym's own Export/Import in its settings still works unchanged, and a bare Gym backup (the pre-Life `gym-tracker-backup` format) is still accepted on import, restoring only Gym.
+
+- **Import merges** (same as Gym's): rows are `put` by key, so a matching ID or day is replaced and nothing is deleted. `inspectBackup()` validates the *whole* file before anything is written — one damaged row rejects it — and `lifeDb.importAll` is a single aborting transaction. Gym and Life are two databases, so the pair isn't atomic; a Gym failure after Life succeeded is reported as such.
+- **When you add a LifeDB store,** add it to `LIFE_STORES` (with its key field) and a row check in `ROW_CHECKS` in `backup-format.js`, or it silently won't be backed up. Bump `LIFE_VERSION` only for a change older Life versions can't read.
+- `lastBackupAt` is a device setting: it lives in LifeDB `settings` but is excluded from export and import (`DEVICE_SETTINGS`), so restoring an old backup can't make a fresh one look stale.
+- **Export** builds the file when the sheet opens (sharing must start straight from the tap on iOS), then uses the Web Share API (`navigator.share` with a file — on iPhone, "Save to Files", AirDrop…) and falls back to a download. A cancelled share isn't recorded as a backup.
+- The home screen nudges (`needsNudge`) when there's data and no backup for 14+ days, or never.
+- After an import, `reloadGym()` (in `gym/js/app.js`) re-reads Gym's data; the other sections reload on every `enter()`.
 
 **Weight unit:** Body follows Gym's global kg/lb setting (`getUnit()` in `gym/js/units.js`, loaded while Gym boots). `life/life.js` starts `bootGym()` before the first route and Body's `enter` waits on it, so loading straight onto `#/body` can't read the unit too early. Weight is stored in kg and converted only at the display/input edge, same as Gym.
 

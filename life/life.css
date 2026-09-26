@@ -172,3 +172,61 @@ a.life-card:active {
     font-size: 17px;
     font-weight: 650;
 }
+
+/* --- Home header, backup nudge and sheet -------------------------------------- */
+
+.life-home-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.life-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    background: color-mix(in srgb, var(--warning) 14%, var(--bg-raised));
+    border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border));
+    border-radius: var(--radius);
+}
+
+.life-banner-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.life-banner .btn {
+    flex-shrink: 0;
+}
+
+.backup-age {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.backup-age-label {
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.backup-age-value {
+    font-size: 16px;
+    font-weight: 650;
+}
+
+#backup-body .btn + .btn {
+    margin-top: 10px;
+}

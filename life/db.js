@@ -9,6 +9,8 @@
  * generic get/getAll/put/delete/byIndex here.
  */
 
+import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
+
 const DB_NAME = 'LifeDB';
 const DB_VERSION = 3;
 
@@ -126,6 +128,49 @@ class LifeDatabase {
     delete(storeName, key) {
         return this._run(storeName, 'readwrite', (tx) => {
             tx.objectStore(storeName).delete(key);
+        });
+    }
+
+    count(storeName) {
+        return this._request(this.db.transaction(storeName, 'readonly').objectStore(storeName).count());
+    }
+
+    /** Is there anything here worth backing up? Settings alone don't count. */
+    async hasAnyData() {
+        const counts = await Promise.all(['foods', 'nutritionEntries', 'habits', 'bodyEntries'].map((name) => this.count(name)));
+        return counts.some((n) => n > 0);
+    }
+
+    /** Every Life store, minus settings that belong to this device (see DEVICE_SETTINGS). */
+    async exportAll() {
+        const names = Object.keys(LIFE_STORES);
+        const rows = await Promise.all(names.map((name) => this.getAll(name)));
+        const life = Object.fromEntries(names.map((name, i) => [name, rows[i]]));
+        life.settings = life.settings.filter((row) => !DEVICE_SETTINGS.includes(row.key));
+        return life;
+    }
+
+    /**
+     * Writes rows by key in one transaction — same as re-saving them, so a row
+     * sharing a key with existing data replaces it and nothing else is touched.
+     * All-or-nothing: any bad row aborts the whole transaction.
+     */
+    async importAll(life) {
+        const names = Object.keys(LIFE_STORES).filter((name) => Array.isArray(life[name]));
+        if (!names.length) return;
+
+        await this._run(names, 'readwrite', (tx) => {
+            try {
+                names.forEach((name) => {
+                    const store = tx.objectStore(name);
+                    life[name].forEach((row) => store.put(row));
+                });
+            } catch (error) {
+                // A thrown error alone would still commit the rows put before
+                // it; aborting is what makes this genuinely all-or-nothing.
+                tx.abort();
+                throw error;
+            }
         });
     }
 

@@ -1,4 +1,6 @@
-import { bootstrap } from './store.js';
+import { database } from './db.js';
+import { bootstrap, loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger } from './store.js';
+import { getUnit, setUnit } from './units.js';
 import { $$ } from '../../life/dom.js';
 import { initLibrary, renderLibrary, releaseMediaUrls } from './library.js';
 import { initTemplates, renderTemplates } from './templates.js';
@@ -41,6 +43,16 @@ function renderAll() {
     renderHistory();
     renderRecords();
     renderRewards();
+}
+
+/**
+ * Re-reads everything from storage and redraws — for when data changed behind
+ * Gym's back (a Life backup was imported), the same steps as Gym's own import.
+ */
+export async function reloadGym() {
+    setUnit(await database.getSetting('unit', getUnit()));
+    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger()]);
+    renderAll();
 }
 
 /** Boots the Gym section once; Life keeps it mounted and only hides/shows it. */
