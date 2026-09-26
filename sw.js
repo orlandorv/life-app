@@ -1,7 +1,7 @@
 // Bump this on every deploy that changes any cached file. Old caches are
 // dropped automatically on activate, so this one line is the whole release
 // process — nothing else in here needs to change per deploy.
-const CACHE_VERSION = 'v43';
+const CACHE_VERSION = 'v44';
 const CACHE_NAME = `life-${CACHE_VERSION}`;
 
 // Registered as a relative path from index.html, so these resolve under
@@ -24,6 +24,9 @@ const APP_SHELL = [
     './nutrition/nutrition.js',
     './nutrition/store.js',
     './nutrition/totals.js',
+    './nutrition/portions.js',
+    './nutrition/off.js',
+    './nutrition/scanner.js',
     './habits/habits.css',
     './habits/habits.js',
     './habits/store.js',
@@ -115,6 +118,10 @@ self.addEventListener('activate', (event) => {
 // cached for next time if it succeeds.
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
+    // Only the app's own files are cached. Other sites (Open Food Facts
+    // searches and lookups) always go to the network: caching them would
+    // serve stale results forever and grow the cache without limit.
+    if (new URL(event.request.url).origin !== self.location.origin) return;
 
     event.respondWith(
         caches.match(event.request).then((cached) => {

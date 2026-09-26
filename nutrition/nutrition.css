@@ -1,21 +1,26 @@
-/* Nutrition section. Tokens, .btn, .form-input, .stepper-*, .modal* and
-   .history-group-label come from life/life.css and gym/gym.css. */
+/* Nutrition section. Tokens, .btn, .form-input, .segmented, .stepper-*,
+   .modal*, .life-list and .history-group-label come from life/life.css and
+   gym/gym.css. Macros keep one colour each everywhere they appear. */
 
 .nutrition-main {
     width: 100%;
     max-width: 640px;
     margin: 0 auto;
-    padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
+    padding: 4px 20px calc(40px + env(safe-area-inset-bottom));
 }
 
-/* --- Targets card ------------------------------------------------------ */
+.nutrition-macro.carbs,
+.portion-pill.carbs { --macro: var(--body); }
+.nutrition-macro.protein,
+.portion-pill.protein { --macro: var(--nutrition); }
+.nutrition-macro.fat,
+.portion-pill.fat { --macro: var(--warning); }
+
+/* --- Summary: calories remaining + macros -------------------------------- */
 
 .nutrition-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
     padding: 18px;
-    margin-bottom: 24px;
+    margin-bottom: 26px;
     background: var(--bg-raised);
     border: 1px solid var(--card-border);
     border-radius: var(--radius);
@@ -28,121 +33,508 @@
     justify-content: space-between;
 }
 
-.nutrition-summary-title {
-    font-size: 11px;
-    font-weight: 650;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-}
-
 .nutrition-summary-head .link-btn {
     padding: 0;
     font-size: 14px;
 }
 
-.nutrition-meter-head {
+.nutrition-hero {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 6px;
+    gap: 6px;
+    margin: 4px 0 10px;
 }
 
-.nutrition-meter-label {
+.nutrition-hero-value {
+    font-family: var(--font-rounded);
+    font-size: 46px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary);
+}
+
+.nutrition-hero.over .nutrition-hero-value {
+    color: var(--warning);
+}
+
+.nutrition-hero-unit {
     font-size: 16px;
-    font-weight: 650;
+    font-weight: 600;
+    color: var(--text-secondary);
 }
 
-.nutrition-meter-value {
-    font-size: 15px;
+.nutrition-equation {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 12px 0 16px;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.nutrition-term {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+}
+
+.nutrition-term-value {
+    font-family: var(--font-rounded);
+    font-size: 17px;
+    font-weight: 650;
     font-variant-numeric: tabular-nums;
 }
 
+.nutrition-term-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.nutrition-op {
+    padding-top: 1px;
+    font-size: 17px;
+    color: var(--text-secondary);
+}
+
+.nutrition-macros {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding-top: 16px;
+}
+
+.nutrition-macro {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.nutrition-macro-label {
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--macro);
+}
+
+.nutrition-macro-value {
+    font-family: var(--font-rounded);
+    font-size: 17px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.nutrition-macro-value small {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
 .nutrition-track {
-    height: 8px;
-    border-radius: 4px;
+    height: 6px;
+    margin-top: 3px;
+    border-radius: 3px;
     background: var(--bg-secondary);
     overflow: hidden;
 }
 
 .nutrition-fill {
     height: 100%;
-    border-radius: 4px;
-    background: var(--primary);
+    border-radius: 3px;
+    background: var(--macro, var(--primary));
     transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.nutrition-fill.done { background: var(--success); }
-.nutrition-fill.over { background: var(--warning); }
-
-.nutrition-meter-note {
-    margin-top: 5px;
-    font-size: 12px;
-    color: var(--text-secondary);
+.nutrition-fill.over {
+    background: var(--danger);
 }
 
-/* --- Entries and saved foods ------------------------------------------- */
+/* --- Meals ------------------------------------------------------------------- */
 
-.nutrition-entry,
-.nutrition-food-main {
+.meal + .meal {
+    margin-top: 22px;
+}
+
+.meal-head {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0 4px 8px;
+}
+
+.meal-title {
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+.meal-kcal {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.meal-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     width: 100%;
-    padding: 13px 18px;
-    text-align: left;
-    font-family: inherit;
-    color: var(--text-primary);
+    padding: 12px 16px;
     background: none;
     border: none;
+    font-family: inherit;
+    text-align: left;
+    color: var(--text-primary);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
 
-.nutrition-entry:active,
-.nutrition-food-main:active {
+.meal-entry:active {
     background: var(--bg-secondary);
 }
 
-.nutrition-entry-name {
-    font-size: 16px;
-    font-weight: 600;
+.meal-entry-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
 }
 
-.nutrition-entry-meta {
+.meal-entry-name {
+    font-size: 16px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.meal-entry-meta {
     font-size: 13px;
     color: var(--text-secondary);
 }
 
-.nutrition-food-row {
+.meal-entry-kcal {
+    flex-shrink: 0;
+    font-family: var(--font-rounded);
+    font-size: 17px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.meal-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: space-between;
+    gap: 8px;
     padding-right: 8px;
 }
 
-.nutrition-empty {
-    padding: 18px;
+.meal-add,
+.meal-copy {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 13px 16px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.meal-copy {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.meal-add:active,
+.meal-copy:active {
+    opacity: 0.6;
+}
+
+/* --- Add-food sheet -------------------------------------------------------------- */
+
+.meal-picker {
+    width: 100%;
+    margin-bottom: 14px;
+}
+
+.meal-picker button {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 13px;
+}
+
+.food-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.food-search-icon {
+    position: absolute;
+    left: 13px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.food-search-input {
+    flex: 1;
+    padding-left: 40px;
+}
+
+.food-scan {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary);
+}
+
+.food-shortcuts {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 18px;
+}
+
+.food-shortcuts .btn {
+    flex: 1;
+}
+
+.food-results .history-group-label {
+    margin-top: 20px;
+}
+
+.food-results .history-group-label:first-child {
+    margin-top: 0;
+}
+
+.food-status {
+    padding: 4px 4px 0;
+}
+
+.food-empty {
+    padding-top: 12px;
+}
+
+.food-row {
+    display: flex;
+    align-items: center;
+    padding-right: 6px;
+}
+
+.food-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+    padding: 12px 8px 12px 16px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    text-align: left;
+    color: var(--text-primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.food-row-main:active {
+    background: var(--bg-secondary);
+}
+
+.food-row-name {
+    font-size: 16px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.food-row-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.food-row-add {
+    flex-shrink: 0;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.sheet-back {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: -4px 0 12px;
+    padding: 4px 0;
+    font-size: 15px;
+}
+
+.sheet-actions {
+    margin: 18px -20px -20px;
+    position: sticky;
+    bottom: -20px;
+    background: var(--bg);
+}
+
+.sheet-danger-link {
+    margin: 26px auto 0;
+    font-size: 14px;
+    color: var(--danger);
+}
+
+/* --- Portion ---------------------------------------------------------------------- */
+
+.portion-food {
+    margin-bottom: 16px;
+}
+
+.portion-name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.portion-amount {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.portion-amount .stepper-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.portion-units {
+    flex-shrink: 0;
+    height: 48px;
+}
+
+.portion-units button {
+    padding: 8px 12px;
+}
+
+.portion-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 16px;
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+}
+
+.portion-kcal {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.portion-kcal-value {
+    font-family: var(--font-rounded);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.portion-kcal-unit {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.portion-macros {
+    display: flex;
+    gap: 8px;
+}
+
+.portion-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 58px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--macro) 12%, transparent);
+}
+
+.portion-pill-value {
+    font-family: var(--font-rounded);
+    font-size: 15px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.portion-pill-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--macro);
+}
+
+/* --- Scanner ------------------------------------------------------------------------ */
+
+.scan-modal {
+    --primary: var(--nutrition);
+}
+
+.scan-view {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius);
+    background: #0d0b09;
+}
+
+.scan-view video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* The band frames are decoded from: 80% wide, 40% tall, centred. */
+.scan-guide {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 30%;
+    bottom: 30%;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 14px;
+    box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+}
+
+.scan-status {
+    margin: 12px 2px;
     text-align: center;
 }
 
-/* --- Log / edit sheet -------------------------------------------------- */
-
-.nutrition-newfood:not(:empty) {
-    margin-top: 12px;
-}
-
-.nutrition-form {
+.scan-manual {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    flex-direction: row;
+    gap: 8px;
 }
 
-.nutrition-form .modal-actions {
-    padding: 0;
-    border: none;
+.scan-manual .form-input {
+    flex: 1;
 }
+
+/* --- Shared bits ------------------------------------------------------------------------ */
 
 /* Gym's bare `label` rule stacks children in a column; a checkbox wants a row. */
 .nutrition-check {

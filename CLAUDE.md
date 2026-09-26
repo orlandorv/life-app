@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Life — a mobile-first, offline-capable personal app, installable as a home-screen PWA on iOS via GitHub Pages. Life is the shell (home screen + routing); each area of life is a **section** inside it. Built sections: **Gym** (exercise library, templates, live workout logging, rest timer, history, personal records, XP/levels/badges), **Nutrition** (daily calories and protein against targets, quick entry with remembered foods) **Habits** (recurring habits on every day or chosen weekdays, with streaks, a Today checklist and a Week grid, and backfilling past days) and **Body** (daily weight, sleep and steps, with a smoothed weight-trend chart, weekly averages and editable history). All four home-screen cards are live.
+Life — a mobile-first, offline-capable personal app, installable as a home-screen PWA on iOS via GitHub Pages. Life is the shell (home screen + routing); each area of life is a **section** inside it. Built sections: **Gym** (exercise library, templates, live workout logging, rest timer, history, personal records, XP/levels/badges), **Nutrition** (a MyFitnessPal-style diary: meals, calories remaining, carbs/protein/fat, Open Food Facts search, barcode scanning, portions) **Habits** (recurring habits on every day or chosen weekdays, with streaks, a Today checklist and a Week grid, and backfilling past days) and **Body** (daily weight, sleep and steps, with a smoothed weight-trend chart, weekly averages and editable history). All four home-screen cards are live.
 
 ### Layout
 
@@ -16,7 +16,8 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
 - `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry maths, unit-testable in Node), `chart.js` (hand-built SVG), `body.css`.
 - `habits/` — the Habits section: `habits.js` (Today/Week views + habit sheet), `store.js`, `streaks.js` and `routine.js` (pure schedule/streak and routine-step maths, unit-testable in Node), `routine-sheet.js` (a routine's checklist, also opened from Today), `step-editor.js`, `habits.css`.
-- `nutrition/` — the Nutrition section: `nutrition.js` (screen + sheets), `store.js` (state and writes), `totals.js` (pure arithmetic), `nutrition.css`.
+- `nutrition/` — the Nutrition section: `nutrition.js` (diary + add-food sheet), `store.js` (state and writes), `portions.js` and `totals.js` (pure food/portion/meal and total maths, unit-testable in Node), `off.js` (Open Food Facts client), `scanner.js` (camera barcode scanning), `nutrition.css`.
+- `vendor/zxing/` — ZXing barcode decoder (`@zxing/library` 0.23.0 UMD, Apache-2.0, LICENSE alongside). Vendored because there's no build step; loaded lazily by `nutrition/scanner.js` on first scan and deliberately **not** in `APP_SHELL`.
 - `gym/js/*.js` + `gym/gym.css` — the Gym section. Its entry point is `bootGym()` in `gym/js/app.js`.
 
 **Routing** is a hash: `#/` is Today (home), `#/<section>` a section, `#/<section>/<action>` a section opened straight into something (see Today below). `route()` shows the one `#<id>-section` matching the hash, sets `body[data-section]`, and calls that section's optional `enter(action)`. Gym is booted once at startup and only hidden/shown, so an active workout, stopwatch and rest timer keep running while you're on the home screen. Gym's selectors are scoped to `#gym-section` — keep new Gym code from using bare global selectors.
@@ -61,6 +62,14 @@ Warm and calm: paper background, white cards, ink text, one colour per section. 
 - **Type:** `--font-sans` for UI; `--font-display` (New York serif on Apple devices) for page and sheet titles and the greeting; `--font-rounded` for big figures. System fonts only, so it works fully offline.
 - **Icons:** `life/icons.js` — 24px line icons, one stroke weight, `currentColor`. Build with `icon(name)`; in static HTML use `<span data-icon="name">`, swapped in by `hydrateIcons()` at start. No emoji in UI chrome.
 - **Shared pieces:** `.life-surface` (card), `.life-list` (grouped list with hairlines — rows inside drop their own box), `.life-empty` (icon + title + line), `.life-eyebrow`, `.life-daybar`. Gym's `.btn`, `.card`, `.modal*`, `.stepper*`, `.segmented`, `.form-input` in `gym/gym.css` are the shared form controls.
+
+### Nutrition data (`nutrition/portions.js`, `off.js`, `scanner.js`)
+
+- **Foods** hold nutrition `per100` (per 100 g/ml) and/or per `serving` (`{grams?, kcal, proteinG, carbsG, fatG}`), plus `baseUnit` 'g'|'ml'. Foods saved before portions existed have bare `kcal`/`proteinG` (one serving); `normalizeFood()` reads every shape — always go through it rather than reading fields directly.
+- **Entries are snapshots** (`amount`, `unit` 'serving'|'g'|'quick', `meal`, and the computed nutrients), so editing or deleting a food never rewrites history. Old entries without `meal` are filed by `loggedAt` time (`mealOf()`); without `unit` they edit as quick entries.
+- **Open Food Facts** (`off.js`): search uses `uk.openfoodfacts.org/cgi/search.pl` (UK-sold products first, sorted by popularity); barcode lookups use `world.openfoodfacts.org/api/v2/product/`. No key; only the search text or barcode is sent. Foods are saved locally the first time they're logged (id `off-<barcode>`), so they work offline after that. `fromOpenFoodFacts()` skips products without a name or calories and converts kJ-only energy.
+- **Scanning** decodes cropped camera frames with ZXing, restricted to EAN-13/8 and UPC-A/E. Barcodes are compared as 13 digits (`foodByBarcode`) because an EAN-13 starting with 0 is reported as a 12-digit UPC. Typing the number in the scan sheet is the fallback when the camera is blocked or missing.
+- **The service worker only caches same-origin requests.** Open Food Facts calls pass straight through, so results are never stale and the cache can't grow unbounded — keep that guard if you touch the fetch handler.
 
 ### Routines (`habits/routine.js`, `routine-sheet.js`, `step-editor.js`)
 

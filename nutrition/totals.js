@@ -8,14 +8,25 @@ export function hasTarget(target) {
     return Number.isFinite(target) && target > 0;
 }
 
+/** Totals across entries. Entries from before carbs and fat were tracked count them as 0. */
 export function dayTotals(entries) {
     return entries.reduce(
         (sum, entry) => ({
             kcal: sum.kcal + (entry.kcal || 0),
             proteinG: sum.proteinG + (entry.proteinG || 0),
+            carbsG: sum.carbsG + (entry.carbsG || 0),
+            fatG: sum.fatG + (entry.fatG || 0),
         }),
-        { kcal: 0, proteinG: 0 },
+        { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 },
     );
+}
+
+/**
+ * Calories implied by macros (4 kcal/g protein and carbs, 9 kcal/g fat) — used
+ * to show whether macro targets add up to the calorie target.
+ */
+export function kcalFromMacros({ proteinG = 0, carbsG = 0, fatG = 0 }) {
+    return Math.round((proteinG || 0) * 4 + (carbsG || 0) * 4 + (fatG || 0) * 9);
 }
 
 /**

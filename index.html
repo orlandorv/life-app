@@ -238,6 +238,27 @@
         </div>
     </div>
 
+    <!-- Modal: nutrition — barcode scanner (opens over the add-food sheet) -->
+    <div id="scan-modal" class="modal scan-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Scan a barcode</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="scan-view">
+                    <video id="scan-video" playsinline muted autoplay></video>
+                    <div class="scan-guide" aria-hidden="true"></div>
+                </div>
+                <p id="scan-status" class="hint scan-status" role="status"></p>
+                <form id="scan-manual" class="scan-manual">
+                    <input name="code" class="form-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Or type the barcode number" aria-label="Barcode number">
+                    <button type="submit" class="btn btn-outline">Look up</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: nutrition — daily targets -->
     <div id="nutrition-targets-modal" class="modal">
         <div class="modal-content">
