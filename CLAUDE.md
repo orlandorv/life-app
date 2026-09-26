@@ -15,7 +15,7 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/backup.js` + `life/backup-format.js` — Life-wide backup and restore (see Backup below). `backup-format.js` is pure and unit-testable in Node.
 - `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
 - `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry maths, unit-testable in Node), `chart.js` (hand-built SVG), `body.css`.
-- `habits/` — the Habits section: `habits.js` (Today/Week views + sheet), `store.js`, `streaks.js` (pure schedule/streak maths, unit-testable in Node), `habits.css`.
+- `habits/` — the Habits section: `habits.js` (Today/Week views + habit sheet), `store.js`, `streaks.js` and `routine.js` (pure schedule/streak and routine-step maths, unit-testable in Node), `routine-sheet.js` (a routine's checklist, also opened from Today), `step-editor.js`, `habits.css`.
 - `nutrition/` — the Nutrition section: `nutrition.js` (screen + sheets), `store.js` (state and writes), `totals.js` (pure arithmetic), `nutrition.css`.
 - `gym/js/*.js` + `gym/gym.css` — the Gym section. Its entry point is `bootGym()` in `gym/js/app.js`.
 
@@ -62,13 +62,21 @@ Warm and calm: paper background, white cards, ink text, one colour per section. 
 - **Icons:** `life/icons.js` — 24px line icons, one stroke weight, `currentColor`. Build with `icon(name)`; in static HTML use `<span data-icon="name">`, swapped in by `hydrateIcons()` at start. No emoji in UI chrome.
 - **Shared pieces:** `.life-surface` (card), `.life-list` (grouped list with hairlines — rows inside drop their own box), `.life-empty` (icon + title + line), `.life-eyebrow`, `.life-daybar`. Gym's `.btn`, `.card`, `.modal*`, `.stepper*`, `.segmented`, `.form-input` in `gym/gym.css` are the shared form controls.
 
+### Routines (`habits/routine.js`, `routine-sheet.js`, `step-editor.js`)
+
+A habit may carry optional `note` and `steps: [{id, text, detail?, days?}]`; a habit with steps is a **routine**. A step's `days` (Monday=0…Sunday=6) limits it to certain weekdays; without it the step follows the routine. Pressing a routine opens its checklist instead of ticking it.
+
+- **One rule keeps them consistent:** a routine is done on a day exactly when every step due that day is ticked. `setStepDone()` maintains it tick by tick; `toggleHabit()` (the week grid, Today) ticks or clears all of that day's steps; `updateHabit()` re-checks *today* after an edit. Use `toggleHabit`, not the low-level `toggleDone`, from UI.
+- Step ids survive edits, so reordering or rewording steps keeps today's ticks.
+- Personal routines are not in the repo (it's public for GitHub Pages): they're imported as a `life-backup` file. `.gitignore` excludes `*-backup-*.json` and `life-routines*.json`.
+
 ### Today (`life/home.js`)
 
 The home screen is a live summary of the day, one block per section, each with its most likely next action. It reads through the sections' own stores and maths (`nutrition/store.js`, `habits/streaks.js`, `body/stats.js`, `computeProgress()`), so its numbers always match the sections. Habits can be ticked in place. Buttons deep-link with a route action — `#/gym/workout`, `#/nutrition/log`, `#/body/log`, `#/habits/new` — handled by each section's `enter(action)`; the action is dropped from the URL once used. Today re-renders when the app comes back to the foreground, so it rolls over to a new day.
 
 ### LifeDB (`life/db.js`)
 
-Storage for every section **except Gym**, which keeps its own `GymTrackerDB` (its data and backups predate Life, so it was deliberately left alone). Stores: `foods`, `nutritionEntries` (index `day`, a local `YYYY-MM-DD`), `settings` (v1, Nutrition); `habits` and `habitLogs` (v2, Habits — a log's id is `habitId|day` and its presence means done; a habit's `days` are Monday=0…Sunday=6); `bodyEntries` (v3, Body — keyPath is the local `day`, so one record per day; any of `weightKg`, `sleepHours`, `steps` may be `null` = not recorded, never a fake 0). Upgrades are additive (`contains` guards in `onupgradeneeded`), so existing data survives a version bump. A generic get/getAll/byIndex/put/delete wrapper; each section keeps its record shapes and helpers in its own `store.js`. Call `await lifeDb.init()` before use (idempotent).
+Storage for every section **except Gym**, which keeps its own `GymTrackerDB` (its data and backups predate Life, so it was deliberately left alone). Stores: `foods`, `nutritionEntries` (index `day`, a local `YYYY-MM-DD`), `settings` (v1, Nutrition); `habits` and `habitLogs` (v2, Habits — a log's id is `habitId|day` and its presence means done; a habit's `days` are Monday=0…Sunday=6); `bodyEntries` (v3, Body — keyPath is the local `day`, so one record per day; any of `weightKg`, `sleepHours`, `steps` may be `null` = not recorded, never a fake 0); `routineTicks` (v4 — `habitId|day` → the step ids ticked that day). Upgrades are additive (`contains` guards in `onupgradeneeded`), so existing data survives a version bump. A generic get/getAll/byIndex/put/delete wrapper; each section keeps its record shapes and helpers in its own `store.js`. Call `await lifeDb.init()` before use (idempotent).
 
 ### Backup (`life/backup.js`, `life/backup-format.js`)
 

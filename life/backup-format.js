@@ -19,6 +19,7 @@ export const LIFE_STORES = {
     habits: 'id',
     habitLogs: 'id',
     bodyEntries: 'day',
+    routineTicks: 'id',
     settings: 'key',
 };
 
@@ -35,6 +36,16 @@ const GYM_STORES = ['exercises', 'templates', 'workouts', 'settings', 'checkins'
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const isText = (value) => typeof value === 'string' && value.length > 0;
 const isNumberOrNull = (value) => value === null || value === undefined || (Number.isFinite(value) && value > 0);
+const isWeekdays = (days) => Array.isArray(days) && days.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+const isOptionalText = (value) => value === undefined || value === null || typeof value === 'string';
+
+/** A routine step: an id and text, optionally a detail line and the weekdays it applies. */
+const isStep = (step) =>
+    isObject(step) &&
+    isText(step.id) &&
+    isText(step.text) &&
+    isOptionalText(step.detail) &&
+    (step.days === undefined || isWeekdays(step.days));
 
 export function buildBackup({ gym, life, now = new Date() }) {
     return { format: LIFE_FORMAT, version: LIFE_VERSION, exportedAt: now.toISOString(), gym, life };
@@ -50,9 +61,12 @@ const ROW_CHECKS = {
         isText(row.id) &&
         isText(row.name) &&
         DAY.test(row.startDay) &&
-        Array.isArray(row.days) &&
-        row.days.every((d) => Number.isInteger(d) && d >= 0 && d <= 6),
+        isWeekdays(row.days) &&
+        isOptionalText(row.note) &&
+        (row.steps === undefined || (Array.isArray(row.steps) && row.steps.every(isStep))),
     habitLogs: (row) => isText(row.id) && isText(row.habitId) && DAY.test(row.day),
+    routineTicks: (row) =>
+        isText(row.id) && isText(row.habitId) && DAY.test(row.day) && Array.isArray(row.steps) && row.steps.every(isText),
     bodyEntries: (row) =>
         DAY.test(row.day) && isNumberOrNull(row.weightKg) && isNumberOrNull(row.sleepHours) && isNumberOrNull(row.steps),
     settings: (row) => isText(row.key),

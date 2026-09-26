@@ -7,8 +7,10 @@ import { computeProgress } from '../gym/js/progress.js';
 import { getUnit, toDisplay, formatNumber } from '../gym/js/units.js';
 import { state as food, loadDay, loadTargets } from '../nutrition/store.js';
 import { dayTotals, hasTarget } from '../nutrition/totals.js';
-import { state as habitsState, loadHabits, loadLogs, doneDays, toggleDone } from '../habits/store.js';
+import { state as habitsState, loadHabits, loadLogs, loadTicks, doneDays, tickedSteps, toggleHabit } from '../habits/store.js';
 import { isScheduled, currentStreak } from '../habits/streaks.js';
+import { isRoutine, routineProgress } from '../habits/routine.js';
+import { openRoutine } from '../habits/routine-sheet.js';
 import { state as bodyState, loadEntries, entryFor } from '../body/store.js';
 import { trendSeries } from '../body/stats.js';
 
@@ -60,7 +62,7 @@ export async function renderHome() {
 
     try {
         await Promise.all([gymReady(), lifeDb.init()]);
-        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadEntries()]);
+        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries()]);
     } catch (error) {
         console.error(error);
         return;
@@ -246,9 +248,20 @@ function habitsBlock(today) {
     return node;
 }
 
+/** Redraws just the Habits block, so the others don't replay their entrance. */
+function refreshHabitsBlock(today) {
+    const section = document.querySelector('.life-block[data-tone="habits"]');
+    if (!section) return;
+    const next = habitsBlock(today);
+    next.style.animation = 'none';
+    section.replaceWith(next);
+}
+
 function habitRow(habit, today) {
     const done = doneDays(habit.id).has(today);
     const streak = currentStreak(habit, doneDays(habit.id), today);
+    const routine = isRoutine(habit);
+    const progress = routine ? routineProgress(habit, tickedSteps(habit.id, today), today) : null;
 
     return el(
         'button',
@@ -256,29 +269,37 @@ function habitRow(habit, today) {
             class: `life-habit${done ? ' done' : ''}`,
             type: 'button',
             'aria-pressed': String(done),
-            onclick: async (event) => {
-                const section = event.currentTarget.closest('.life-block');
+            'aria-label': routine ? `${habit.name}, ${progress.done} of ${progress.total} steps. Open checklist` : null,
+            onclick: async () => {
+                // A routine opens its checklist; a plain habit ticks in place.
+                if (routine) {
+                    openRoutine(habit, today, { onChange: () => refreshHabitsBlock(today) });
+                    return;
+                }
                 try {
-                    await toggleDone(habit.id, today);
+                    await toggleHabit(habit, today);
                 } catch (error) {
                     console.error(error);
                     return;
                 }
-                // Redraw just this block, so the others don't replay their entrance.
-                const next = habitsBlock(today);
-                next.style.animation = 'none';
-                section.replaceWith(next);
+                refreshHabitsBlock(today);
             },
         },
         [
-            el('span', { class: 'life-tick' }, [done ? icon('check', { size: 16 }) : null]),
-            el('span', { class: 'life-habit-name', text: habit.name }),
+            el('span', { class: 'life-tick' }, [
+                done ? icon('check', { size: 16 }) : progress?.done ? el('span', { text: String(progress.done) }) : null,
+            ]),
+            el('span', { class: 'life-habit-name' }, [
+                habit.name,
+                routine && !done ? el('small', { text: `${progress.done} of ${progress.total} steps` }) : null,
+            ]),
             streak > 1
                 ? el('span', { class: 'life-habit-streak', 'aria-label': `${streak} in a row` }, [
                     icon('flame', { size: 14 }),
                     String(streak),
                 ])
                 : null,
+            routine ? icon('chevron', { size: 16, className: 'life-habit-open' }) : null,
         ],
     );
 }

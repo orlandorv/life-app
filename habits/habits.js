@@ -7,19 +7,26 @@ import {
     state,
     loadHabits,
     loadLogs,
+    loadTicks,
     doneDays,
+    tickedSteps,
     addHabit,
     updateHabit,
     deleteHabit,
-    toggleDone,
+    toggleHabit,
 } from './store.js';
 import { EVERY_DAY, isScheduled, currentStreak, longestStreak, weekCells, weekTally } from './streaks.js';
+import { isRoutine, routineProgress } from './routine.js';
+import { openRoutine } from './routine-sheet.js';
+import { stepEditor } from './step-editor.js';
 
 /**
  * Habits: recurring things you tick off. Two views of the same data — Today
  * (a checklist for one day, with streaks) and Week (a seven-day grid per habit).
- * Both let you step back in time to tick something you forgot. Same conventions
- * as the other sections: no reactivity, so every change re-renders.
+ * Both let you step back in time to tick something you forgot. A habit with
+ * steps is a routine: pressing it opens its checklist (routine-sheet.js)
+ * instead of ticking it. Same conventions as the other sections: no
+ * reactivity, so every change re-renders.
  */
 
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -40,7 +47,7 @@ export function initHabits() {
 /** Called each time the section is opened; always starts on today's checklist. `'new'` opens the add sheet. */
 export async function enterHabits(action = null) {
     await initHabits();
-    await Promise.all([loadHabits(), loadLogs()]);
+    await Promise.all([loadHabits(), loadLogs(), loadTicks()]);
 
     const today = localDayId();
     state.view = 'today';
@@ -162,20 +169,44 @@ function habitRow(habit, today) {
     const done = doneDays(habit.id).has(state.day);
     // A streak is "as of now", so it only belongs on today's checklist, not on a past day.
     const streak = state.day === today ? streakBadge(currentStreak(habit, doneDays(habit.id), today)) : null;
+    const routine = isRoutine(habit);
+    const progress = routine ? routineProgress(habit, tickedSteps(habit.id, state.day), state.day) : null;
 
-    return el('div', { class: `habit-row${done ? ' done' : ''}` }, [
+    // A routine's circle shows how far through it you are until it's done.
+    const circle = done
+        ? icon('check', { size: 17 })
+        : progress?.done
+          ? el('span', { class: 'habit-circle-count', text: String(progress.done) })
+          : null;
+
+    const sub = routine
+        ? el('span', { class: 'habit-sub' }, [
+            icon('list', { size: 14 }),
+            done ? `${progress.total} steps · done` : `${progress.done} of ${progress.total} steps`,
+        ])
+        : habit.note
+          ? el('span', { class: 'habit-sub habit-note', text: habit.note })
+          : null;
+
+    return el('div', { class: `habit-row${done ? ' done' : ''}${routine ? ' routine' : ''}` }, [
         el(
             'button',
             {
                 class: 'habit-check',
                 type: 'button',
                 'aria-pressed': String(done),
-                'aria-label': `${habit.name}, ${done ? 'done' : 'not done'}`,
-                onclick: () => save(() => toggleDone(habit.id, state.day)),
+                'aria-label': routine
+                    ? `${habit.name}, ${progress.done} of ${progress.total} steps. Open checklist`
+                    : `${habit.name}, ${done ? 'done' : 'not done'}`,
+                onclick: () =>
+                    routine
+                        ? openRoutine(habit, state.day, { onChange: renderHabits })
+                        : save(() => toggleHabit(habit, state.day)),
             },
             [
-                el('span', { class: 'habit-circle' }, [done ? icon('check', { size: 17 }) : null]),
-                el('span', { class: 'habit-text' }, [el('span', { class: 'habit-name', text: habit.name }), streak]),
+                el('span', { class: 'habit-circle' }, [circle]),
+                el('span', { class: 'habit-text' }, [el('span', { class: 'habit-name', text: habit.name }), sub, streak]),
+                routine ? icon('chevron', { size: 18, className: 'habit-open' }) : null,
             ],
         ),
         el('button', {
@@ -244,7 +275,7 @@ function weekCell(habit, cell, index) {
             type: 'button',
             disabled: !tappable,
             'aria-label': `${habit.name}, ${DAY_NAMES[index]}, ${cell.state === 'off' ? 'not scheduled' : cell.state}`,
-            onclick: () => save(() => toggleDone(habit.id, cell.day)),
+            onclick: () => save(() => toggleHabit(habit, cell.day)),
         }, [cell.state === 'done' ? icon('check', { size: 16 }) : null]),
     ]);
 }
@@ -252,7 +283,7 @@ function weekCell(habit, cell, index) {
 // --- Add / edit sheet ---------------------------------------------------------
 
 function openHabitModal(habit = null) {
-    $('#habit-modal-title').textContent = habit ? 'Edit habit' : 'New habit';
+    $('#habit-modal-title').textContent = habit ? (isRoutine(habit) ? 'Edit routine' : 'Edit habit') : 'New habit';
     clear($('#habit-body')).append(habitForm(habit));
     openModal('habit-modal');
 }
@@ -290,6 +321,34 @@ function habitForm(habit) {
             chip.setAttribute('aria-pressed', String(on));
         });
 
+    const note = el('input', {
+        class: 'form-input',
+        type: 'text',
+        placeholder: 'e.g. 30–60 min before a shower',
+        autocomplete: 'off',
+        maxlength: 140,
+        value: habit?.note ?? '',
+    });
+
+    // Steps turn a habit into a routine. Hidden behind a link for a plain
+    // habit so the common case stays short; open straight away for a routine.
+    const editor = stepEditor(habit?.steps ?? []);
+    const stepsBody = el('div', { class: 'habit-steps-body', hidden: !habit?.steps?.length }, [
+        el('p', { class: 'hint', text: 'Pressing a habit with steps opens them as a checklist. Ticking the last step ticks the habit.' }),
+        editor.node,
+    ]);
+    const stepsOpen = el('button', {
+        class: 'link-btn',
+        type: 'button',
+        text: '+ Add steps (make it a routine)',
+        hidden: Boolean(habit?.steps?.length),
+        onclick: () => {
+            stepsOpen.hidden = true;
+            stepsBody.hidden = false;
+            if (!editor.count()) editor.node.querySelector('.btn')?.click();
+        },
+    });
+
     const preset = (label, days) =>
         el('button', {
             class: 'link-btn',
@@ -314,7 +373,7 @@ function habitForm(habit) {
             return;
         }
 
-        const values = { name: name.value, days: [...selected] };
+        const values = { name: name.value, days: [...selected], note: note.value, steps: editor.value() };
         closeModal('habit-modal');
 
         if (habit) {
@@ -346,6 +405,12 @@ function habitForm(habit) {
             el('span', { class: 'stepper-label', text: 'Repeats on' }),
             el('div', { class: 'habit-chips' }, chips),
             el('div', { class: 'habit-presets' }, [preset('Every day', EVERY_DAY), preset('Weekdays', WEEKDAYS)]),
+        ]),
+        el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Note (optional)' }), note]),
+        el('div', { class: 'stepper-field' }, [
+            el('span', { class: 'stepper-label', text: 'Steps' }),
+            stepsOpen,
+            stepsBody,
         ]),
         el('div', { class: 'modal-actions' }, [
             habit ? el('button', { class: 'btn btn-danger', type: 'button', text: 'Delete', onclick: remove }) : null,

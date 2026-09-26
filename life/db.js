@@ -12,7 +12,7 @@
 import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -76,6 +76,13 @@ class LifeDatabase {
                 // null: "not recorded" is different from zero.
                 if (!db.objectStoreNames.contains('bodyEntries')) {
                     db.createObjectStore('bodyEntries', { keyPath: 'day' });
+                }
+
+                // v4 — routine steps ticked on a day: one record per routine
+                // per day (`habitId|day`), holding the ids of the steps done.
+                if (!db.objectStoreNames.contains('routineTicks')) {
+                    const store = db.createObjectStore('routineTicks', { keyPath: 'id' });
+                    store.createIndex('habitId', 'habitId', { unique: false });
                 }
             };
         }).catch((error) => {

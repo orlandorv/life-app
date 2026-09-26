@@ -646,3 +646,21 @@ body.modal-open {
 .life-list > * + * {
     border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
+
+/* Routines on Today: step progress under the name, a chevron to the checklist. */
+.life-habit-name small {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.life-tick > span {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tone);
+    font-variant-numeric: tabular-nums;
+}
+
+.life-habit-open {
+    color: var(--text-secondary);
+}
