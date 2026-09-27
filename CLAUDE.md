@@ -14,7 +14,7 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/db.js` + `life/dates.js` — **LifeDB** (see below) and local-day helpers (`localDayId`, `addDays`, `dayLabel`). Use local days, never `toISOString().slice(0,10)`, which is UTC.
 - `life/backup.js` + `life/backup-format.js` — Life-wide backup and restore (see Backup below). `backup-format.js` is pure and unit-testable in Node.
 - `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
-- `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry maths, unit-testable in Node), `chart.js` (hand-built SVG), `body.css`.
+- `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry/reminder maths, unit-testable in Node), `chart.js` (hand-built SVG), `health-import.js` (pure: parse Apple Health text, plan the save) + `health-sheet.js` (Paste from Health UI and setup guide), `body.css`.
 - `habits/` — the Habits section: `habits.js` (Today/Week views + habit sheet), `store.js`, `streaks.js` and `routine.js` (pure schedule/streak and routine-step maths, unit-testable in Node), `routine-sheet.js` (a routine's checklist, also opened from Today), `step-editor.js`, `habits.css`.
 - `nutrition/` — the Nutrition section: `nutrition.js` (diary + add-food sheet), `store.js` (state and writes), `portions.js` and `totals.js` (pure food/portion/meal and total maths, unit-testable in Node), `off.js` (Open Food Facts client), `scanner.js` (camera barcode scanning), `nutrition.css`.
 - `vendor/zxing/` — ZXing barcode decoder (`@zxing/library` 0.23.0 UMD, Apache-2.0, LICENSE alongside). Vendored because there's no build step; loaded lazily by `nutrition/scanner.js` on first scan and deliberately **not** in `APP_SHELL`.
@@ -70,6 +70,14 @@ Warm and calm: paper background, white cards, ink text, one colour per section. 
 - **Open Food Facts** (`off.js`): search uses `uk.openfoodfacts.org/cgi/search.pl` (UK-sold products first, sorted by popularity); barcode lookups use `world.openfoodfacts.org/api/v2/product/`. No key; only the search text or barcode is sent. Foods are saved locally the first time they're logged (id `off-<barcode>`), so they work offline after that. `fromOpenFoodFacts()` skips products without a name or calories and converts kJ-only energy.
 - **Scanning** decodes cropped camera frames with ZXing, restricted to EAN-13/8 and UPC-A/E. Barcodes are compared as 13 digits (`foodByBarcode`) because an EAN-13 starting with 0 is reported as a 12-digit UPC. Typing the number in the scan sheet is the fallback when the camera is blocked or missing.
 - **The service worker only caches same-origin requests.** Open Food Facts calls pass straight through, so results are never stale and the cache can't grow unbounded — keep that guard if you touch the fetch handler.
+
+### Apple Health import (`body/health-import.js`, `health-sheet.js`)
+
+A home-screen web app can't read HealthKit, so a user-built Apple Shortcut ("Life: copy Health") copies the last 7 days as text — `steps YYYY-MM-DD <count>` (grouped by day) and `weight YYYY-MM-DD <value> <unit>` (every weigh-in, oldest first) — and **Paste from Health** in Body reads it with `navigator.clipboard.readText()` (must be called straight from the tap), previews, and saves on confirm. No key, account or server; nothing leaves the phone. The setup steps live in the app (`showHealthSetup()`) since the Shortcut is built on the phone.
+
+- `parseHealthText()` is deliberately forgiving (thousands separators, comma decimals, kg/lb/st, times after the date, junk lines) but rejects implausible numbers, future days, impossible dates, negatives and lines with no number. The last weigh-in of a day wins.
+- `planHealthImport()` merges into existing entries: sleep is kept, a 0 step count never wipes a typed number, unchanged days are skipped, and days that change existing values are flagged "updates".
+- If the clipboard can't be read (denied, dismissed, unsupported), the sheet falls back to a box you paste into by hand.
 
 ### Routines (`habits/routine.js`, `routine-sheet.js`, `step-editor.js`)
 

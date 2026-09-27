@@ -694,3 +694,11 @@ body.modal-open {
     background: var(--tone);
     color: var(--on-accent);
 }
+
+/* Action bar at the bottom of a sheet whose body is built in JS: stays in reach while it scrolls. */
+.sheet-actions {
+    margin: 18px -20px -20px;
+    position: sticky;
+    bottom: -20px;
+    background: var(--bg);
+}

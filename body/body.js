@@ -6,6 +6,7 @@ import { getUnit, toDisplay, fromDisplay, formatNumber, weightPrecision } from '
 import { state, loadEntries, entryFor, saveEntry, deleteEntry, hasAnyNumber } from './store.js';
 import { trendSeries, trendChange, weeklyAverages, chartLayout } from './stats.js';
 import { weightChart } from './chart.js';
+import { pasteFromHealth, showHealthSetup } from './health-sheet.js';
 
 /**
  * Body: weight, sleep and steps, logged a day at a time. The screen is a
@@ -104,18 +105,30 @@ function todayCard(today) {
             tile('Sleep', entry?.sleepHours != null ? fmtSleep(entry.sleepHours) : null),
             tile('Steps', entry?.steps != null ? fmtSteps(entry.steps) : null),
         ]),
-        el('button', {
-            class: 'btn btn-primary btn-block',
-            type: 'button',
-            text: entry ? 'Edit today' : 'Log today',
-            onclick: () => openEntryModal(today),
-        }),
-        el('button', {
-            class: 'link-btn body-another',
-            type: 'button',
-            text: 'Log a different day',
-            onclick: () => openEntryModal(addDays(today, -1), true),
-        }),
+        el('div', { class: 'body-actions' }, [
+            el('button', {
+                class: 'btn btn-primary',
+                type: 'button',
+                text: entry ? 'Edit today' : 'Log today',
+                onclick: () => openEntryModal(today),
+            }),
+            // Straight from the tap: reading the clipboard needs a user gesture.
+            el('button', {
+                class: 'btn btn-outline',
+                type: 'button',
+                text: 'Paste from Health',
+                onclick: () => pasteFromHealth({ onSaved: refresh }),
+            }),
+        ]),
+        el('div', { class: 'body-links' }, [
+            el('button', {
+                class: 'link-btn',
+                type: 'button',
+                text: 'Log a different day',
+                onclick: () => openEntryModal(addDays(today, -1), true),
+            }),
+            el('button', { class: 'link-btn', type: 'button', text: 'Set up Health shortcut', onclick: showHealthSetup }),
+        ]),
     ]);
 }
 

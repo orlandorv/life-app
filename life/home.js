@@ -121,7 +121,8 @@ function weighInReminder() {
     return el('section', { class: 'life-reminder', dataset: { tone: 'body' } }, [
         el('span', { class: 'life-chip' }, [icon('scale', { size: 19 })]),
         el('p', { class: 'life-reminder-text' }, [el('strong', { text: 'Weekly weigh-in' }), text]),
-        el('a', { class: 'btn btn-small life-reminder-action', href: '#/body/log', text: 'Log now' }),
+        // Body itself, not straight into the sheet, so pasting from Health is one tap away too.
+        el('a', { class: 'btn btn-small life-reminder-action', href: '#/body', text: 'Log now' }),
     ]);
 }
 

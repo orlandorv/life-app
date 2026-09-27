@@ -78,9 +78,21 @@
     color: var(--text-secondary);
 }
 
-.body-another {
-    margin: 12px auto 0;
-    padding: 4px 8px;
+.body-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.body-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.body-links .link-btn {
+    padding: 4px 0;
     font-size: 14px;
 }
 
@@ -196,4 +208,81 @@
 .body-form .modal-actions {
     padding: 0;
     border: none;
+}
+
+/* --- Apple Health import ------------------------------------------------------------ */
+
+#health-modal {
+    --primary: var(--body);
+}
+
+.health-message {
+    margin-bottom: 14px;
+    font-size: 15px;
+    color: var(--text-secondary);
+}
+
+.health-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.health-row-day {
+    flex-shrink: 0;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.health-row-values {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.health-row-tag {
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.health-paste {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+}
+
+.health-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 22px;
+}
+
+.health-steps li {
+    padding-left: 4px;
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.health-steps li::marker {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.health-steps strong {
+    display: block;
+    font-weight: 650;
+}
+
+.health-steps span {
+    color: var(--text-secondary);
 }
