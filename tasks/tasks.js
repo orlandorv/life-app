@@ -152,17 +152,59 @@ async function toggleDone(task) {
 }
 
 // --- Calendar export -----------------------------------------------------------
+//
+// iOS Calendar isn't a registered Share Sheet target for an arbitrary file —
+// confirmed on a real phone — so sharing the .ics never had a way to actually
+// add it. What iOS *does* recognise is opening a text/calendar resource
+// directly: it intercepts the navigation and shows its own "Add Event" screen
+// instead of really navigating there. That's the technique behind every
+// "Add to calendar" button on the web, and it's the primary path here.
+//
+// A data: URI, not a blob: one: window.open can hand the request to Safari in
+// a separate process from this standalone app, and a blob: URL — created in,
+// and scoped to, this page's own memory — wouldn't resolve there. A data:
+// URI is self-contained, so it survives the hand-off regardless of who ends
+// up opening it.
+
+/** Records that this task's calendar export was sent, so a later one updates the same event rather than duplicating it. */
+async function recordCalendarExport(task) {
+    if (!(await attempt(() => bumpCalendarSequence(task)))) return;
+    await refresh();
+
+    // The sheet may still be open on this task — refresh it too, so its
+    // button relabels from "Add to Calendar" to "Update calendar event".
+    if ($('#task-modal').classList.contains('active')) {
+        const current = state.tasks.find((existing) => existing.id === task.id);
+        if (current) openTaskModal(current);
+    }
+}
 
 /**
- * Builds this task's `.ics` and hands it to the OS. The file must be built,
- * and `shareOrDownload` called, with nothing awaited beforehand — the same
- * constraint Backup's export works around: sharing has to start straight
- * from the tap, or Safari stops treating it as user-initiated. The
- * calendar-sequence bump (so a later re-export updates the same event
- * instead of duplicating it) is saved *after* the share settles, same
- * principle as `lastBackupAt` — a dismissed share sheet shouldn't count.
+ * Opens the task directly as a calendar file. Must run with nothing awaited
+ * beforehand — same constraint as Share further down: called too long after
+ * the tap, Safari's popup blocker treats it as not user-initiated and
+ * silently blocks it.
  */
 async function addToCalendar(task) {
+    const sequence = (task.calendarSequence ?? 0) + 1;
+    const text = taskToIcs({ ...task, calendarSequence: sequence });
+    const dataUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(text)}`;
+
+    const opened = window.open(dataUrl, '_blank');
+    toast(opened ? 'Opening in Calendar…' : 'Couldn’t open Calendar — try Share the file instead');
+    if (!opened) return;
+
+    await recordCalendarExport(task);
+}
+
+/**
+ * The fallback for when the direct open doesn't do the right thing (a
+ * different browser, an older iOS, a popup blocker): the same Save-to-Files
+ * hand-off Backup already uses. From Files, opening the saved file still
+ * gets you to Calendar's own "Add Event" screen — just as a second tap
+ * instead of one.
+ */
+async function shareCalendarFile(task) {
     const sequence = (task.calendarSequence ?? 0) + 1;
     const text = taskToIcs({ ...task, calendarSequence: sequence });
     const file = new File([text], icsFilename(task.title), { type: 'text/calendar' });
@@ -177,16 +219,8 @@ async function addToCalendar(task) {
     }
     if (outcome === 'cancelled') return;
 
-    if (!(await attempt(() => bumpCalendarSequence(task)))) return;
-    toast(outcome === 'shared' ? 'Sent to your calendar' : 'Calendar file downloaded');
-    await refresh();
-
-    // The sheet may still be open on this task — refresh it too, so its
-    // button relabels from "Add to Calendar" to "Update calendar event".
-    if ($('#task-modal').classList.contains('active')) {
-        const current = state.tasks.find((existing) => existing.id === task.id);
-        if (current) openTaskModal(current);
-    }
+    toast(outcome === 'shared' ? 'Shared — open it from Files to add it to Calendar' : 'Calendar file downloaded');
+    await recordCalendarExport(task);
 }
 
 // --- Add / edit sheet ----------------------------------------------------------
@@ -289,12 +323,20 @@ function taskForm(task) {
     if (task) {
         fields.push(el('label', { class: 'life-check' }, [done, el('span', { text: 'Done' })]));
         fields.push(
-            el('button', {
-                class: 'btn btn-outline btn-block',
-                type: 'button',
-                text: task.calendarSequence > 0 ? 'Update calendar event' : 'Add to Calendar',
-                onclick: () => addToCalendar(task),
-            }),
+            el('div', { class: 'task-calendar-actions' }, [
+                el('button', {
+                    class: 'btn btn-outline btn-block',
+                    type: 'button',
+                    text: task.calendarSequence > 0 ? 'Update calendar event' : 'Add to Calendar',
+                    onclick: () => addToCalendar(task),
+                }),
+                el('button', {
+                    class: 'link-btn',
+                    type: 'button',
+                    text: 'Share the file instead',
+                    onclick: () => shareCalendarFile(task),
+                }),
+            ]),
         );
     }
 
