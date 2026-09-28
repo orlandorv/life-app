@@ -155,16 +155,21 @@ async function toggleDone(task) {
 //
 // iOS Calendar isn't a registered Share Sheet target for an arbitrary file —
 // confirmed on a real phone — so sharing the .ics never had a way to actually
-// add it. What iOS *does* recognise is opening a text/calendar resource
-// directly: it intercepts the navigation and shows its own "Add Event" screen
-// instead of really navigating there. That's the technique behind every
-// "Add to calendar" button on the web, and it's the primary path here.
+// add it. What iOS *does* recognise is a text/calendar resource opened as a
+// same-window, same-tab navigation — the same mechanism as a tel: or mailto:
+// link: WebKit intercepts it before any page actually loads and shows its own
+// "Add Event" screen instead, leaving this page right where it was. That's
+// the technique behind every "Add to calendar" button on the web.
 //
-// A data: URI, not a blob: one: window.open can hand the request to Safari in
-// a separate process from this standalone app, and a blob: URL — created in,
-// and scoped to, this page's own memory — wouldn't resolve there. A data:
-// URI is self-contained, so it survives the hand-off regardless of who ends
-// up opening it.
+// window.open() does NOT get this treatment — confirmed on a real phone, it
+// just opens a new tab that sits there trying (and failing) to render
+// "data:" as a page, since a *new browsing context* isn't what iOS's
+// calendar-mime interception watches for. So this has to be a real anchor
+// click with no target, navigating the current window/tab.
+//
+// A data: URI, not a blob: one, since it has to be self-contained: nothing
+// here creates a second browsing context any more, but a data: URI is also
+// simply what the "add to calendar" convention this is built on expects.
 
 /** Records that this task's calendar export was sent, so a later one updates the same event rather than duplicating it. */
 async function recordCalendarExport(task) {
@@ -180,20 +185,24 @@ async function recordCalendarExport(task) {
 }
 
 /**
- * Opens the task directly as a calendar file. Must run with nothing awaited
- * beforehand — same constraint as Share further down: called too long after
- * the tap, Safari's popup blocker treats it as not user-initiated and
- * silently blocks it.
+ * Opens the task directly as a calendar file, via a real anchor click rather
+ * than window.open() (see above) — and, like Share further down, with
+ * nothing awaited beforehand, or Safari can treat the tap as not
+ * user-initiated and silently ignore it.
  */
 async function addToCalendar(task) {
     const sequence = (task.calendarSequence ?? 0) + 1;
     const text = taskToIcs({ ...task, calendarSequence: sequence });
     const dataUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(text)}`;
 
-    const opened = window.open(dataUrl, '_blank');
-    toast(opened ? 'Opening in Calendar…' : 'Couldn’t open Calendar — try Share the file instead');
-    if (!opened) return;
+    const link = el('a', { href: dataUrl, style: 'display:none' });
+    document.body.append(link);
+    link.click();
+    link.remove();
 
+    // There's no signal back from this (same as a tel: or mailto: link) —
+    // just that the tap happened, not that Calendar actually opened.
+    toast('Opening in Calendar…');
     await recordCalendarExport(task);
 }
 
