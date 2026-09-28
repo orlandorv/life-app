@@ -6,6 +6,7 @@ import { enterNutrition } from '../nutrition/nutrition.js';
 import { enterHabits } from '../habits/habits.js';
 import { enterBody } from '../body/body.js';
 import { enterVideos } from '../videos/videos.js';
+import { enterTasks } from '../tasks/tasks.js';
 import { initBackup, renderBackupBanner } from './backup.js';
 
 /**
@@ -27,6 +28,7 @@ const SECTIONS = [
     // Weight follows Gym's kg/lb setting, which Gym loads while booting.
     { id: 'body', enter: (action) => gymBoot.then(() => enterBody(action)) },
     { id: 'videos', enter: enterVideos },
+    { id: 'tasks', enter: enterTasks },
 ];
 
 let gymReady = false;

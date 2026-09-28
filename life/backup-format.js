@@ -21,6 +21,7 @@ export const LIFE_STORES = {
     bodyEntries: 'day',
     routineTicks: 'id',
     videos: 'id',
+    tasks: 'id',
     settings: 'key',
 };
 
@@ -32,6 +33,7 @@ export const LIFE_STORES = {
 export const DEVICE_SETTINGS = ['lastBackupAt'];
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const TIME = /^\d{2}:\d{2}$/;
 const GYM_STORES = ['exercises', 'templates', 'workouts', 'settings', 'checkins'];
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -80,6 +82,16 @@ const ROW_CHECKS = {
         isBoolean(row.watched) &&
         isText(row.addedAt) &&
         isOptionalText(row.watchedAt),
+    tasks: (row) =>
+        isText(row.id) &&
+        isText(row.title) &&
+        DAY.test(row.date) &&
+        (row.time === null || row.time === undefined || TIME.test(row.time)) &&
+        isOptionalText(row.note) &&
+        isBoolean(row.done) &&
+        isOptionalText(row.doneAt) &&
+        isText(row.createdAt) &&
+        (row.calendarSequence === undefined || (Number.isInteger(row.calendarSequence) && row.calendarSequence >= 0)),
     settings: (row) => isText(row.key),
 };
 
@@ -153,6 +165,7 @@ export function summarize(info) {
         habits: count(info.life?.habits),
         bodyDays: count(info.life?.bodyEntries),
         videos: count(info.life?.videos),
+        tasks: count(info.life?.tasks),
     };
 }
 

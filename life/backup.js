@@ -4,6 +4,7 @@ import { localDayId } from './dates.js';
 import { database as gymDb } from '../gym/js/db.js';
 import { state as gymState } from '../gym/js/store.js';
 import { icon } from './icons.js';
+import { shareOrDownload } from './share.js';
 import { buildBackup, inspectBackup, summarize, describeAge, backupAgeDays, needsNudge } from './backup-format.js';
 
 /**
@@ -116,37 +117,11 @@ async function renderSheet() {
 
 // --- Export -------------------------------------------------------------------------------
 
-/**
- * Hands the file to the share sheet where there is one (on an iPhone that's
- * "Save to Files", AirDrop, Mail…), otherwise downloads it. Returns
- * 'shared', 'downloaded' or 'cancelled'.
- */
-async function deliver({ text, filename }) {
-    const file = new File([text], filename, { type: 'application/json' });
-
-    if (navigator.canShare?.({ files: [file] })) {
-        try {
-            await navigator.share({ files: [file], title: 'Life backup' });
-            return 'shared';
-        } catch (error) {
-            if (error?.name === 'AbortError') return 'cancelled';
-            // Sharing refused for some other reason — fall back to a download.
-        }
-    }
-
-    const url = URL.createObjectURL(file);
-    const link = el('a', { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    return 'downloaded';
-}
-
 async function exportBackup() {
     if (!prepared) return;
 
-    const outcome = await deliver(prepared);
+    const file = new File([prepared.text], prepared.filename, { type: 'application/json' });
+    const outcome = await shareOrDownload(file, 'Life backup');
     if (outcome === 'cancelled') return;
 
     // Recorded here, not on the tap, so a dismissed share sheet doesn't count.
@@ -168,6 +143,7 @@ function importMessage(info) {
         [counts.habits, 'habit'],
         [counts.bodyDays, 'body log day'],
         [counts.videos, 'video'],
+        [counts.tasks, 'task'],
     ]
         .filter(([n]) => n > 0)
         .map(([n, one, many]) => `${n} ${n === 1 ? one : many ?? `${one}s`}`);

@@ -29,6 +29,7 @@
     --habits: #6B54B8;
     --body: #2B7482;
     --videos: #A23E6D;
+    --tasks: #2E5FA3;
 
     --primary: var(--ink);
     /* Text on a --primary / --success / --danger fill. White in light mode;
@@ -70,6 +71,7 @@
         --habits: #A794E6;
         --body: #6FB7C4;
         --videos: #E38FB4;
+        --tasks: #7FB0E8;
 
         --on-accent: #151311;
         --success: #72B98A;
@@ -86,6 +88,7 @@ body[data-section="nutrition"] { --primary: var(--nutrition); }
 body[data-section="habits"] { --primary: var(--habits); }
 body[data-section="body"] { --primary: var(--body); }
 body[data-section="videos"] { --primary: var(--videos); }
+body[data-section="tasks"] { --primary: var(--tasks); }
 
 html {
     -webkit-text-size-adjust: 100%;
@@ -295,6 +298,7 @@ body.modal-open {
 .life-block[data-tone="habits"] { --tone: var(--habits); }
 .life-block[data-tone="body"] { --tone: var(--body); }
 .life-block[data-tone="videos"] { --tone: var(--videos); }
+.life-block[data-tone="tasks"] { --tone: var(--tasks); }
 
 /* The whole header row opens the section. */
 .life-block-head {
@@ -357,6 +361,11 @@ body.modal-open {
 .life-sub {
     font-size: 14px;
     color: var(--text-secondary);
+}
+
+.life-sub-warn {
+    color: var(--danger);
+    font-weight: 600;
 }
 
 .life-block-action {

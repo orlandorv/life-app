@@ -15,6 +15,8 @@ import { state as bodyState, loadEntries, entryFor } from '../body/store.js';
 import { trendSeries, weeklyLogReminder } from '../body/stats.js';
 import { state as videosState, loadVideos } from '../videos/store.js';
 import { unwatchedCount, nextToWatch } from '../videos/organize.js';
+import { state as tasksState, loadTasks } from '../tasks/store.js';
+import { nextTask, overdueCount, dueCount, taskDateLabel } from '../tasks/organize.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -64,7 +66,7 @@ export async function renderHome() {
 
     try {
         await Promise.all([gymReady(), lifeDb.init()]);
-        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos()]);
+        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks()]);
     } catch (error) {
         console.error(error);
         return;
@@ -80,6 +82,7 @@ export async function renderHome() {
         habitsBlock(today),
         bodyBlock(today),
         videosBlock(),
+        tasksBlock(today),
     );
 }
 
@@ -392,5 +395,42 @@ function videosBlock() {
         figure(String(remaining), remaining === 1 ? 'video to watch' : 'videos to watch'),
         next ? el('p', { class: 'life-sub', text: `Next up: ${next.title}` }) : null,
         action('Watch something', '#/videos'),
+    ]);
+}
+
+// --- Tasks -----------------------------------------------------------------------
+
+function tasksBlock(today) {
+    const tasks = tasksState.tasks;
+
+    if (!tasks.length) {
+        return block('tasks', 'Tasks', 'calendar', [
+            el('p', { class: 'life-sub', text: 'Nothing on your list yet.' }),
+            action('Add a task', '#/tasks/add'),
+        ]);
+    }
+
+    const due = dueCount(tasks);
+    const overdue = overdueCount(tasks, today);
+    const next = nextTask(tasks, today);
+
+    if (!due) {
+        return block('tasks', 'Tasks', 'calendar', [
+            figure('All done'),
+            el('p', { class: 'life-sub', text: 'Nothing left on your list.' }),
+            action('Add a task', '#/tasks/add', true),
+        ]);
+    }
+
+    const note = overdue
+        ? `${overdue} overdue`
+        : next
+          ? `Next: ${next.title} · ${taskDateLabel(next.date, today)}`
+          : null;
+
+    return block('tasks', 'Tasks', 'calendar', [
+        figure(String(due), due === 1 ? 'task due' : 'tasks due'),
+        note ? el('p', { class: `life-sub${overdue ? ' life-sub-warn' : ''}`, text: note }) : null,
+        action('View tasks', '#/tasks', !overdue),
     ]);
 }

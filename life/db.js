@@ -12,7 +12,7 @@
 import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -90,6 +90,15 @@ class LifeDatabase {
                 if (!db.objectStoreNames.contains('videos')) {
                     db.createObjectStore('videos', { keyPath: 'id' });
                 }
+
+                // v6 — Tasks. `date` is required; `time` is a local `HH:MM` or
+                // null for an all-day task. `calendarSequence` tracks the ICS
+                // export version, so re-exporting after an edit updates the
+                // same calendar entry instead of duplicating it.
+                if (!db.objectStoreNames.contains('tasks')) {
+                    const store = db.createObjectStore('tasks', { keyPath: 'id' });
+                    store.createIndex('date', 'date', { unique: false });
+                }
             };
         }).catch((error) => {
             this.opening = null;
@@ -151,7 +160,7 @@ class LifeDatabase {
     /** Is there anything here worth backing up? Settings alone don't count. */
     async hasAnyData() {
         const counts = await Promise.all(
-            ['foods', 'nutritionEntries', 'habits', 'bodyEntries', 'videos'].map((name) => this.count(name)),
+            ['foods', 'nutritionEntries', 'habits', 'bodyEntries', 'videos', 'tasks'].map((name) => this.count(name)),
         );
         return counts.some((n) => n > 0);
     }
