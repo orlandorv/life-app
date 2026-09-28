@@ -167,9 +167,13 @@ async function toggleDone(task) {
 // calendar-mime interception watches for. So this has to be a real anchor
 // click with no target, navigating the current window/tab.
 //
-// A data: URI, not a blob: one, since it has to be self-contained: nothing
-// here creates a second browsing context any more, but a data: URI is also
-// simply what the "add to calendar" convention this is built on expects.
+// A blob: URL, not a data: one — also confirmed on a real phone: WebKit
+// silently blocks top-level navigation to a data: URI outright (an
+// anti-phishing measure against data: links spoofing real pages), so the
+// click was simply a no-op. blob: isn't a data: URI and isn't blocked the
+// same way. The reason a data: URI was used originally — window.open()
+// handing off to a separate browsing context where a page-scoped blob: URL
+// might not resolve — no longer applies now this is a same-window click.
 
 /** Records that this task's calendar export was sent, so a later one updates the same event rather than duplicating it. */
 async function recordCalendarExport(task) {
@@ -193,12 +197,15 @@ async function recordCalendarExport(task) {
 async function addToCalendar(task) {
     const sequence = (task.calendarSequence ?? 0) + 1;
     const text = taskToIcs({ ...task, calendarSequence: sequence });
-    const dataUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(text)}`;
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/calendar' }));
 
-    const link = el('a', { href: dataUrl, style: 'display:none' });
+    const link = el('a', { href: url, style: 'display:none' });
     document.body.append(link);
     link.click();
     link.remove();
+    // Give the navigation/hand-off a moment to actually pick the blob up
+    // before freeing it — revoking immediately can race it.
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
 
     // There's no signal back from this (same as a tel: or mailto: link) —
     // just that the tap happened, not that Calendar actually opened.
