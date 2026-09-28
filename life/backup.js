@@ -167,6 +167,7 @@ function importMessage(info) {
         [counts.foodEntries, 'food entry', 'food entries'],
         [counts.habits, 'habit'],
         [counts.bodyDays, 'body log day'],
+        [counts.videos, 'video'],
     ]
         .filter(([n]) => n > 0)
         .map(([n, one, many]) => `${n} ${n === 1 ? one : many ?? `${one}s`}`);

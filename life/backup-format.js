@@ -20,6 +20,7 @@ export const LIFE_STORES = {
     habitLogs: 'id',
     bodyEntries: 'day',
     routineTicks: 'id',
+    videos: 'id',
     settings: 'key',
 };
 
@@ -38,6 +39,7 @@ const isText = (value) => typeof value === 'string' && value.length > 0;
 const isNumberOrNull = (value) => value === null || value === undefined || (Number.isFinite(value) && value > 0);
 const isWeekdays = (days) => Array.isArray(days) && days.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
 const isOptionalText = (value) => value === undefined || value === null || typeof value === 'string';
+const isBoolean = (value) => typeof value === 'boolean';
 
 /** A routine step: an id and text, optionally a detail line and the weekdays it applies. */
 const isStep = (step) =>
@@ -69,6 +71,15 @@ const ROW_CHECKS = {
         isText(row.id) && isText(row.habitId) && DAY.test(row.day) && Array.isArray(row.steps) && row.steps.every(isText),
     bodyEntries: (row) =>
         DAY.test(row.day) && isNumberOrNull(row.weightKg) && isNumberOrNull(row.sleepHours) && isNumberOrNull(row.steps),
+    videos: (row) =>
+        isText(row.id) &&
+        isText(row.title) &&
+        isText(row.url) &&
+        isOptionalText(row.topic) &&
+        isOptionalText(row.note) &&
+        isBoolean(row.watched) &&
+        isText(row.addedAt) &&
+        isOptionalText(row.watchedAt),
     settings: (row) => isText(row.key),
 };
 
@@ -141,6 +152,7 @@ export function summarize(info) {
         foodEntries: count(info.life?.nutritionEntries),
         habits: count(info.life?.habits),
         bodyDays: count(info.life?.bodyEntries),
+        videos: count(info.life?.videos),
     };
 }
 

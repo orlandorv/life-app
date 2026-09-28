@@ -12,7 +12,7 @@
 import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -84,6 +84,12 @@ class LifeDatabase {
                     const store = db.createObjectStore('routineTicks', { keyPath: 'id' });
                     store.createIndex('habitId', 'habitId', { unique: false });
                 }
+
+                // v5 — Recommended Videos. `topic` is free text rather than a
+                // fixed list, grouped for display in videos/organize.js.
+                if (!db.objectStoreNames.contains('videos')) {
+                    db.createObjectStore('videos', { keyPath: 'id' });
+                }
             };
         }).catch((error) => {
             this.opening = null;
@@ -144,7 +150,9 @@ class LifeDatabase {
 
     /** Is there anything here worth backing up? Settings alone don't count. */
     async hasAnyData() {
-        const counts = await Promise.all(['foods', 'nutritionEntries', 'habits', 'bodyEntries'].map((name) => this.count(name)));
+        const counts = await Promise.all(
+            ['foods', 'nutritionEntries', 'habits', 'bodyEntries', 'videos'].map((name) => this.count(name)),
+        );
         return counts.some((n) => n > 0);
     }
 

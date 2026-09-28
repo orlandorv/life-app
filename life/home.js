@@ -13,6 +13,8 @@ import { isRoutine, routineProgress } from '../habits/routine.js';
 import { openRoutine } from '../habits/routine-sheet.js';
 import { state as bodyState, loadEntries, entryFor } from '../body/store.js';
 import { trendSeries, weeklyLogReminder } from '../body/stats.js';
+import { state as videosState, loadVideos } from '../videos/store.js';
+import { unwatchedCount, nextToWatch } from '../videos/organize.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -62,7 +64,7 @@ export async function renderHome() {
 
     try {
         await Promise.all([gymReady(), lifeDb.init()]);
-        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries()]);
+        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos()]);
     } catch (error) {
         console.error(error);
         return;
@@ -77,6 +79,7 @@ export async function renderHome() {
         nutritionBlock(),
         habitsBlock(today),
         bodyBlock(today),
+        videosBlock(),
     );
 }
 
@@ -359,5 +362,35 @@ function bodyBlock(today) {
             stat('steps', 'Steps', entry?.steps != null ? fmt(entry.steps) : null),
         ]),
         action(entry ? 'Edit today' : 'Log today', '#/body/log', Boolean(entry)),
+    ]);
+}
+
+// --- Videos ----------------------------------------------------------------------
+
+function videosBlock() {
+    const videos = videosState.videos;
+
+    if (!videos.length) {
+        return block('videos', 'Videos', 'play', [
+            el('p', { class: 'life-sub', text: 'Nothing saved yet. Add one you want to watch.' }),
+            action('Add a video', '#/videos/add'),
+        ]);
+    }
+
+    const remaining = unwatchedCount(videos);
+    const next = nextToWatch(videos);
+
+    if (!remaining) {
+        return block('videos', 'Videos', 'play', [
+            figure('All caught up'),
+            el('p', { class: 'life-sub', text: 'Nothing left on your list.' }),
+            action('Add a video', '#/videos/add', true),
+        ]);
+    }
+
+    return block('videos', 'Videos', 'play', [
+        figure(String(remaining), remaining === 1 ? 'video to watch' : 'videos to watch'),
+        next ? el('p', { class: 'life-sub', text: `Next up: ${next.title}` }) : null,
+        action('Watch something', '#/videos'),
     ]);
 }

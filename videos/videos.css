@@ -1,0 +1,192 @@
+/* Recommended Videos section. Tokens, .btn, .form-input, .life-list,
+   .life-empty, .life-check and .history-group-label come from life/life.css
+   and gym/gym.css. */
+
+.video-topic + .video-topic {
+    margin-top: 22px;
+}
+
+.video-topic-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 4px 8px;
+}
+
+.video-topic-title {
+    flex: 1;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.video-topic-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    white-space: nowrap;
+}
+
+.video-topic-head .icon-btn {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    color: var(--text-secondary);
+}
+
+/* --- Row: watch toggle, thumbnail + text (opens the link), edit ------------ */
+
+.video-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-right: 8px;
+}
+
+.video-check {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    margin-left: 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.video-check::before {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--primary) 40%, var(--border));
+    transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.video-row.watched .video-check::before {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.video-check svg {
+    position: absolute;
+    color: var(--on-accent);
+}
+
+.video-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 10px 4px;
+    text-decoration: none;
+    color: var(--text-primary);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.video-link:active {
+    opacity: 0.7;
+}
+
+.video-thumb {
+    position: relative;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 84px;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--primary) 14%, var(--bg-secondary));
+    color: var(--primary);
+}
+
+.video-thumb img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-thumb-play {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+}
+
+/* When there's a thumbnail image, the play mark sits over it, dimmer. */
+.video-thumb img + .video-thumb-play {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.video-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.video-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.video-row.watched .video-title {
+    color: var(--text-secondary);
+}
+
+.video-note {
+    font-size: 13px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.video-external {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+/* --- Add / edit sheet -------------------------------------------------------- */
+
+.video-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.video-lookup-status:empty {
+    display: none;
+}
+
+.video-lookup-status {
+    margin-top: -8px;
+    font-style: italic;
+}
+
+.video-topic-field {
+    display: flex;
+}
+
+.video-topic-field .form-input {
+    flex: 1;
+}

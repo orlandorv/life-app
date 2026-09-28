@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="nutrition/nutrition.css">
     <link rel="stylesheet" href="habits/habits.css">
     <link rel="stylesheet" href="body/body.css">
+    <link rel="stylesheet" href="videos/videos.css">
 </head>
 <body>
     <!-- Today: the home screen, a live summary of the day rendered by life/home.js -->
@@ -174,6 +175,17 @@
         </main>
     </div>
 
+    <!-- Recommended Videos section -->
+    <div id="videos-section" hidden>
+        <a class="life-back" href="#/"><span data-icon="back" data-icon-size="24"></span>Today</a>
+        <main class="life-main">
+            <header class="tab-header">
+                <h1>Videos</h1>
+            </header>
+            <div id="videos-body"></div>
+        </main>
+    </div>
+
     <!-- Modal: Life backup / restore -->
     <div id="backup-modal" class="modal">
         <div class="modal-content">
@@ -196,6 +208,32 @@
                 <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
             </div>
             <div id="body-entry-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal: videos — add / edit a video -->
+    <div id="video-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="video-modal-title">Add video</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="video-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal: videos — rename a topic -->
+    <div id="topic-modal" class="modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h2 id="topic-modal-title">Rename topic</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="topic-body" class="modal-body"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="topic-save">Save</button>
+            </div>
         </div>
     </div>
 

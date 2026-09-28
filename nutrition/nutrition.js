@@ -726,7 +726,7 @@ function showCreate({ barcode = null } = {}) {
         el('div', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Nutrition from the label' }), basisSwitch]),
         servingGrams,
         numbers.node,
-        el('label', { class: 'nutrition-check' }, [drink, el('span', { text: 'It’s a drink (measured in ml)' })]),
+        el('label', { class: 'life-check' }, [drink, el('span', { text: 'It’s a drink (measured in ml)' })]),
         el('div', { class: 'modal-actions sheet-actions' }, [
             el('button', { class: 'btn btn-primary', type: 'button', text: 'Save and choose amount', onclick: save }),
         ]),

@@ -28,6 +28,7 @@
     --nutrition: #3D7A4E;
     --habits: #6B54B8;
     --body: #2B7482;
+    --videos: #A23E6D;
 
     --primary: var(--ink);
     /* Text on a --primary / --success / --danger fill. White in light mode;
@@ -68,6 +69,7 @@
         --nutrition: #7DBF8C;
         --habits: #A794E6;
         --body: #6FB7C4;
+        --videos: #E38FB4;
 
         --on-accent: #151311;
         --success: #72B98A;
@@ -83,6 +85,7 @@ body[data-section="gym"] { --primary: var(--gym); }
 body[data-section="nutrition"] { --primary: var(--nutrition); }
 body[data-section="habits"] { --primary: var(--habits); }
 body[data-section="body"] { --primary: var(--body); }
+body[data-section="videos"] { --primary: var(--videos); }
 
 html {
     -webkit-text-size-adjust: 100%;
@@ -291,6 +294,7 @@ body.modal-open {
 .life-block[data-tone="nutrition"] { --tone: var(--nutrition); }
 .life-block[data-tone="habits"] { --tone: var(--habits); }
 .life-block[data-tone="body"] { --tone: var(--body); }
+.life-block[data-tone="videos"] { --tone: var(--videos); }
 
 /* The whole header row opens the section. */
 .life-block-head {
@@ -701,4 +705,20 @@ body.modal-open {
     position: sticky;
     bottom: -20px;
     background: var(--bg);
+}
+
+/* A checkbox with a label, in a row — Gym's bare `label` rule stacks children
+   in a column, which a checkbox doesn't want. Shared by any section's forms. */
+.life-check {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+}
+
+.life-check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
 }

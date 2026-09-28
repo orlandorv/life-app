@@ -529,17 +529,3 @@
 
 /* --- Shared bits ------------------------------------------------------------------------ */
 
-/* Gym's bare `label` rule stacks children in a column; a checkbox wants a row. */
-.nutrition-check {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    font-size: 15px;
-}
-
-.nutrition-check input {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--primary);
-}

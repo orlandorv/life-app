@@ -1,7 +1,9 @@
 .DS_Store
 .claude/settings.local.json
 
-# Personal data: backups and routine import files stay on this machine.
+# Personal data: backups and import files (routines, video links, etc.)
+# generated for this user's own phone stay on this machine, not the repo.
 *-backup-*.json
 life-routines*.json
+life-videos*.json
 life-*.ics
