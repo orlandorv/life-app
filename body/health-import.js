@@ -56,9 +56,15 @@ const NOT_SLEEP = /\bawake\b|\bin\s*bed\b/i;
 // Segments that start from this hour on belong to the night that ends the next morning.
 const NIGHT_STARTS_AT = 18;
 
-/** "1 hr 5 min" → 1.083…, "45 min" → 0.75, "7,5 h" → 7.5, a bare "7.5" → 7.5. Null if it isn't a duration. */
-function parseDurationHours(text) {
-    // "07:30" is a clock time, not a length of time — never read it as hours.
+/**
+ * "1 hr 5 min" → 1.083…, "45 min" → 0.75, "7,5 h" → 7.5, "9:40:48" → 9.68,
+ * a bare "7.5" → 7.5. Null if it isn't a duration. `h:mm:ss` is how Shortcuts
+ * prints a Duration, but only trusted when a start time came first — on its own
+ * "07:30" is far more likely a clock time than a length of time.
+ */
+function parseDurationHours(text, allowClock = false) {
+    const clock = text.match(/^\s*(\d+):([0-5]\d)(?::([0-5]\d))?(?![\d:])/);
+    if (clock && allowClock) return Number(clock[1]) + Number(clock[2]) / 60 + Number(clock[3] ?? 0) / 3600;
     if (/\d:\d/.test(text)) return null;
     // A minus sign is never a length of time ("-3 h" is a mangled line, not 3 hours).
     if (/-\s*\d/.test(text)) return null;
@@ -118,7 +124,7 @@ export function parseHealthText(text, today) {
                 continue;
             }
 
-            const hours = parseDurationHours(rest);
+            const hours = parseDurationHours(rest, startHour !== undefined);
             if (hours === null || !(hours > 0) || hours > 24) {
                 skipped += 1;
                 continue;
