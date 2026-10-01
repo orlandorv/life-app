@@ -170,10 +170,11 @@ export function showHealthSetup() {
             step('Repeat with Each, Format Date', 'Repeat Item › Start Date, Custom yyyy-MM-dd HH:mm — this one includes the time, so Life can tell which morning a night belongs to.'),
             step('Inside: Text', 'Type “sleep ”, insert Formatted Date, a space, Repeat Item › Duration, a space, Repeat Item › Value.'),
             step('Inside: Add to Variable', 'Add the Text to Lines. Life ignores Awake and In Bed segments by itself, so no extra filter is needed.'),
-            step('After all the repeats: Copy to Clipboard', 'Copy Lines.'),
+            step('After all the repeats: Combine Text', 'Combine Lines with New Lines as the separator. Without this only the first line reaches the clipboard — a list is copied as separate pieces and Life can only read the first.'),
+            step('Copy to Clipboard', 'Copy the Combined Text.'),
             step('Run it', 'Allow access to Steps, Weight and Sleep when asked. Then open Life › Body › Paste from Health.'),
         ]),
-        el('p', { class: 'hint footnote', text: 'Already built it before sleep was added? Add the four sleep steps above just before Copy to Clipboard.' }),
+        el('p', { class: 'hint footnote', text: 'Already built it before sleep was added? Add the four sleep steps above just before Combine Text.' }),
         el('p', { class: 'hint footnote', text: 'Tip: add the shortcut to your Home Screen (share button in the shortcut › Add to Home Screen) so it’s one tap before you open Life.' }),
     );
     openModal('health-modal');
