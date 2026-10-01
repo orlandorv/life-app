@@ -61,6 +61,30 @@ export const DEFAULT_EXERCISES = [
         attachment: '',
         notes: 'Adjust the seat so the handles sit at chest height. Bring the pads together in front of the chest without shrugging. Control the return to a full stretch.',
     },
+    {
+        id: 'machine-chest-press',
+        name: 'Machine Chest Press',
+        muscleGroup: 'Chest',
+        equipment: 'Machine',
+        attachment: 'Seat set so the handles are at mid-chest',
+        notes: 'Set the seat so the handles sit level with the mid-chest. Press forward without locking out hard, then return slowly until you feel a stretch across the chest.',
+    },
+    {
+        id: 'push-up',
+        name: 'Push-Up',
+        muscleGroup: 'Chest',
+        equipment: 'Bodyweight',
+        attachment: '',
+        notes: 'Hands slightly wider than the shoulders, body in a straight line from head to heels. Lower the chest to just above the floor and press back up. Elevate the feet or add a plate for more load.',
+    },
+    {
+        id: 'dumbbell-fly',
+        name: 'Dumbbell Fly',
+        muscleGroup: 'Chest',
+        equipment: 'Dumbbell',
+        attachment: 'Flat bench',
+        notes: 'Lie on a flat bench with the dumbbells above the chest and a slight bend in the elbows. Open the arms in a wide arc until you feel a deep chest stretch, then bring them back together.',
+    },
 
     // --- Back ----------------------------------------------------------------
     {
@@ -111,6 +135,46 @@ export const DEFAULT_EXERCISES = [
         attachment: 'Pec deck, reverse-fly position',
         notes: 'Face into the pad with arms out in front. Pull the handles out and back, squeezing the rear delts and upper back. Keep the movement slow and controlled.',
     },
+    {
+        id: 'chin-up',
+        name: 'Chin-Ups',
+        muscleGroup: 'Back',
+        equipment: 'Bodyweight',
+        attachment: 'Fixed bar, underhand grip',
+        notes: 'Underhand grip about shoulder-width. Pull the chest toward the bar by driving the elbows down. Lower to a full hang under control.',
+    },
+    {
+        id: 'assisted-pull-up-machine',
+        name: 'Assisted Pull-Up Machine',
+        muscleGroup: 'Back',
+        equipment: 'Machine',
+        attachment: 'Assisted pull-up machine',
+        notes: 'Set the assistance so you can hit your reps with good form. Pull the chest toward the handles and lower to a full stretch. Reduce the assistance as you get stronger.',
+    },
+    {
+        id: 'seated-cable-row',
+        name: 'Seated Cable Row',
+        muscleGroup: 'Back',
+        equipment: 'Cable Machine',
+        attachment: 'Close-grip handle, low pulley',
+        notes: 'Sit tall with a slight bend in the knees. Pull the handle to the lower ribs and squeeze the shoulder blades together. Let the shoulders stretch forward under control.',
+    },
+    {
+        id: 'face-pull',
+        name: 'Face Pull',
+        muscleGroup: 'Back',
+        equipment: 'Cable Machine',
+        attachment: 'Rope attachment, high pulley',
+        notes: 'Pull the rope toward the face with the elbows high and wide. Finish with the hands beside the ears, squeezing the rear shoulders and upper back. Control the return.',
+    },
+    {
+        id: 'dumbbell-rear-delt-fly',
+        name: 'Dumbbell Rear Delt Fly',
+        muscleGroup: 'Back',
+        equipment: 'Dumbbell',
+        attachment: 'Bent over, or chest on an incline bench',
+        notes: 'Hinge forward or lie chest-down on an incline bench. With a slight bend in the elbows, raise the dumbbells out to the sides to shoulder height. Lower slowly without swinging.',
+    },
 
     // --- Shoulders -----------------------------------------------------------
     {
@@ -136,6 +200,30 @@ export const DEFAULT_EXERCISES = [
         equipment: 'Dumbbell',
         attachment: '',
         notes: 'Lift dumbbells out to shoulder height with a slight elbow bend. Keep wrists neutral and lead with the elbows. Raise under control with minimal momentum.',
+    },
+    {
+        id: 'barbell-overhead-press',
+        name: 'Barbell Overhead Press',
+        muscleGroup: 'Shoulders',
+        equipment: 'Barbell',
+        attachment: 'Squat rack, straight bar, standing',
+        notes: 'Bar at the collarbone with the elbows slightly in front. Squeeze the glutes and press straight up, moving the head back and then through. Lock out over the mid-foot and lower with control.',
+    },
+    {
+        id: 'machine-shoulder-press',
+        name: 'Machine Shoulder Press',
+        muscleGroup: 'Shoulders',
+        equipment: 'Machine',
+        attachment: 'Seat set so the handles start at shoulder height',
+        notes: 'Set the seat so the handles start level with the shoulders. Press up without shrugging, stopping just short of lockout. Lower slowly to the start.',
+    },
+    {
+        id: 'machine-lateral-raise',
+        name: 'Machine Lateral Raise',
+        muscleGroup: 'Shoulders',
+        equipment: 'Machine',
+        attachment: 'Lateral raise machine',
+        notes: 'Elbows against the pads, with the seat set so the pivot lines up with the shoulders. Raise the arms out to shoulder height without shrugging. Lower slowly.',
     },
 
     // --- Biceps ----------------------------------------------------------------
@@ -204,6 +292,22 @@ export const DEFAULT_EXERCISES = [
         equipment: 'Cable Machine',
         attachment: 'Single D-handle, high pulley',
         notes: 'Face away from the pulley with the elbow pinned high and close to the head. Extend one arm down and out, keeping the upper arm still. Control the weight back up to a full stretch.',
+    },
+    {
+        id: 'ez-bar-skull-crusher',
+        name: 'EZ-Bar Skull Crusher',
+        muscleGroup: 'Triceps',
+        equipment: 'Barbell',
+        attachment: 'Flat bench, EZ bar',
+        notes: 'Lie back with the bar over the chest and the elbows pointing at the ceiling. Bend only at the elbows to lower the bar toward the forehead, then extend back up.',
+    },
+    {
+        id: 'close-grip-bench-press',
+        name: 'Close-Grip Bench Press',
+        muscleGroup: 'Triceps',
+        equipment: 'Barbell',
+        attachment: 'Flat bench, straight bar',
+        notes: 'Hands about shoulder-width apart with the elbows tucked at roughly 45 degrees. Lower to the lower chest and press up, driving through the triceps.',
     },
 
     // --- Legs ----------------------------------------------------------------
@@ -287,6 +391,54 @@ export const DEFAULT_EXERCISES = [
         attachment: '',
         notes: 'Sit with the pad resting just above the knees and the balls of the feet on the platform. Rise onto the toes and pause at the top. Lower slowly for a full stretch.',
     },
+    {
+        id: 'conventional-deadlift',
+        name: 'Conventional Deadlift',
+        muscleGroup: 'Legs',
+        equipment: 'Barbell',
+        attachment: 'Straight bar, from the floor',
+        notes: 'Bar over mid-foot, hips back, grip just outside the knees. Brace, push the floor away and keep the bar dragging up the legs. Stand tall, then lower with a flat back.',
+    },
+    {
+        id: 'barbell-front-squat',
+        name: 'Barbell Front Squat',
+        muscleGroup: 'Legs',
+        equipment: 'Barbell',
+        attachment: 'Squat rack, straight bar',
+        notes: 'Rest the bar on the front of the shoulders with the elbows high. Keep the torso upright and squat to parallel or below. Drive up through the whole foot.',
+    },
+    {
+        id: 'bulgarian-split-squat',
+        name: 'Bulgarian Split Squat',
+        muscleGroup: 'Legs',
+        equipment: 'Dumbbell',
+        attachment: 'Bench behind for the back foot',
+        notes: 'Rear foot on a bench, front foot far enough forward that the shin stays near vertical. Lower straight down until the front thigh is parallel, then drive up through the front heel.',
+    },
+    {
+        id: 'barbell-hip-thrust',
+        name: 'Barbell Hip Thrust',
+        muscleGroup: 'Legs',
+        equipment: 'Barbell',
+        attachment: 'Bench, pad on the bar',
+        notes: 'Upper back against a bench with the bar over the hips. Drive the hips up until the torso is level with the thighs, chin tucked. Squeeze the glutes at the top and lower with control.',
+    },
+    {
+        id: 'dumbbell-romanian-deadlift',
+        name: 'Dumbbell Romanian Deadlift',
+        muscleGroup: 'Legs',
+        equipment: 'Dumbbell',
+        attachment: '',
+        notes: 'Hold dumbbells in front of the thighs and hinge at the hips with a soft bend in the knees. Slide them down the legs to a deep hamstring stretch, then drive the hips forward to stand.',
+    },
+    {
+        id: 'leg-press-calf-raise',
+        name: 'Leg Press Calf Raise',
+        muscleGroup: 'Legs',
+        equipment: 'Machine',
+        attachment: 'Leg press, balls of the feet on the platform',
+        notes: 'Sit in the leg press with only the balls of the feet on the platform and the legs straight. Lower the heels for a full stretch, then press up as high as you can. Never snap the knees into lockout.',
+    },
 
     // --- Core ----------------------------------------------------------------
     {
@@ -304,5 +456,21 @@ export const DEFAULT_EXERCISES = [
         equipment: 'Cable Machine',
         attachment: 'Rope attachment, high pulley',
         notes: 'Hold the rope attachment behind the head and kneel below the pulley. Crunch forward by flexing the abs, driving the elbows toward the hips. Feel the contraction in the upper abs.',
+    },
+    {
+        id: 'ab-wheel-rollout',
+        name: 'Ab Wheel Rollout',
+        muscleGroup: 'Core',
+        equipment: 'Bodyweight',
+        attachment: 'Ab wheel',
+        notes: 'Kneel with the wheel under the shoulders. Brace the abs, round the lower back slightly and roll out as far as you can without the hips sagging, then pull back in.',
+    },
+    {
+        id: 'decline-sit-up',
+        name: 'Decline Sit-Up',
+        muscleGroup: 'Core',
+        equipment: 'Bodyweight',
+        attachment: 'Decline bench',
+        notes: 'Hook the feet under the pads with the arms crossed on the chest. Curl up using the abs rather than pulling on the neck, and lower slowly. Hold a plate to add load.',
     },
 ];

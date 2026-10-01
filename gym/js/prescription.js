@@ -19,6 +19,11 @@ const ROLE_BY_ID = {
     'bodyweight-pull-up': 'main',
     'barbell-bent-over-row': 'main',
     'seated-dumbbell-shoulder-press': 'main',
+    'conventional-deadlift': 'main',
+    'barbell-front-squat': 'main',
+    'barbell-overhead-press': 'main',
+    'chin-up': 'main',
+    'close-grip-bench-press': 'main',
 
     'incline-dumbbell-press': 'secondary',
     'flat-dumbbell-press': 'secondary',
@@ -28,6 +33,14 @@ const ROLE_BY_ID = {
     'machine-leg-press': 'secondary',
     'hack-squat': 'secondary',
     'goblet-squat': 'secondary',
+    'machine-chest-press': 'secondary',
+    'push-up': 'secondary',
+    'seated-cable-row': 'secondary',
+    'assisted-pull-up-machine': 'secondary',
+    'machine-shoulder-press': 'secondary',
+    'bulgarian-split-squat': 'secondary',
+    'barbell-hip-thrust': 'secondary',
+    'dumbbell-romanian-deadlift': 'secondary',
 };
 
 const ISOLATION_NAME = /curl|raise|fly|flye|extension|pressdown|push-?down|crunch|calf|kickback|shrug|pullover|face pull|twist|pec deck|rear delt|abduction|adduction/i;
