@@ -150,6 +150,14 @@ Every feature area (`library.js`, `templates.js`, `workout.js`, `history.js`, `r
 
 `js/workout.js` is the largest module: it owns the active-workout session state machine (start/finish/discard), the elapsed-time stopwatch (pauses automatically once every set is ticked, driven by a deadline timestamp rather than a decrementing counter so it survives backgrounded-tab throttling), a hand-rolled drag-to-reorder for exercises (pointer events, FLIP-style animation, no library), and timing the "exercise added" entrance animation to when the exercise picker sheet actually closes rather than when the DOM node is inserted (the picker is full-screen, so animating on insertion would play invisibly behind it).
 
+### Rep schemes (`gym/js/prescription.js`, `guidance.js`)
+
+What a plan entry starts with depends on the *kind* of lift, not one flat default (`DEFAULTS` in `db.js` is now only the fallback for old data and the v1→v2 migration). `exerciseRole()` sorts an exercise into `main` (heavy compound: squat, bench, RDL, pull-up, barbell row, DB shoulder press), `secondary` (machine/dumbbell compound) or `isolation` — by id for the seeded library, and by a name/muscle-group/equipment guess for custom exercises (Biceps/Triceps/Core and names like "curl", "raise", "fly", "extension" are isolation). `PRESETS` maps each role to `{sets, reps, restSeconds, rir}` under three schemes: **Strength**, **Strength + physique** (the default: 4×6 / 3×10 / 3×15, rest 180 / 120 / 75s) and **Hypertrophy**.
+
+- `reps` is still the *top* of the range; `guidance.js` shows the range (6 → 4–6, 10 → 6–10, 15 → 10–15). Don't add a second "range" field.
+- The plan editor's **Rep scheme** picker overwrites sets/reps/rest/RIR on every exercise in the draft (notes untouched) and records `draft.preset` on the template, so exercises added later start from that scheme. Like every edit there, nothing persists until Save. Plans saved before this have no `preset`, so none shows as active and new exercises use the default scheme.
+- An exercise added mid-workout (`entryFromExercise()` in `workout.js`) uses the default scheme too. Existing plans are never rewritten automatically — they're the user's data.
+
 ### Shared UI primitives (`dom.js`, `stepper.js`, `sfx.js`)
 
 `dom.js` provides `el()` (builds an element from a props+children object, always via `textContent`, never `innerHTML`), a **modal stack** (`openModal`/`closeModal`/`onModalClosed`), `toast()`, and `confirmSheet()` — a promise-based confirm dialog. Every modal in the app is static markup already present in `index.html`, shown/hidden via the stack rather than created dynamically. `confirmSheet()` resolves exactly once no matter how the sheet closes (Confirm, Cancel, backdrop tap, or Escape) — always reuse it for destructive-action confirmation rather than wiring up ad-hoc confirm logic.

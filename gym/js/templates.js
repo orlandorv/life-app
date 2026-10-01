@@ -5,6 +5,7 @@ import { labelledStepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
 import { formatRest } from './units.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
+import { findPreset, prescriptionFor } from './prescription.js';
 
 // Working copy of the template being edited. Nothing touches IndexedDB until
 // Save, so backing out of the sheet discards cleanly.
@@ -163,6 +164,29 @@ function syncPlanToggle() {
     });
 }
 
+const PRESET_HINT = 'Tap one to set sets, reps and rest for every exercise below — it replaces what’s there now. Nothing is kept until you Save.';
+
+/** Highlights the scheme last applied to this plan (none for a plan that predates them) and describes it. */
+function syncPresetPicker() {
+    const preset = findPreset(draft.preset);
+    $$('#template-preset button').forEach((button) => {
+        button.classList.toggle('active', button.dataset.preset === preset?.id);
+    });
+    $('#template-preset-desc').textContent = preset ? preset.summary : PRESET_HINT;
+}
+
+/** Overwrites sets/reps/rest/RIR on every exercise in the draft; notes are left alone. */
+function applyPreset(id) {
+    if (!draft || !findPreset(id)) return;
+    draft.preset = id;
+    draft.exercises.forEach((entry) => {
+        Object.assign(entry, prescriptionFor(findExercise(entry.exerciseId), id));
+    });
+    syncPresetPicker();
+    renderRows();
+    toast(draft.exercises.length ? `${findPreset(id).label} applied` : `${findPreset(id).label} — new exercises will start with it`);
+}
+
 export function openTemplateForm(templateId = null) {
     const existing = templateId ? state.templates.find((t) => t.id === templateId) : null;
 
@@ -174,6 +198,7 @@ export function openTemplateForm(templateId = null) {
     $('#template-name').value = draft.name;
     $('#delete-template-btn').hidden = !existing;
     syncPlanToggle();
+    syncPresetPicker();
     renderRows();
     openModal('template-form-modal');
 }
@@ -183,7 +208,9 @@ function addExerciseToDraft() {
         title: 'Add to Plan',
         exclude: draft.exercises.map((entry) => entry.exerciseId),
         onSelect: (exerciseId) => {
-            draft.exercises.push({ exerciseId, ...DEFAULTS });
+            // Starts at whatever suits this kind of lift under the plan's
+            // scheme — a squat and a curl shouldn't open at the same numbers.
+            draft.exercises.push({ exerciseId, ...prescriptionFor(findExercise(exerciseId), draft.preset) });
             renderRows();
             return true; // keep the picker open for building a full day in one go
         },
@@ -273,6 +300,11 @@ export function initTemplates({ onStart, onTemplatesChanged }) {
     $('#template-add-exercise').addEventListener('click', addExerciseToDraft);
     $('#template-form').addEventListener('submit', submitTemplate);
     $('#delete-template-btn').addEventListener('click', deleteTemplate);
+
+    $('#template-preset').addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-preset]');
+        if (button) applyPreset(button.dataset.preset);
+    });
 
     $('#template-in-plan').addEventListener('click', (event) => {
         const button = event.target.closest('button[data-value]');

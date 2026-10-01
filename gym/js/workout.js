@@ -1,4 +1,5 @@
 import { database, DEFAULTS, uid } from './db.js';
+import { prescriptionFor } from './prescription.js';
 import { state, loadWorkouts, findExercise, lastPerformance, lastNote } from './store.js';
 import { $, el, clear, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
@@ -125,7 +126,7 @@ function entryFromTemplate(templateEntry) {
 }
 
 function entryFromExercise(exerciseId) {
-    return entryFromTemplate({ exerciseId, ...DEFAULTS });
+    return entryFromTemplate({ exerciseId, ...prescriptionFor(findExercise(exerciseId)) });
 }
 
 async function persist() {

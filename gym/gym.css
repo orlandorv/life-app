@@ -1856,6 +1856,25 @@ body.resting-room #app {
     box-shadow: 0 1px 3px rgba(24, 16, 8, 0.12);
 }
 
+/* Rep-scheme picker at the top of the plan editor: full width, three
+   buttons sharing it, the long middle label allowed to wrap. */
+.preset-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.segmented-fill {
+    width: 100%;
+}
+
+.segmented-fill button {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
 /* --- Toast ------------------------------------------------------------ */
 
 .toast {
