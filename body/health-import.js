@@ -49,7 +49,7 @@ function toKg(value, unit) {
 
 // A sleep segment: date, optional start time, then a duration ("7.5 h",
 // "1 hr 5 min", "45 min", or a bare number of hours) and optionally the stage.
-const SLEEP_LINE = /^\s*sleep\b[\s:,-]*(\d{4}-\d{2}-\d{2})(?:[T\s,]+(\d{1,2}):\d{2}(?::\d{2})?)?[\s,:]*(.*\S)\s*$/i;
+const SLEEP_LINE = /^\s*sleep\b[\s:,-]*(\d{4}-\d{2}-\d{2})(?:[T\s,]+(\d{1,2}):\d{2}(?::\d{2})?(?:\s*([ap])\.?m\b\.?)?)?[\s,:]*(.*\S)\s*$/i;
 const DURATION_PART = /(\d+(?:[.,]\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s)\b/gi;
 // Time in bed and time awake aren't sleep — skipped on purpose, not as errors.
 const NOT_SLEEP = /\bawake\b|\bin\s*bed\b/i;
@@ -83,6 +83,22 @@ function parseDurationHours(text, allowClock = false) {
     return bare ? parseDecimal(bare[1]) : null;
 }
 
+/**
+ * A line's date as Shortcuts writes it when its format setting didn't stick —
+ * "01/10/2026" or "1.10.2026" — rewritten as 2026-10-01 so everything after
+ * it reads the same. Day first (as in the UK), unless the second number is
+ * above 12 and the first isn't, which can only be month first.
+ */
+function withIsoDate(line) {
+    return line.replace(/^(\s*[a-z]+\b[\s:,-]*)(\d{1,2})[/.](\d{1,2})[/.](\d{4})(?!\d)/i, (whole, lead, a, b, year) => {
+        const first = Number(a);
+        const second = Number(b);
+        const [day, month] = second > 12 && first <= 12 ? [second, first] : [first, second];
+        if (month < 1 || month > 12 || day < 1 || day > 31) return whole;
+        return `${lead}${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    });
+}
+
 const validDay = (day) => {
     const [y, m, d] = day.split('-').map(Number);
     const date = new Date(y, m - 1, d);
@@ -98,9 +114,9 @@ const validDay = (day) => {
  * and counted in `skipped`.
  *
  * A night's sleep goes to the day you wake up: a segment that starts at 18:00
- * or later counts toward the next day. The oldest night in a paste of
- * timed segments is left out (`partialDay`), because Health's date window can
- * cut it off and a short total would replace a good one.
+ * or later counts toward the next day. When a paste has several nights of
+ * timed segments the oldest is left out (`partialDay`), because Health's date
+ * window can cut it off and a short total would replace a good one.
  */
 export function parseHealthText(text, today) {
     const days = new Map();
@@ -112,12 +128,18 @@ export function parseHealthText(text, today) {
         return days.get(day);
     };
 
-    for (const raw of String(text ?? '').split(/\r?\n/)) {
-        if (!raw.trim()) continue;
+    for (const original of String(text ?? '').split(/\r?\n/)) {
+        if (!original.trim()) continue;
+        const raw = withIsoDate(original);
 
         const sleep = raw.match(SLEEP_LINE);
         if (sleep) {
-            const [, written, startHour, rest] = sleep;
+            const [, written, shownHour, meridiem, rest] = sleep;
+            // "12:00 AM" / "7:30 pm" → a 24-hour clock hour.
+            const startHour =
+                shownHour !== undefined && meridiem
+                    ? String((Number(shownHour) % 12) + (meridiem.toLowerCase() === 'p' ? 12 : 0))
+                    : shownHour;
             if (NOT_SLEEP.test(rest)) continue;
             if (!validDay(written) || (today && written > today)) {
                 skipped += 1;
@@ -176,8 +198,10 @@ export function parseHealthText(text, today) {
         }
     }
 
+    // Only with several nights to choose from: a lone night can't be told apart
+    // from a complete one, and dropping it would leave nothing at all.
     let partialDay = null;
-    if (timedSleepDays.size) {
+    if (timedSleepDays.size > 1) {
         partialDay = [...timedSleepDays].sort()[0];
         const entry = days.get(partialDay);
         delete entry.sleepHours;

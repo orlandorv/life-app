@@ -46,14 +46,6 @@ function handleText(text) {
     const today = localDayId();
     const parsed = parseHealthText(text, today);
 
-    if (!parsed.days.size && parsed.partialDay) {
-        showPasteBox(
-            'Only one night of sleep was in there, and the oldest night is always left out because Health’s date range can cut it short. Set the shortcut’s sleep range to the last 8 days and run it again.',
-            text,
-        );
-        return;
-    }
-
     if (!parsed.days.size) {
         showPasteBox(
             text.trim()
@@ -166,8 +158,8 @@ export function showHealthSetup() {
             step('Repeat with Each, Format Date', 'Same as before: Repeat Item › Start Date, Custom yyyy-MM-dd.'),
             step('Inside: Text', 'Type “weight ”, insert Formatted Date, a space, Repeat Item › Value, a space, Repeat Item › Unit.'),
             step('Inside: Add to Variable', 'Add the Text to Lines.'),
-            step('Find Health Samples a third time, for sleep', 'Type is Sleep Analysis. Start Date is in the last 8 days (a day more than the others — the oldest night is always cut short, so Life leaves it out). No grouping. Sort by: Start Date, Oldest First.'),
-            step('Repeat with Each, Format Date', 'Repeat Item › Start Date, Custom yyyy-MM-dd HH:mm — this one includes the time, so Life can tell which morning a night belongs to.'),
+            step('Find Health Samples a third time, for sleep', 'Type is Sleep Analysis. Start Date is in the last 8 days (a day more than the others — when there are several nights, Life leaves out the oldest, which the window may cut short). No grouping. Sort by: Start Date, Oldest First.'),
+            step('Repeat with Each, Format Date', 'Repeat Item › Start Date (not Date Created — that’s when it was saved), Custom yyyy-MM-dd HH:mm (if the format doesn’t stick, Life also reads your phone’s usual date style) — this one includes the time, so Life can tell which morning a night belongs to.'),
             step('Inside: Text', 'Type “sleep ”, insert Formatted Date, a space, Repeat Item › Duration, a space, Repeat Item › Value.'),
             step('Inside: Add to Variable', 'Add the Text to Lines. Life ignores Awake and In Bed segments by itself, so no extra filter is needed.'),
             step('After all the repeats: Combine Text', 'Combine Lines with New Lines as the separator. Without this only the first line reaches the clipboard — a list is copied as separate pieces and Life can only read the first.'),
