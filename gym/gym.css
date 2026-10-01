@@ -786,6 +786,12 @@ form.modal-body .modal-actions {
     color: var(--text-secondary);
 }
 
+.picker-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
 .picker-add {
     color: var(--primary);
     font-size: 22px;

@@ -158,6 +158,15 @@ What a plan entry starts with depends on the *kind* of lift, not one flat defaul
 - The plan editor's **Rep scheme** picker overwrites sets/reps/rest/RIR on every exercise in the draft (notes untouched) and records `draft.preset` on the template, so exercises added later start from that scheme. Like every edit there, nothing persists until Save. Plans saved before this have no `preset`, so none shows as active and new exercises use the default scheme.
 - An exercise added mid-workout (`entryFromExercise()` in `workout.js`) uses the default scheme too. Existing plans are never rewritten automatically — they're the user's data.
 
+### Swapping an exercise (`gym/js/alternatives.js`, `swapExercise()`/`applySwap()` in `workout.js`)
+
+The ⇄ on an exercise in a live workout opens `#swap-modal`: substitutes that train the same muscle in a similar way, closest first, each with a one-line note on what changes, plus **Browse all exercises** (the full picker) for anything not listed. `alternativesFor()` is pure.
+
+- **Each seeded exercise has a hand-written list** (`CURATED`), checked by a test to only reference real exercises in the *same muscle group*. A list is deliberately **empty** where the library has no honest equivalent (seated DB shoulder press, reverse pec deck) — the sheet says so rather than suggest a bad match. Where a swap trades a compound for a single-joint lift (leg extension ↔ squats, RDL ↔ leg curls) the note says it. Add a new stock exercise to `seed.js` and it needs a `CURATED` entry too, or its sheet is empty.
+- **Custom exercises** (no list) get same muscle group *and* same kind of lift (`exerciseRole()`); they also appear after the hand-written ones on a stock exercise's list when they match. No muscle group → no suggestions.
+- **`applySwap()` keeps the plan's slot** (set count, target reps, RIR, rest) but not the lift's weights or note: each working set is re-seeded from what was last lifted on the new exercise (blank if never), since a barbell-squat load means nothing on a leg press. Ticked sets were done on the old exercise, so it asks, then clears them rather than crediting them to the new one.
+- The entry records `swappedFromId`/`swappedFrom`, shown as "Swapped from …" and offered first in the sheet as the way back. The plan itself is never changed — next session it still asks for the original.
+
 ### Shared UI primitives (`dom.js`, `stepper.js`, `sfx.js`)
 
 `dom.js` provides `el()` (builds an element from a props+children object, always via `textContent`, never `innerHTML`), a **modal stack** (`openModal`/`closeModal`/`onModalClosed`), `toast()`, and `confirmSheet()` — a promise-based confirm dialog. Every modal in the app is static markup already present in `index.html`, shown/hidden via the stack rather than created dynamically. `confirmSheet()` resolves exactly once no matter how the sheet closes (Confirm, Cancel, backdrop tap, or Escape) — always reuse it for destructive-action confirmation rather than wiring up ad-hoc confirm logic.

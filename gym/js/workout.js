@@ -1,7 +1,8 @@
 import { database, DEFAULTS, uid } from './db.js';
 import { prescriptionFor } from './prescription.js';
+import { alternativesFor } from './alternatives.js';
 import { state, loadWorkouts, findExercise, lastPerformance, lastNote } from './store.js';
-import { $, el, clear, confirmSheet, toast, noteField } from '../../life/dom.js';
+import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
@@ -783,6 +784,7 @@ function exerciseBlock(entry, entryIndex) {
                     entry.exerciseName,
                 ]),
                 meta ? el('div', { class: 'exercise-block-meta', text: meta }) : null,
+                entry.swappedFrom ? el('div', { class: 'exercise-block-meta', text: `Swapped from ${entry.swappedFrom}` }) : null,
             ]),
             el('div', { class: 'row-controls' }, [
                 editToggle,
@@ -915,30 +917,122 @@ async function removeExercise(index) {
     render();
 }
 
+// Which exercise the open swap sheet is for — the sheet is static markup
+// (shown via the modal stack, like every other), so it has to be remembered.
+let swapIndex = null;
+
+/**
+ * Opens the swap sheet: substitutes that train the same thing (see
+ * `alternatives.js`), with the full exercise list one tap away for anything
+ * it didn't think of.
+ */
 function swapExercise(index) {
-    openPicker({
-        title: 'Swap For',
-        exclude: session.entries.map((entry) => entry.exerciseId),
-        onSelect: (exerciseId) => {
-            const exercise = findExercise(exerciseId);
-            const entry = session.entries[index];
-            // Keep the set structure and weights, change what they belong to.
-            // The note does NOT carry over — "shoulder hurts on this one" was
-            // written about the exercise being replaced, not whatever takes
-            // its place.
-            Object.assign(entry, {
-                exerciseId,
-                exerciseName: exercise.name,
-                muscleGroup: exercise.muscleGroup || '',
-                attachment: exercise.attachment || '',
-                equipment: exercise.equipment || '',
-                note: '',
-            });
-            persist();
-            render();
-            return false;
-        },
+    const entry = session.entries[index];
+    // A deleted exercise has no record to look up, but what the entry itself
+    // remembers is enough to find like-for-like.
+    const current = findExercise(entry.exerciseId) ?? {
+        id: entry.exerciseId,
+        name: entry.exerciseName,
+        muscleGroup: entry.muscleGroup,
+        equipment: entry.equipment,
+    };
+    const taken = session.entries.map((e) => e.exerciseId);
+    const options = alternativesFor(current, state.exercises, taken);
+
+    // Already swapped once? Going back to what the plan called for is always on the table.
+    const original = entry.swappedFromId ? findExercise(entry.swappedFromId) : null;
+    if (original && !taken.includes(original.id)) {
+        // It may already be one of the suggestions — it moves to the top, not twice.
+        const rest = options.filter((option) => option.exercise.id !== original.id);
+        options.length = 0;
+        options.push({ exercise: original, note: 'What your plan called for' }, ...rest);
+    }
+
+    swapIndex = index;
+    $('#swap-subtitle').textContent = [entry.exerciseName, entry.muscleGroup].filter(Boolean).join(' · ');
+    const list = clear($('#swap-list'));
+    if (!options.length) {
+        list.append(el('div', { class: 'empty-state small', text: 'No close substitute in your library — browse all exercises instead.' }));
+    }
+    options.forEach(({ exercise, note }) => {
+        list.append(
+            el('button', { class: 'picker-row', type: 'button', dataset: { id: exercise.id } }, [
+                el('span', { class: 'muscle-dot', dataset: { muscle: exercise.muscleGroup } }),
+                el('div', { class: 'picker-row-body' }, [
+                    el('div', { class: 'picker-name', text: exercise.name }),
+                    el('div', {
+                        class: 'picker-meta',
+                        text: [exercise.equipment, exercise.attachment].filter(Boolean).join(' · '),
+                    }),
+                    note ? el('div', { class: 'picker-note', text: note }) : null,
+                ]),
+                el('span', { class: 'picker-add', text: '⇄' }),
+            ]),
+        );
     });
+    openModal('swap-modal');
+}
+
+/**
+ * Replaces an exercise in the running workout. The plan's slot (set count,
+ * target reps, RIR, rest) stays; everything about the lift itself doesn't:
+ * the note ("shoulder hurts on this") was written about the exercise being
+ * replaced, and the weights were too — a barbell squat load means nothing on
+ * a leg press — so each working set is re-seeded from what you last lifted on
+ * the new exercise, or left blank if you never have. Sets already ticked were
+ * done on the old exercise, so they're cleared (after asking) rather than
+ * quietly credited to the new one.
+ */
+async function applySwap(index, exerciseId) {
+    const entry = session.entries[index];
+    const exercise = findExercise(exerciseId);
+    if (!entry || !exercise) return false;
+
+    const logged = entry.sets.filter((set) => set.done).length;
+    if (logged) {
+        const ok = await confirmSheet({
+            title: 'Swap exercise',
+            message: `“${entry.exerciseName}” has ${logged} logged set${logged === 1 ? '' : 's'}. Swapping to “${exercise.name}” clears ${logged === 1 ? 'it' : 'them'}.`,
+            confirmLabel: 'Swap & clear',
+            danger: true,
+        });
+        if (!ok) return false;
+    }
+
+    // Remember what the plan originally called for, so the block can say so
+    // and the swap sheet can offer the way back.
+    const originalId = entry.swappedFromId ?? entry.exerciseId;
+    const originalName = entry.swappedFrom ?? entry.exerciseName;
+    Object.assign(entry, {
+        exerciseId,
+        exerciseName: exercise.name,
+        muscleGroup: exercise.muscleGroup || '',
+        attachment: exercise.attachment || '',
+        equipment: exercise.equipment || '',
+        note: '',
+    });
+    if (exerciseId === originalId) {
+        delete entry.swappedFromId;
+        delete entry.swappedFrom;
+    } else {
+        entry.swappedFromId = originalId;
+        entry.swappedFrom = originalName;
+    }
+
+    const previous = lastPerformance(exerciseId)?.sets ?? [];
+    const lastKnown = previous.at(-1)?.weightKg ?? 0;
+    let working = 0;
+    entry.sets.forEach((set) => {
+        set.done = false;
+        set.completedAt = null;
+        set.weightKg = set.warmup ? 0 : (previous[working++]?.weightKg ?? lastKnown);
+    });
+
+    await persist();
+    render();
+    syncElapsedTimer();
+    toast(`Swapped to ${exercise.name}`);
+    return true;
 }
 
 /**
@@ -1097,6 +1191,25 @@ export function initWorkout({ onWorkoutFinished } = {}) {
     onFinished = onWorkoutFinished;
 
     $('#start-empty-btn').addEventListener('click', () => startWorkout(null));
+
+    $('#swap-list').addEventListener('click', (event) => {
+        const row = event.target.closest('.picker-row');
+        if (!row) return;
+        closeModal('swap-modal');
+        applySwap(swapIndex, row.dataset.id);
+    });
+    $('#swap-browse').addEventListener('click', () => {
+        const index = swapIndex;
+        openPicker({
+            title: 'Swap For',
+            exclude: session.entries.map((e) => e.exerciseId),
+            onSelect: (exerciseId) => {
+                closeModal('swap-modal');
+                applySwap(index, exerciseId);
+                return false;
+            },
+        });
+    });
 
     // Re-request the lock after the phone is unlocked or the tab is refocused —
     // the browser drops it whenever the page loses visibility.
