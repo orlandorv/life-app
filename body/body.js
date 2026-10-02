@@ -4,8 +4,8 @@ import { lifeDb } from '../life/db.js';
 import { localDayId, addDays, dayLabel, weekStartId } from '../life/dates.js';
 import { getUnit, toDisplay, fromDisplay, formatNumber, weightPrecision } from '../gym/js/units.js';
 import { state, loadEntries, entryFor, saveEntry, deleteEntry, hasAnyNumber } from './store.js';
-import { trendSeries, trendChange, weeklyAverages, chartLayout } from './stats.js';
-import { weightChart } from './chart.js';
+import { trendSeries, trendChange, weeklyAverages, chartLayout, dailySeries, rollingAverage, barChartLayout, average } from './stats.js';
+import { weightChart, barChart } from './chart.js';
 import { pasteFromHealth, showHealthSetup } from './health-sheet.js';
 
 /**
@@ -17,6 +17,36 @@ import { pasteFromHealth, showHealthSetup } from './health-sheet.js';
 
 const CHART = { width: 320, height: 170 };
 const RANGES = [30, 90];
+const ROLLING_DAYS = 7;
+
+// What differs between the steps and sleep charts. `unit`/`minTop` round the
+// chart's top to a number worth reading; sleep also shades a common 7–9 h band.
+const TREND_CHARTS = [
+    {
+        title: 'Steps',
+        key: 'steps',
+        unit: 4000,
+        minTop: 8000,
+        band: null,
+        format: (steps) => fmtSteps(steps),
+        tick: (value) => (value === 0 ? '0' : `${formatNumber(value / 1000)}k`),
+        logged: 'Logged',
+        empty: 'Log steps, or paste them from Health, on a few days to see how they’re trending.',
+        bars: 'Bars are each day’s steps',
+    },
+    {
+        title: 'Sleep',
+        key: 'sleepHours',
+        unit: 4,
+        minTop: 12,
+        band: { from: 7, to: 9 },
+        format: (hours) => fmtSleep(hours),
+        tick: (value) => `${formatNumber(value)} h`,
+        logged: 'Logged',
+        empty: 'Log your sleep on a few nights to see how it’s trending.',
+        bars: 'Bars are each night’s sleep, the shaded band is 7–9 hours (a common target for adults)',
+    },
+];
 const RECENT_DAYS = 14;
 
 let ready = null;
@@ -79,6 +109,7 @@ export function renderBody() {
     clear($('#body-content')).append(
         todayCard(today),
         weightCard(today),
+        ...TREND_CHARTS.map((chart) => trendCard(today, chart)),
         weeklyCard(today),
         recentCard(today),
     );
@@ -132,19 +163,15 @@ function todayCard(today) {
     ]);
 }
 
-function weightCard(today) {
-    const range = state.range;
-    const series = trendSeries(state.entries);
-    const from = addDays(today, -(range - 1));
-    const inRange = series.filter((point) => point.day >= from);
-
-    const picker = el(
+/** The 30/90-day switch. One shared setting, so changing it on any chart changes them all. */
+function rangePicker() {
+    return el(
         'div',
         { class: 'segmented body-range' },
         RANGES.map((days) =>
             el('button', {
                 type: 'button',
-                class: range === days ? 'active' : '',
+                class: state.range === days ? 'active' : '',
                 text: `${days} days`,
                 onclick: () => {
                     state.range = days;
@@ -153,6 +180,15 @@ function weightCard(today) {
             }),
         ),
     );
+}
+
+function weightCard(today) {
+    const range = state.range;
+    const series = trendSeries(state.entries);
+    const from = addDays(today, -(range - 1));
+    const inRange = series.filter((point) => point.day >= from);
+
+    const picker = rangePicker();
 
     const card = el('div', { class: 'body-card' }, [sectionTitle('Weight', picker)]);
 
@@ -187,6 +223,68 @@ function weightCard(today) {
             description: `Weight over the last ${range} days. Dots are weigh-ins; the line is the trend.`,
         }),
         el('p', { class: 'hint body-legend', text: 'Dots are single weigh-ins; the line smooths out the daily ups and downs.' }),
+    );
+    return card;
+}
+
+/**
+ * A daily total (steps, sleep) as bars with a 7-day average through them.
+ * Bars, not dots: each one is a whole day's number, and a day you didn't log is
+ * a gap rather than a zero. The average only counts days that were logged.
+ */
+function trendCard(today, chart) {
+    const range = state.range;
+    const from = addDays(today, -(range - 1));
+    // The average reaches back a week before the window so its first days are complete.
+    const all = dailySeries(state.entries, chart.key, addDays(from, -(ROLLING_DAYS - 1)), today);
+    const inRange = all.filter((point) => point.day >= from);
+
+    const card = el('div', { class: 'body-card' }, [sectionTitle(chart.title, rangePicker())]);
+    if (!inRange.length) {
+        card.append(el('p', { class: 'hint', text: chart.empty }));
+        return card;
+    }
+
+    const lastWeek = inRange.filter((point) => point.day >= addDays(today, -(ROLLING_DAYS - 1)));
+    const mean = (points) => average(points.map((point) => point.value));
+    card.append(
+        el('div', { class: 'body-tiles' }, [
+            tile('Last 7 days', lastWeek.length ? chart.format(mean(lastWeek)) : null),
+            tile(`Avg in ${range} days`, chart.format(mean(inRange))),
+            tile(chart.logged, `${inRange.length} of ${range}`),
+        ]),
+    );
+
+    const averages = rollingAverage(all, from, today, { window: ROLLING_DAYS });
+    const layout = barChartLayout(inRange, averages, {
+        from,
+        to: today,
+        ...CHART,
+        unit: chart.unit,
+        minTop: chart.minTop,
+        band: chart.band,
+    });
+    if (!layout) {
+        card.append(el('p', { class: 'hint', text: `Two or more days in this range will draw the chart.` }));
+        return card;
+    }
+
+    const legend = [
+        layout.line ? `${chart.bars}; the line is the 7-day average.` : `${chart.bars}. The average line appears once three days in a week are logged.`,
+        chart.key === 'steps' && inRange.some((point) => point.day === today) ? 'Today’s total is still building.' : null,
+    ]
+        .filter(Boolean)
+        .join(' ');
+
+    card.append(
+        barChart(layout, {
+            ...CHART,
+            formatTick: chart.tick,
+            fromLabel: dayLabel(from, today),
+            toLabel: 'Today',
+            description: `${chart.title} over the last ${range} days. ${legend}`,
+        }),
+        el('p', { class: 'hint body-legend', text: legend }),
     );
     return card;
 }

@@ -131,6 +131,24 @@
     stroke-linejoin: round;
 }
 
+.body-bar {
+    fill: var(--primary);
+    opacity: 0.4;
+}
+
+.body-avg {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.body-band {
+    fill: var(--primary);
+    opacity: 0.1;
+}
+
 .body-legend {
     margin-top: 8px;
     font-size: 12px;

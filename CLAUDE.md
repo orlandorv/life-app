@@ -15,7 +15,7 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/backup.js` + `life/backup-format.js` — Life-wide backup and restore (see Backup below). `backup-format.js` is pure and unit-testable in Node.
 - `life/share.js` — `shareOrDownload(file, title)`: hands a generated file to the Web Share API, falling back to a plain download. Shared by Backup and Tasks' calendar export — both need the same "must start straight from the tap on iOS" handling.
 - `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
-- `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry/reminder maths, unit-testable in Node), `chart.js` (hand-built SVG), `health-import.js` (pure: parse Apple Health text, plan the save) + `health-sheet.js` (Paste from Health UI and setup guide), `body.css`.
+- `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry/reminder maths, unit-testable in Node), `chart.js` (hand-built SVG: the weight line chart and the daily bar chart), `health-import.js` (pure: parse Apple Health text, plan the save) + `health-sheet.js` (Paste from Health UI and setup guide), `body.css`.
 - `habits/` — the Habits section: `habits.js` (Today/Week views + habit sheet), `store.js`, `streaks.js` and `routine.js` (pure schedule/streak and routine-step maths, unit-testable in Node), `routine-sheet.js` (a routine's checklist, also opened from Today), `step-editor.js`, `habits.css`.
 - `nutrition/` — the Nutrition section: `nutrition.js` (diary + add-food sheet), `store.js` (state and writes), `portions.js` and `totals.js` (pure food/portion/meal and total maths, unit-testable in Node), `off.js` (Open Food Facts client), `scanner.js` (camera barcode scanning), `nutrition.css`.
 - `vendor/zxing/` — ZXing barcode decoder (`@zxing/library` 0.23.0 UMD, Apache-2.0, LICENSE alongside). Vendored because there's no build step; loaded lazily by `nutrition/scanner.js` on first scan and deliberately **not** in `APP_SHELL`.
@@ -73,6 +73,15 @@ Warm and calm: paper background, white cards, ink text, one colour per section. 
 - **Open Food Facts** (`off.js`): search uses `uk.openfoodfacts.org/cgi/search.pl` (UK-sold products first, sorted by popularity); barcode lookups use `world.openfoodfacts.org/api/v2/product/`. No key; only the search text or barcode is sent. Foods are saved locally the first time they're logged (id `off-<barcode>`), so they work offline after that. `fromOpenFoodFacts()` skips products without a name or calories and converts kJ-only energy.
 - **Scanning** decodes cropped camera frames with ZXing, restricted to EAN-13/8 and UPC-A/E. Barcodes are compared as 13 digits (`foodByBarcode`) because an EAN-13 starting with 0 is reported as a 12-digit UPC. Typing the number in the scan sheet is the fallback when the camera is blocked or missing.
 - **The service worker only caches same-origin requests.** Open Food Facts calls pass straight through, so results are never stale and the cache can't grow unbounded — keep that guard if you touch the fetch handler.
+
+### Body charts (`body/stats.js`, `chart.js`)
+
+Three cards, three shapes, because the data is three kinds of thing. **Weight** is a noisy reading, so it's dots with a smoothed trend line (`chartLayout()`). **Steps and sleep** are whole-day totals, so they're **bars** with a 7-day rolling average line (`barChartLayout()`, `rollingAverage()`), one `TREND_CHARTS` entry each in `body.js`. All three share `state.range` (30/90 days), so changing it on any card changes them all.
+
+- **A day you didn't log is a gap, never a zero** — in the bars, and in the average, which only counts logged days. The average line only appears where a day's 7-day window has at least 3 logged days (`minDays`), so one reading can't pose as a trend; below that the legend says why there's no line.
+- Bars always start at 0 (a bar's length *is* its value) and the top rounds up to a readable number (`niceCeil()`: multiples of 4,000 steps, min 8,000; 4 h, min 12 h). Needs two logged days to draw, same as the weight chart.
+- Sleep also shades a 7–9 h band (a common adult target — a reference, not a goal the app sets); steps have none. The top is always at least 12 h so the band is always on the chart.
+- Today's step bar is usually incomplete until midnight, and the legend says so when today is shown. Today is still counted in the average, as it is in Weekly averages.
 
 ### Apple Health import (`body/health-import.js`, `health-sheet.js`)
 

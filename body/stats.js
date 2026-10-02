@@ -7,7 +7,7 @@ import { addDays, daysBetween, weekStartId, localDayId, weekdayIndex } from '../
  * a function says so; weight is always kg here and converted at the display edge.
  */
 
-const average = (values) => (values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : null);
+export const average = (values) => (values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : null);
 const present = (value) => value !== null && value !== undefined;
 
 /**
@@ -127,6 +127,87 @@ export function chartLayout(series, { from, to, width, height, padX = 8, padTop 
     const ticks = [lo + pad, (lo + hi) / 2, hi - pad].map((kg) => ({ kg, y: y(kg) }));
 
     return { dots, line, ticks };
+}
+
+// --- Daily bar charts (steps, sleep) -------------------------------------------
+
+/** The days in `from`..`to` that have a recorded `key`, as `[{day, value}]`, oldest first. */
+export function dailySeries(entries, key, from, to) {
+    return entries
+        .filter((entry) => present(entry[key]) && entry.day >= from && entry.day <= to)
+        .map((entry) => ({ day: entry.day, value: entry[key] }))
+        .sort((a, b) => a.day.localeCompare(b.day));
+}
+
+/**
+ * A rolling mean for each day in `from`..`to`: the average of the recorded
+ * days in the `window` days ending that day. Missed days aren't zeros — they
+ * simply aren't in the average — and a day with fewer than `minDays` recorded
+ * in its window gets no point, so one lucky reading can't pose as a trend.
+ * Pass `points` reaching back `window - 1` days before `from` so the first
+ * days have their full window.
+ */
+export function rollingAverage(points, from, to, { window = 7, minDays = 3 } = {}) {
+    const out = [];
+    for (let day = from; day <= to; day = addDays(day, 1)) {
+        const start = addDays(day, -(window - 1));
+        const inWindow = points.filter((point) => point.day >= start && point.day <= day);
+        if (inWindow.length >= minDays) out.push({ day, value: average(inWindow.map((point) => point.value)) });
+    }
+    return out;
+}
+
+/** `value` rounded up to a multiple of `unit`, never below `min` — keeps a chart's top at a number worth reading. */
+export const niceCeil = (value, unit, min = unit) => Math.max(min, Math.ceil(value / unit) * unit);
+
+/**
+ * Pixel positions for a daily bar chart over `from`..`to`: one bar per
+ * recorded day (a missed day is a gap, not a zero-height bar), the rolling
+ * average as a line through the middle of each day's slot, gridline values at
+ * 0, half and the top, and an optional shaded `band` ({from, to} in the same
+ * units as the values). Bars always start at 0 — a bar's length is its value.
+ * `unit`/`minTop` set how the top is rounded; null with fewer than two
+ * recorded days, same as the weight chart.
+ */
+export function barChartLayout(points, averages, { from, to, width, height, unit, minTop, band = null, padX = 8, padTop = 10, padBottom = 18 }) {
+    const shown = points.filter((point) => point.day >= from && point.day <= to);
+    if (shown.length < 2) return null;
+
+    const days = daysBetween(from, to) + 1;
+    const top = niceCeil(Math.max(...shown.map((point) => point.value), band ? band.to : 0), unit, minTop);
+    const slot = (width - padX * 2) / days;
+    const barWidth = Math.max(1.5, Math.min(slot * 0.72, 14));
+    const y = (value) => padTop + (1 - value / top) * (height - padTop - padBottom);
+    const baseline = y(0);
+    const slotLeft = (day) => padX + daysBetween(from, day) * slot;
+
+    const bars = shown.map((point) => {
+        const barY = y(point.value);
+        return {
+            day: point.day,
+            value: point.value,
+            x: slotLeft(point.day) + (slot - barWidth) / 2,
+            y: barY,
+            w: barWidth,
+            h: Math.max(1, baseline - barY),
+        };
+    });
+
+    let line = '';
+    let previous = null;
+    for (const point of averages.filter((a) => a.day >= from && a.day <= to)) {
+        const joined = previous !== null && daysBetween(previous, point.day) === 1;
+        line += `${joined ? 'L' : line ? ' M' : 'M'}${(slotLeft(point.day) + slot / 2).toFixed(1)} ${y(point.value).toFixed(1)}`;
+        previous = point.day;
+    }
+
+    return {
+        bars,
+        line,
+        top,
+        ticks: [0, top / 2, top].map((value) => ({ value, y: y(value) })),
+        band: band ? { y: y(band.to), h: y(band.from) - y(band.to) } : null,
+    };
 }
 
 // --- Weekly reminder ---------------------------------------------------------
