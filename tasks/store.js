@@ -1,4 +1,5 @@
 import { lifeDb, uid } from '../life/db.js';
+import { isDoneExpired } from './organize.js';
 
 /**
  * In-memory mirror of Tasks, in the same style as the other sections' stores.
@@ -8,8 +9,18 @@ export const state = {
     tasks: [],
 };
 
-export async function loadTasks() {
-    state.tasks = await lifeDb.getAll('tasks');
+/**
+ * Loads the tasks, first clearing any that were ticked 24 hours ago or more.
+ * Done here rather than in the Tasks screen so every reader (Today's block
+ * included) sees the same list, and it happens whenever the data is read —
+ * there's no timer to keep running in a home-screen app that's usually closed.
+ */
+export async function loadTasks(now = new Date()) {
+    const all = await lifeDb.getAll('tasks');
+    const expired = all.filter((task) => isDoneExpired(task, now));
+    await Promise.all(expired.map((task) => lifeDb.delete('tasks', task.id)));
+    const gone = new Set(expired.map((task) => task.id));
+    state.tasks = all.filter((task) => !gone.has(task.id));
 }
 
 const cleanText = (value) => (typeof value === 'string' ? value.trim() : '');

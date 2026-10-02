@@ -18,6 +18,21 @@ export function taskDateLabel(dateId, today) {
     return dayLabel(dateId, today);
 }
 
+/** How long a ticked task stays in the Done list before it's cleared. */
+export const DONE_KEEP_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a ticked task has been done for at least `DONE_KEEP_MS`. A task with
+ * no usable `doneAt` (an import that lost it) or one in the future (a clock set
+ * back) is never expired — if its age can't be known, it's kept, not deleted.
+ */
+export function isDoneExpired(task, now = new Date()) {
+    if (!task.done || !task.doneAt) return false;
+    const doneAt = Date.parse(task.doneAt);
+    if (!Number.isFinite(doneAt)) return false;
+    return now.getTime() - doneAt >= DONE_KEEP_MS;
+}
+
 export function isOverdue(task, today) {
     return !task.done && task.date < today;
 }

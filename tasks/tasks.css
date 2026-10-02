@@ -21,6 +21,10 @@
     opacity: 0.7;
 }
 
+.task-done-note {
+    margin: 8px 4px 0;
+}
+
 .task-bucket-done .task-bucket-title {
     color: var(--text-secondary);
 }

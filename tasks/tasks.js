@@ -110,6 +110,7 @@ function doneSection(done, today) {
     return el('section', { class: 'task-bucket task-bucket-done' }, [
         el('h2', { class: 'task-bucket-title', text: 'Done' }),
         el('div', { class: 'life-list' }, done.map((task) => taskRow(task, today))),
+        el('p', { class: 'hint task-done-note', text: 'Ticked tasks are cleared after 24 hours.' }),
     ]);
 }
 
