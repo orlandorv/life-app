@@ -48,6 +48,10 @@ const TREND_CHARTS = [
     },
 ];
 const RECENT_DAYS = 14;
+const RECENT_PREVIEW = 5;
+
+// Whether the Recent list shows all of RECENT_DAYS rather than the latest few.
+let recentExpanded = false;
 
 let ready = null;
 
@@ -319,10 +323,11 @@ function weeklyCard(today) {
 }
 
 function recentCard(today) {
-    const recent = [...state.entries].reverse().slice(0, RECENT_DAYS);
+    const all = [...state.entries].reverse().slice(0, RECENT_DAYS);
+    const recent = recentExpanded ? all : all.slice(0, RECENT_PREVIEW);
     const card = el('div', { class: 'body-card' }, [sectionTitle('Recent')]);
 
-    if (!recent.length) {
+    if (!all.length) {
         card.append(el('p', { class: 'hint', text: 'Nothing logged yet.' }));
         return card;
     }
@@ -339,6 +344,20 @@ function recentCard(today) {
             ),
         ),
     );
+
+    if (all.length > RECENT_PREVIEW) {
+        card.append(
+            el('button', {
+                class: 'link-btn body-recent-toggle',
+                type: 'button',
+                text: recentExpanded ? 'Show less' : `Show ${all.length - RECENT_PREVIEW} more`,
+                onclick: () => {
+                    recentExpanded = !recentExpanded;
+                    renderBody();
+                },
+            }),
+        );
+    }
     return card;
 }
 
