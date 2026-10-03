@@ -5,6 +5,8 @@
  * later never rewrites what you already logged.
  */
 
+import { storeFromOff } from './stores.js';
+
 export const MEALS = [
     { id: 'breakfast', label: 'Breakfast' },
     { id: 'lunch', label: 'Lunch' },
@@ -112,11 +114,27 @@ export function nutrientsFor(food, amount, unit) {
 
 const trimNumber = (n) => String(round1(n));
 
-/** "150 g", "1 serving (125 g)", "2.5 servings". */
+/**
+ * What one serving is called: foods from the built-in whole-food list say
+ * `servingLabel: ['medium egg', 'medium eggs']`, everything else is just "serving".
+ */
+function servingWords(food) {
+    const names = food.servingLabel;
+    return Array.isArray(names) && names.length === 2 ? names : ['serving', 'servings'];
+}
+
+/** The unit's name for headings and buttons: "Servings", or "Medium eggs" for an egg. */
+export function servingName(food) {
+    const plural = servingWords(food)[1];
+    return plural.charAt(0).toUpperCase() + plural.slice(1);
+}
+
+/** "150 g", "1 serving (125 g)", "2.5 servings", "2 medium eggs (100 g)". */
 export function portionLabel(food, amount, unit) {
     const f = normalizeFood(food);
     if (unit === 'g') return `${trimNumber(amount)} ${f.baseUnit}`;
-    const servings = `${trimNumber(amount)} serving${amount === 1 ? '' : 's'}`;
+    const [one, many] = servingWords(f);
+    const servings = `${trimNumber(amount)} ${amount === 1 ? one : many}`;
     return f.serving?.grams ? `${servings} (${trimNumber(f.serving.grams * amount)} ${f.baseUnit})` : servings;
 }
 
@@ -124,7 +142,7 @@ export function portionLabel(food, amount, unit) {
 export function foodSummary(food) {
     const f = normalizeFood(food);
     const parts = [];
-    if (f.serving) parts.push(`${Math.round(f.serving.kcal)} kcal per serving${f.serving.grams ? ` (${trimNumber(f.serving.grams)} ${f.baseUnit})` : ''}`);
+    if (f.serving) parts.push(`${Math.round(f.serving.kcal)} kcal per ${servingWords(f)[0]}${f.serving.grams ? ` (${trimNumber(f.serving.grams)} ${f.baseUnit})` : ''}`);
     if (f.per100) parts.push(`${Math.round(f.per100.kcal)} kcal per 100 ${f.baseUnit}`);
     return parts.join(' · ');
 }
@@ -170,6 +188,7 @@ export function fromOpenFoodFacts(product) {
         barcode: String(product.code ?? ''),
         name,
         brand: brand || null,
+        store: storeFromOff(product.stores),
         baseUnit: /\d\s*(ml|cl|l)\b/i.test(text) ? 'ml' : 'g',
         per100,
         serving: perServing ? { grams, ...perServing } : null,

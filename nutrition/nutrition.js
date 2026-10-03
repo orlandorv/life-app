@@ -33,15 +33,19 @@ import {
     nutrientsFor,
     portionLabel,
     foodSummary,
+    servingName,
 } from './portions.js';
 import { searchFoods, lookupBarcode, OfflineError } from './off.js';
+import { STORES, storeById, sourceLabel } from './stores.js';
+import { CATEGORIES, searchWholeFoods } from './whole-foods.js';
 import { scanBarcode } from './scanner.js';
 
 /**
  * Nutrition, modelled on the way MyFitnessPal works: a day is a diary of
  * meals, the top says how many calories are left, and adding food is search
- * first — your recent foods instantly, Open Food Facts as you type, a barcode
- * scan, or a quick add. Every food is logged as a portion (grams or servings)
+ * first — your recent foods instantly, the built-in whole foods (eggs, bananas,
+ * chicken…) offline, Open Food Facts as you type (optionally for one
+ * supermarket), a barcode scan, or a quick add. Every food is logged as a portion (grams or servings)
  * and the numbers scale with it.
  *
  * Same conventions as the other sections: no reactivity, so every write
@@ -201,7 +205,7 @@ function entryRow(entry) {
     const portion = entry.unit === 'serving' || entry.unit === 'g'
         ? portionLabel(findFood(entry.foodId) ?? {}, entry.amount, entry.unit)
         : null;
-    const meta = [entry.brand, portion, macroLine(entry)].filter(Boolean).join(' · ');
+    const meta = [sourceLabel(entry.brand, entry.store), portion, macroLine(entry)].filter(Boolean).join(' · ');
 
     return el('button', { class: 'meal-entry', type: 'button', onclick: () => openEntry(entry) }, [
         el('span', { class: 'meal-entry-text' }, [
@@ -229,6 +233,8 @@ async function copyFromPreviousDay(meal) {
 const sheet = {
     meal: 'breakfast',
     query: '',
+    category: null, // a whole-food category being browsed
+    store: null, // a STORES id narrowing the online search and your foods
     remote: { state: 'idle', foods: [], message: '' },
     abort: null,
     timer: null,
@@ -242,6 +248,8 @@ function setSheetHeader(title) {
 function openAddSheet(meal) {
     sheet.meal = meal;
     sheet.query = '';
+    sheet.category = null;
+    sheet.store = null;
     sheet.remote = { state: 'idle', foods: [], message: '' };
     showSearch();
     openModal('food-modal');
@@ -277,7 +285,7 @@ function showSearch() {
     const input = el('input', {
         class: 'form-input food-search-input',
         type: 'search',
-        placeholder: 'Search foods, e.g. “greek yoghurt”',
+        placeholder: 'Search foods, e.g. “eggs”',
         autocomplete: 'off',
         enterkeyhint: 'search',
         value: sheet.query,
@@ -304,10 +312,61 @@ function showSearch() {
             el('button', { class: 'btn btn-outline btn-small', type: 'button', text: 'Quick add', onclick: () => showQuick() }),
             el('button', { class: 'btn btn-outline btn-small', type: 'button', text: 'Create a food', onclick: () => showCreate() }),
         ]),
+        el('div', { class: 'food-chips-label', text: 'Whole foods' }),
+        chipRow(
+            CATEGORIES.map((category) => ({ id: category, label: category })),
+            () => sheet.category,
+            (id) => {
+                sheet.category = id;
+                renderResults(results);
+            },
+        ),
+        el('div', { class: 'food-chips-label', text: 'Shop' }),
+        chipRow(
+            STORES.map((store) => ({ id: store.id, label: store.label })),
+            () => sheet.store,
+            (id) => {
+                sheet.store = id;
+                // The online search is per shop, so choosing or clearing one re-runs it.
+                scheduleRemoteSearch(results);
+                renderResults(results);
+            },
+        ),
         results,
     );
 
     renderResults(results);
+}
+
+/**
+ * A scrolling row of toggle chips: tapping the lit one clears it. `current()`
+ * is read at tap time so the row never goes stale against `sheet`.
+ */
+function chipRow(items, current, onPick) {
+    const row = el('div', { class: 'food-chips', role: 'group' });
+    const sync = () =>
+        row.querySelectorAll('button').forEach((button) => {
+            const on = button.dataset.id === current();
+            button.classList.toggle('active', on);
+            button.setAttribute('aria-pressed', String(on));
+        });
+
+    items.forEach((item) =>
+        row.append(
+            el('button', {
+                class: 'food-chip',
+                type: 'button',
+                text: item.label,
+                dataset: { id: item.id },
+                onclick: () => {
+                    onPick(current() === item.id ? null : item.id);
+                    sync();
+                },
+            }),
+        ),
+    );
+    sync();
+    return row;
 }
 
 function scheduleRemoteSearch(results) {
@@ -326,9 +385,14 @@ function scheduleRemoteSearch(results) {
         const controller = new AbortController();
         sheet.abort = controller;
         try {
-            const foods = await searchFoods(query, { signal: controller.signal });
+            const store = storeById(sheet.store);
+            const foods = await searchFoods(query, { signal: controller.signal, store });
             if (controller.signal.aborted) return;
-            sheet.remote = { state: 'done', foods, message: foods.length ? '' : 'No matches on Open Food Facts.' };
+            sheet.remote = {
+                state: 'done',
+                foods,
+                message: foods.length ? '' : store ? `No ${store.label} matches on Open Food Facts.` : 'No matches on Open Food Facts.',
+            };
         } catch (error) {
             if (controller.signal.aborted) return;
             console.warn(error);
@@ -344,44 +408,67 @@ function scheduleRemoteSearch(results) {
 
 function renderResults(results) {
     const query = sheet.query.trim().toLowerCase();
+    const store = storeById(sheet.store);
+
+    // Your own foods: matching the search, and from the chosen shop if there is one.
+    const fromYou = state.foods.filter((food) => !store || food.store === store.label);
     const saved = query
-        ? state.foods.filter((food) => `${food.name} ${food.brand ?? ''}`.toLowerCase().includes(query))
-        : state.foods.slice(0, RECENT_SHOWN);
+        ? fromYou.filter((food) => `${food.name} ${food.brand ?? ''} ${food.store ?? ''}`.toLowerCase().includes(query))
+        : fromYou.slice(0, RECENT_SHOWN);
+
+    // Whole foods are generic, not any one shop's, so they step aside when a shop is chosen.
+    const savedIds = new Set(saved.map((food) => food.id));
+    const whole = store ? [] : searchWholeFoods(query, sheet.category).filter((food) => !savedIds.has(food.id));
 
     const nodes = [];
 
     if (saved.length) {
-        nodes.push(el('div', { class: 'history-group-label', text: query ? 'Your foods' : 'Recent' }));
+        nodes.push(el('div', { class: 'history-group-label', text: [query ? 'Your foods' : 'Recent', store?.label].filter(Boolean).join(' · ') }));
         nodes.push(el('div', { class: 'life-list' }, saved.map(foodRow)));
-    } else if (!query) {
+    }
+
+    if (whole.length) {
+        nodes.push(el('div', { class: 'history-group-label', text: sheet.category ? `Whole foods · ${sheet.category}` : 'Whole foods' }));
+        nodes.push(el('div', { class: 'life-list' }, whole.map(foodRow)));
+    }
+
+    if (!saved.length && !whole.length && !query) {
         nodes.push(
             el('div', { class: 'life-empty food-empty' }, [
                 el('span', { class: 'life-empty-icon' }, [icon('search', { size: 24 })]),
-                el('p', { class: 'life-empty-title', text: 'Find a food' }),
+                el('p', { class: 'life-empty-title', text: store ? `Find a ${store.label} food` : 'Find a food' }),
                 el('p', {
                     class: 'life-empty-text',
-                    text: 'Search by name, scan a barcode, or quick add calories. Foods you log show up here next time.',
+                    text: store
+                        ? `Type a food to search products sold at ${store.label}. Foods you log show up here next time.`
+                        : 'Search by name — eggs, banana, chicken — or browse a category. You can also scan a barcode, pick a shop, or quick add calories. Foods you log show up here next time.',
                 }),
             ]),
         );
     }
 
     if (query.length >= 2) {
-        // Products already in your foods are left out of the online list.
-        const savedIds = new Set(saved.map((food) => food.id));
-        const remote = sheet.remote.foods.filter((food) => !savedIds.has(food.id));
-        nodes.push(el('div', { class: 'history-group-label', text: 'Open Food Facts' }));
+        // Anything already shown above is left out of the online list.
+        const shownIds = new Set([...saved, ...whole].map((food) => food.id));
+        const remote = sheet.remote.foods.filter((food) => !shownIds.has(food.id));
+        nodes.push(el('div', { class: 'history-group-label', text: store ? `Open Food Facts · ${store.label}` : 'Open Food Facts' }));
         if (sheet.remote.state === 'loading') {
             nodes.push(el('p', { class: 'hint food-status', text: 'Searching…' }));
         } else if (remote.length) {
             nodes.push(el('div', { class: 'life-list' }, remote.map(foodRow)));
         } else {
             nodes.push(el('p', { class: 'hint food-status', text: sheet.remote.message || 'No other matches.' }));
+            if (sheet.remote.state === 'error') {
+                nodes.push(el('button', { class: 'btn btn-outline btn-small food-retry', type: 'button', text: 'Try again', onclick: () => scheduleRemoteSearch(results) }));
+            }
         }
     }
 
     clear(results).append(...nodes);
 }
+
+/** Where a food comes from, for a list: its category for a whole food, else brand and shop. */
+const originOf = (food) => (food.source === 'whole' ? food.category : sourceLabel(food.brand, food.store));
 
 function foodRow(food) {
     const portion = defaultPortion(food);
@@ -393,7 +480,7 @@ function foodRow(food) {
             el('span', { class: 'food-row-name', text: food.name }),
             el('span', {
                 class: 'food-row-meta',
-                text: [food.brand, amount, `${fmt(nutrients?.kcal ?? 0)} kcal`].filter(Boolean).join(' · '),
+                text: [originOf(food), amount, `${fmt(nutrients?.kcal ?? 0)} kcal`].filter(Boolean).join(' · '),
             }),
         ]),
         // One tap logs your usual portion, like the old saved-food list.
@@ -490,7 +577,7 @@ function showPortion(food, entry = null) {
 
     const drawAmount = () => {
         const isServing = unit === 'serving';
-        const control = labelledStepper(isServing ? 'Servings' : `Amount (${f.baseUnit})`, {
+        const control = labelledStepper(isServing ? servingName(f) : `Amount (${f.baseUnit})`, {
             value: amount,
             min: 0,
             max: isServing ? 50 : 5000,
@@ -508,7 +595,7 @@ function showPortion(food, entry = null) {
                 el('button', {
                     type: 'button',
                     class: u === unit ? 'active' : '',
-                    text: u === 'serving' ? 'Servings' : f.baseUnit,
+                    text: u === 'serving' ? servingName(f) : f.baseUnit,
                     onclick: () => {
                         if (u === unit) return;
                         // Keep the same real amount where a serving's weight is known.
@@ -545,7 +632,7 @@ function showPortion(food, entry = null) {
         entry ? null : backLink('Search', showSearch),
         el('div', { class: 'portion-food' }, [
             el('h3', { class: 'portion-name', text: food.name }),
-            el('p', { class: 'hint', text: [food.brand, foodSummary(food)].filter(Boolean).join(' · ') }),
+            el('p', { class: 'hint', text: [originOf(food), foodSummary(food)].filter(Boolean).join(' · ') }),
         ]),
         amountHolder,
         el('div', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Meal' }), mealPicker()]),
@@ -668,6 +755,8 @@ function showCreate({ barcode = null } = {}) {
 
     const name = el('input', { class: 'form-input', type: 'text', placeholder: 'e.g. Chicken wrap', maxlength: 60 });
     const brand = el('input', { class: 'form-input', type: 'text', placeholder: 'Brand (optional)', maxlength: 40 });
+    const store = el('input', { class: 'form-input', type: 'text', placeholder: 'Shop (optional) — Tesco, Lidl…', maxlength: 30, list: 'food-store-options' });
+    const storeOptions = el('datalist', { id: 'food-store-options' }, STORES.map((option) => el('option', { value: option.label })));
     const servingGrams = labelledStepper('Serving size in g (optional)', { value: 0, min: 0, max: 5000, step: 5, decimals: true, precision: 1 });
     const drink = el('input', { type: 'checkbox' });
     const numbers = nutrientSteppers();
@@ -704,6 +793,7 @@ function showCreate({ barcode = null } = {}) {
             food = await saveCustomFood({
                 name: name.value,
                 brand: brand.value,
+                store: store.value,
                 basis,
                 servingGrams: servingGrams.control.getValue(),
                 baseUnit: drink.checked ? 'ml' : 'g',
@@ -723,6 +813,8 @@ function showCreate({ barcode = null } = {}) {
         barcode ? el('p', { class: 'hint', text: `Barcode ${barcode} will find this food next time you scan it.` }) : null,
         el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Name' }), name]),
         brand,
+        store,
+        storeOptions,
         el('div', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Nutrition from the label' }), basisSwitch]),
         servingGrams,
         numbers.node,

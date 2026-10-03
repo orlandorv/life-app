@@ -305,11 +305,54 @@
 .food-shortcuts {
     display: flex;
     gap: 8px;
-    margin: 12px 0 18px;
+    margin: 12px 0 14px;
 }
 
 .food-shortcuts .btn {
     flex: 1;
+}
+
+/* Whole-food category and shop filters: one scrolling row each. */
+.food-chips-label {
+    margin: 4px 2px 6px;
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.food-chips {
+    display: flex;
+    gap: 6px;
+    margin: 0 -2px 12px;
+    padding: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.food-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.food-chip {
+    flex: none;
+    padding: 7px 13px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.food-chip.active {
+    color: var(--on-accent);
+    background: var(--primary);
 }
 
 .food-results .history-group-label {
@@ -322,6 +365,10 @@
 
 .food-status {
     padding: 4px 4px 0;
+}
+
+.food-retry {
+    margin: 10px 4px 0;
 }
 
 .food-empty {

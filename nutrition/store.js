@@ -92,7 +92,7 @@ async function rememberFood(food, { amount, unit }) {
  * A food you describe yourself, per serving or per 100 g/ml. A serving with a
  * known weight can also be logged in grams.
  */
-export async function saveCustomFood({ name, brand, basis, servingGrams, baseUnit, nutrients }) {
+export async function saveCustomFood({ name, brand, store, basis, servingGrams, baseUnit, nutrients }) {
     const values = {
         kcal: kcal(nutrients.kcal),
         proteinG: grams(nutrients.proteinG),
@@ -104,6 +104,7 @@ export async function saveCustomFood({ name, brand, basis, servingGrams, baseUni
         source: 'custom',
         name: name.trim(),
         brand: brand?.trim() || null,
+        store: store?.trim() || null,
         baseUnit: baseUnit === 'ml' ? 'ml' : 'g',
         per100: basis === '100g' ? values : null,
         serving: basis === 'serving' ? { grams: Number(servingGrams) > 0 ? Number(servingGrams) : null, ...values } : null,
@@ -133,6 +134,7 @@ export async function logPortion(food, { amount, unit, meal }, day = state.day) 
         meal,
         name: food.name,
         brand: food.brand ?? null,
+        store: food.store ?? null,
         foodId: food.id,
         amount,
         unit,
