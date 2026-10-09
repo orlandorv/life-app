@@ -632,7 +632,7 @@ function showPortion(food, entry = null) {
         entry ? null : backLink('Search', showSearch),
         el('div', { class: 'portion-food' }, [
             el('h3', { class: 'portion-name', text: food.name }),
-            el('p', { class: 'hint', text: [originOf(food), foodSummary(food)].filter(Boolean).join(' · ') }),
+            el('p', { class: 'hint', text: [originOf(food), foodSummary(food), food.reference].filter(Boolean).join(' · ') }),
         ]),
         amountHolder,
         el('div', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Meal' }), mealPicker()]),
