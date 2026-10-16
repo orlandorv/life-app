@@ -1,7 +1,7 @@
 import { database, DEFAULTS, uid } from './db.js';
 import { prescriptionFor, clampRest, REST_MIN, REST_MAX } from './prescription.js';
 import { alternativesFor } from './alternatives.js';
-import { state, loadWorkouts, findExercise, lastPerformance, lastNote } from './store.js';
+import { state, loadWorkouts, findExercise, lastPerformance, lastPlanPerformance, lastNote } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
@@ -381,7 +381,7 @@ function fillBlankWorkingWeights(source, weightControls, unit) {
     });
 }
 
-function setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls) {
+function setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls, lastReps = null) {
     const unit = getUnit();
 
     // Ramping a weight with +/- arrives as a burst of small changes, so the
@@ -414,6 +414,19 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress, weightCo
         className: 'stepper-set',
         onChange: (value) => { set.reps = value; updateBanner(); refreshProgress(); persist(); },
     });
+
+    // Last time's reps for this set in this plan, faded behind the number: a
+    // caption to read, never a value — it isn't focusable, selectable or
+    // tappable, and it isn't what gets saved.
+    if (lastReps) {
+        repsStepper.querySelector('.stepper-value').append(
+            el('span', {
+                class: 'reps-ghost',
+                text: `last ${lastReps}`,
+                'aria-label': `Last time in this plan: ${lastReps} reps`,
+            }),
+        );
+    }
 
     const weightStepper = stepper({
         value: toDisplay(set.weightKg, unit),
@@ -754,6 +767,8 @@ function exerciseBlock(entry, entryIndex) {
     // Lets one row write into its siblings' inputs directly, rather than
     // rebuilding the list mid-edit and yanking the field out from under you.
     const weightControls = [];
+    // Read once per block, not per row: it walks the workout history.
+    const lastInPlan = lastPlanPerformance(entry.exerciseId, session.templateId);
     const refreshSets = () => {
         clear(setList);
         weightControls.length = 0;
@@ -761,7 +776,9 @@ function exerciseBlock(entry, entryIndex) {
         let warmupCount = 0;
         entry.sets.forEach((set, index) => {
             const label = set.warmup ? `W${++warmupCount}` : String(++workingCount);
-            setList.append(setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls));
+            // Working sets only, matched by position (set 3 beside last time's set 3).
+            const lastReps = set.warmup ? null : (lastInPlan?.sets[workingCount - 1]?.reps ?? null);
+            setList.append(setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls, lastReps));
         });
         refreshProgress();
     };
