@@ -12,16 +12,16 @@
  * own-brand products are different: those come from the online search, with
  * the store filter, where their real label values are.
  *
- * The Colombian dishes are different again: each is a laboratory analysis of
- * the prepared dish (per 100 g of edible portion, three samples each) published
- * by Colombia's family welfare institute, not an average. The numbers are copied
- * from that document and checked against it — don't "tidy" them. It gives no
- * served-portion weight, so these are logged by weight.
+ * The Colombian foods are different again: they come from `colombian-foods.js`,
+ * copied from the official Colombian composition table (ICBF's TCAC 2018) rather
+ * than from memory or an average. Each carries a `reference` naming its line in
+ * that table, shown on its portion screen. They have no served-portion weight
+ * in the source, so they're logged by weight.
  */
 
-const REF_ICBF = 'Source: ICBF & Universidad Nacional de Colombia, 2017';
+import { COLOMBIAN } from './colombian-foods.js';
 
-export const CATEGORIES = ['Eggs & dairy', 'Meat', 'Fish', 'Fruit', 'Veg', 'Carbs', 'Pulses & nuts', 'Oils & extras', 'Drinks', 'Colombian'];
+export const CATEGORIES = ['Eggs & dairy', 'Meat', 'Fish', 'Fruit', 'Veg', 'Carbs', 'Pulses & nuts', 'Oils & extras', 'Drinks', 'Colombian dishes', 'Colombian staples'];
 
 // name, kcal, protein g, carbs g, fat g — all per 100 g/ml — then one serving's
 // weight (null when the source gives none), what to call it ("medium egg", or
@@ -173,28 +173,14 @@ const DATA = {
         ['Almond milk (unsweetened)', 13, 0.4, 0.1, 1.1, 200, 'glass|glasses', 'nut milk'],
         ['Soya milk (unsweetened)', 33, 3.3, 0.2, 1.8, 200, 'glass|glasses', 'soy milk'],
     ],
-    // Prepared dishes, per 100 g as served. Calories as printed (they equal 4·protein + 4·carbs + 9·fat).
-    Colombian: [
-        ['Ajiaco santafereño', 69, 6.4, 9.1, 0.8, null, '', 'chicken potato soup bogota bogotano colombian', 'g', REF_ICBF],
-        ['Sancocho valluno de gallina', 113, 16.4, 2.9, 4.0, null, '', 'sancocho chicken soup stew valle del cauca colombian', 'g', REF_ICBF],
-        ['Sancocho de bagre', 125, 16.9, 0.1, 6.3, null, '', 'sancocho catfish fish soup stew pacifico colombian', 'g', REF_ICBF],
-        ['Bandeja paisa', 198, 11.7, 13.0, 11.0, null, '', 'platter frijoles chicharron arroz antioquia paisa colombian', 'g', REF_ICBF],
-        ['Arroz atollado', 109, 10.1, 7.5, 4.3, null, '', 'rice stew chicken valle del cauca colombian', 'g', REF_ICBF],
-        ['Tamal tolimense', 108, 5.7, 12.7, 3.8, null, '', 'tamale tamales tolima colombian', 'g', REF_ICBF],
-        ['Mazamorra chiquita', 105, 9.8, 5.1, 5.0, null, '', 'stew beef potato cundiboyacense colombian', 'g', REF_ICBF],
-        ['Mute santandereano', 101, 8.1, 3.5, 6.1, null, '', 'tripe soup mondongo santander colombian', 'g', REF_ICBF],
-        ['Mote de queso', 89, 5.4, 8.0, 3.9, null, '', 'yam cheese soup ñame costeño caribe colombian', 'g', REF_ICBF],
-        ['Rondón', 126, 8.2, 18.5, 2.1, null, '', 'coconut fish stew san andres raizal rundown colombian', 'g', REF_ICBF],
-        ['Arroz clavado', 179, 6.4, 25.9, 5.5, null, '', 'rice cheese pacifico colombian', 'g', REF_ICBF],
-        ['Lechona tolimense', 224, 21.8, 7.3, 12.0, null, '', 'roast pork stuffed rice peas tolima colombian', 'g', REF_ICBF],
-        ['Viudo de bocachico', 117, 13.2, 6.7, 4.1, null, '', 'fish stew yuca plantain tolima colombian', 'g', REF_ICBF],
-        ['Sudao de piangüa', 175, 18.4, 1.6, 10.6, null, '', 'piangua clams shellfish pacifico colombian', 'g', REF_ICBF],
-        ['Friche de chivo', 238, 29.7, 0.8, 12.9, null, '', 'goat meat fried caribe colombian', 'g', REF_ICBF],
-        ['Pisillo de chigüiro', 211, 26.0, 5.8, 9.3, null, '', 'capybara dried meat orinoquia llanos colombian', 'g', REF_ICBF],
-        ['Cuy asado', 178, 24.4, 2.5, 7.8, null, '', 'guinea pig roast nariño colombian', 'g', REF_ICBF],
-        ['Chicharrón de pirarucú', 212, 22.0, 7.9, 10.3, null, '', 'fried fish amazon colombian', 'g', REF_ICBF],
-    ],
 };
+
+// ICBF's rows -> this table's shape: no serving weight (the source gives none), grams, and the table line as the source.
+for (const [category, rows] of Object.entries(COLOMBIAN)) {
+    DATA[category] = rows.map(([name, kcal, proteinG, carbsG, fatG, words, code, source]) => [
+        name, kcal, proteinG, carbsG, fatG, null, '', words, 'g', source ?? `Source: ICBF TCAC 2018 (${code})`,
+    ]);
+}
 
 const slugify = (text) =>
     text
