@@ -187,6 +187,13 @@ The **Swap** button (beside Edit) on an exercise in a live workout opens `#swap-
 - **Notes:** every exercise block in a live workout has both a *Note for next time* (`entry.note`, carried to the next session) and a *Plan note*. The plan note is bound to the template's slot when there is one — a swapped-in exercise uses the slot of what it replaced (`swappedFromId`) — and otherwise (quick workout, exercise added mid-session) is kept on the workout entry as `entry.planNote`, cleared on a swap since it was about the old exercise.
 - The entry records `swappedFromId`/`swappedFrom`, shown as "Swapped from …" and offered first in the sheet as the way back. The plan itself is never changed — next session it still asks for the original.
 
+### Exercise demo clips (`gym/js/demos.js`, `demo-link.js`)
+
+Every stock exercise has a demo: `DEMOS` maps its id to `[YouTube video id, channel]`, with the clip's own title as a comment so a link can be checked against its exercise at a glance. The app **links out, it doesn't host or copy**: a "▶ Watch demo" link under the name in a live workout, and a thumbnail card in the exercise details, both opening the real video in a new tab (`demoLink()`; same approach as Videos — no embedded player, and it needs a connection). The still comes from `i.ytimg.com` and drops away quietly if it can't load. Videos belonging to someone else aren't bundled into the repo (it's public) — keep it that way; the exercise's own *clip/photo* in the Library is the offline, on-device option.
+
+- **Every pick was checked against YouTube when added** (it resolves via oEmbed, and its title names this exercise and equipment), preferring short, established coaching channels. Custom exercises have no entry and show no link. Dead links can't be detected offline, so if one rots, swap its id here.
+- **Adding a stock exercise to `seed.js` means adding a `DEMOS` entry too** (alongside its `CURATED` list and, if needed, a role and `ADJUST` entry).
+
 ### Shared UI primitives (`dom.js`, `stepper.js`, `sfx.js`)
 
 `dom.js` provides `el()` (builds an element from a props+children object, always via `textContent`, never `innerHTML`), a **modal stack** (`openModal`/`closeModal`/`onModalClosed`), `toast()`, and `confirmSheet()` — a promise-based confirm dialog. Every modal in the app is static markup already present in `index.html`, shown/hidden via the stack rather than created dynamically. `confirmSheet()` resolves exactly once no matter how the sheet closes (Confirm, Cancel, backdrop tap, or Escape) — always reuse it for destructive-action confirmation rather than wiring up ad-hoc confirm logic.

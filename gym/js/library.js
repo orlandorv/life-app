@@ -2,6 +2,7 @@ import { database } from './db.js';
 import { MUSCLE_GROUPS, EQUIPMENT } from './seed.js';
 import { state, loadExercises, findExercise } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
+import { demoLink } from './demo-link.js';
 
 let pendingMediaFile = null;
 let pendingMediaCleared = false;
@@ -85,6 +86,10 @@ async function openDetails(exerciseId) {
         const record = await database.getMedia(exercise.mediaId);
         if (record) body.append(el('div', { class: 'media-frame' }, mediaNode(record)));
     }
+
+    // Your own clip (above) is the one that works offline; the demo is a link out.
+    const demo = demoLink(exercise.id, { variant: 'card' });
+    if (demo) body.append(demo);
 
     const field = (label, value) =>
         el('div', { class: 'detail-field' }, [

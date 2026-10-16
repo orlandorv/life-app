@@ -2251,3 +2251,50 @@ button.badge-tile:active {
         scroll-behavior: auto !important;
     }
 }
+
+/* --- Demo clips ------------------------------------------------------- */
+
+.demo-link {
+    padding-top: 6px;
+    text-decoration: none;
+}
+
+.demo-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: inherit;
+    text-decoration: none;
+}
+
+.demo-thumb {
+    width: 112px;
+    flex-shrink: 0;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 8px;
+    background: var(--bg-raised);
+}
+
+.demo-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.demo-card-title {
+    font-size: 15px;
+    font-weight: 650;
+    color: var(--primary);
+}
+
+.demo-card-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+}

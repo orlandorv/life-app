@@ -7,6 +7,7 @@ import { stepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
+import { demoLink } from './demo-link.js';
 import { computeProgress, syncProgressLedger } from './progress.js';
 import { showWorkoutSummary } from './rewards.js';
 import { startRest, stopRest, isResting } from './timer.js';
@@ -792,6 +793,7 @@ function exerciseBlock(entry, entryIndex) {
                 ]),
                 meta ? el('div', { class: 'exercise-block-meta', text: meta }) : null,
                 entry.swappedFrom ? el('div', { class: 'exercise-block-meta', text: `Swapped from ${entry.swappedFrom}` }) : null,
+                demoLink(entry.exerciseId),
             ]),
             el('div', { class: 'row-controls' }, [
                 editToggle,
