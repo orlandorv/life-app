@@ -1035,12 +1035,12 @@ form.modal-body .modal-actions {
 
 .exercise-drag-handle {
     flex-shrink: 0;
-    width: 30px;
-    height: 44px;
+    width: 40px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 20px;
     line-height: 1;
     color: var(--text-secondary);
     cursor: grab;
@@ -1072,6 +1072,12 @@ form.modal-body .modal-actions {
     align-items: center;
     padding: 4px 14px 4px 6px;
     border-bottom: none;
+}
+
+/* The browser's scroll anchoring would nudge the page whenever a block swaps
+   places mid-drag, drifting it away from the finger. */
+.stack.reordering {
+    overflow-anchor: none;
 }
 
 .stack.reordering .exercise-block-title {
@@ -2319,4 +2325,48 @@ button.badge-tile:active {
     pointer-events: none;
     user-select: none;
     -webkit-user-select: none;
+}
+
+/* --- Moving exercises ----------------------------------------------------- */
+
+/* Where a block lands when it's scrolled to after a move: a little clear of the
+   top edge rather than flush against it. */
+.exercise-block {
+    scroll-margin-top: 16px;
+}
+
+/* One-step Move up / Move down, only while the block is in Edit mode. */
+.block-move {
+    display: none;
+    gap: 8px;
+    padding: 8px 12px 0;
+}
+
+.exercise-block.editing .block-move {
+    display: flex;
+}
+
+.block-move .btn {
+    flex: 1;
+    min-height: 44px;
+}
+
+.block-move .btn:disabled {
+    opacity: 0.35;
+}
+
+/* A brief pulse on the block that just moved, so you can see where it went. */
+.exercise-block.just-moved {
+    animation: just-moved 1.2s ease-out;
+}
+
+@keyframes just-moved {
+    0% { box-shadow: 0 0 0 3px var(--primary); }
+    100% { box-shadow: 0 0 0 3px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .exercise-block.just-moved {
+        animation: none;
+    }
 }

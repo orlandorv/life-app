@@ -582,9 +582,39 @@ function flipSibling(sib, mutate) {
     });
 }
 
+// How far the finger has to travel before a press on the handle becomes a drag.
+// A tap (or a thumb that lands there while scrolling) must do nothing — it used
+// to collapse the whole list and rebuild it.
+const DRAG_START_PX = 8;
+// Within this distance of the top or bottom of the screen a drag scrolls the
+// page, faster the closer to the edge. The bottom edge sits above the nav bar.
+const SCROLL_EDGE_TOP = 80;
+const SCROLL_EDGE_BOTTOM = 130;
+const SCROLL_MAX_SPEED = 20; // px per frame
+
+const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * Brings one exercise block to the top of the screen and flashes it, so after
+ * a move you can see where it went rather than having to hunt for it in a
+ * list that just changed height.
+ */
+function showMovedBlock(entryKey, { editing = false } = {}) {
+    const block = [...document.querySelectorAll('#today-body .exercise-block')].find((b) => b.dataset.entryKey === entryKey);
+    if (!block) return;
+    if (editing) block.querySelector('.edit-toggle')?.click();
+    block.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    block.classList.add('just-moved');
+    block.addEventListener('animationend', () => block.classList.remove('just-moved'), { once: true });
+}
+
 function initDragHandle(handle, block) {
-    let dragging = false;
+    let pressed = false; // finger is down on the handle
+    let dragging = false; // ...and has moved far enough to be a drag
+    let startY = 0;
+    let lastY = 0;
     let grabOffset = 0;
+    let scrollFrame = null;
 
     const updateVisual = (pointerY) => {
         const desiredTop = pointerY - grabOffset;
@@ -619,35 +649,33 @@ function initDragHandle(handle, block) {
         return false;
     };
 
-    const onMove = (event) => {
-        if (!dragging) return;
-        event.preventDefault();
-        updateVisual(event.clientY);
-        if (checkSwap()) updateVisual(event.clientY); // re-anchor after a DOM move
+    /** Follow the finger, and re-seat the block if it crossed a neighbour. */
+    const follow = () => {
+        updateVisual(lastY);
+        if (checkSwap()) updateVisual(lastY); // re-anchor after a DOM move
     };
 
-    const finish = async () => {
+    /** Scrolls the page while the finger sits near an edge, so the far end of a
+     *  long list is reachable without letting go. Runs once per frame. */
+    const autoScroll = () => {
+        scrollFrame = null;
         if (!dragging) return;
-        dragging = false;
-        block.classList.remove('dragging');
-        block.style.transform = '';
-        handle.removeEventListener('pointermove', onMove);
-        handle.removeEventListener('pointerup', finish);
-        handle.removeEventListener('pointercancel', finish);
 
-        const container = block.parentElement;
-        container?.classList.remove('reordering');
-        if (container && session) {
-            const order = [...container.children].map((el) => el.dataset.entryKey);
-            session.entries.sort((a, b) => order.indexOf(a.exerciseId) - order.indexOf(b.exerciseId));
-            await persist();
+        const bottomEdge = window.innerHeight - SCROLL_EDGE_BOTTOM;
+        let speed = 0;
+        if (lastY < SCROLL_EDGE_TOP) speed = -SCROLL_MAX_SPEED * ((SCROLL_EDGE_TOP - lastY) / SCROLL_EDGE_TOP) ** 2;
+        else if (lastY > bottomEdge) speed = SCROLL_MAX_SPEED * Math.min(1, (lastY - bottomEdge) / SCROLL_EDGE_BOTTOM) ** 2;
+
+        if (Math.abs(speed) >= 0.5) {
+            const before = window.scrollY;
+            window.scrollBy({ top: speed, behavior: 'instant' });
+            if (window.scrollY !== before) follow(); // the list moved under a still finger
         }
-        render();
+        scrollFrame = requestAnimationFrame(autoScroll);
     };
 
-    handle.addEventListener('pointerdown', (event) => {
-        if (event.button !== undefined && event.button !== 0) return;
-        event.preventDefault();
+    /** The press became a drag: collapse the list and pick the block up. */
+    const begin = () => {
         dragging = true;
 
         // Collapse every block to just its name for the length of the drag.
@@ -661,6 +689,70 @@ function initDragHandle(handle, block) {
         // which would now sit far below a block a fraction of its old height.
         grabOffset = block.getBoundingClientRect().height / 2;
         block.classList.add('dragging');
+        // The block's position is read back right after it's set (naturalTop),
+        // so it must never be mid-transition. The reduced-motion rule leaves
+        // every element a 0.01ms one, which is enough to return the stale
+        // position until the next frame — hence !important inline, which beats
+        // that rule.
+        block.style.setProperty('transition', 'none', 'important');
+
+        // The collapse shortens the page, which leaves the scroll position
+        // wherever the browser clamped it — often with the top of the list
+        // off-screen and out of reach. Scroll so the block lands under the
+        // finger instead; whatever the page can't scroll is made up by the
+        // drag transform.
+        const delta = naturalTop(block) + grabOffset - lastY;
+        window.scrollBy({ top: delta, behavior: 'instant' });
+        updateVisual(lastY);
+        scrollFrame = requestAnimationFrame(autoScroll);
+    };
+
+    const onMove = (event) => {
+        if (!pressed) return;
+        lastY = event.clientY;
+        if (!dragging) {
+            if (Math.abs(lastY - startY) < DRAG_START_PX) return;
+            begin();
+            return;
+        }
+        event.preventDefault();
+        follow();
+    };
+
+    const finish = async () => {
+        if (!pressed) return;
+        const wasDragging = dragging;
+        pressed = false;
+        dragging = false;
+        cancelAnimationFrame(scrollFrame);
+        scrollFrame = null;
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', finish);
+        handle.removeEventListener('pointercancel', finish);
+
+        if (!wasDragging) return; // a tap — nothing to put back
+
+        block.classList.remove('dragging');
+        block.style.removeProperty('transition');
+        block.style.transform = '';
+
+        const container = block.parentElement;
+        container?.classList.remove('reordering');
+        if (container && session) {
+            const order = [...container.children].map((el) => el.dataset.entryKey);
+            session.entries.sort((a, b) => order.indexOf(a.exerciseId) - order.indexOf(b.exerciseId));
+            await persist();
+        }
+        render();
+        showMovedBlock(block.dataset.entryKey);
+    };
+
+    handle.addEventListener('pointerdown', (event) => {
+        if (event.button !== undefined && event.button !== 0) return;
+        event.preventDefault();
+        pressed = true;
+        dragging = false;
+        startY = lastY = event.clientY;
         try {
             // Keeps the drag alive even if the finger slides off the small
             // handle mid-gesture. Not load-bearing for the drag itself —
@@ -675,6 +767,19 @@ function initDragHandle(handle, block) {
         handle.addEventListener('pointerup', finish);
         handle.addEventListener('pointercancel', finish);
     });
+}
+
+/** Moves an exercise one place up or down — the precise alternative to dragging. */
+async function moveExercise(index, direction) {
+    const target = index + direction;
+    if (!session || target < 0 || target >= session.entries.length) return;
+
+    const key = session.entries[index].exerciseId;
+    [session.entries[index], session.entries[target]] = [session.entries[target], session.entries[index]];
+    await persist();
+    render();
+    // Still in edit mode, so the next tap on Move up/down is right there.
+    showMovedBlock(key, { editing: true });
 }
 
 // --- Exercise blocks -----------------------------------------------------
@@ -828,6 +933,24 @@ function exerciseBlock(entry, entryIndex) {
                     onclick: () => removeExercise(entryIndex),
                 }, ['×']),
             ]),
+        ]),
+
+        // Edit mode only: one-step moves for when a drag is more than you need.
+        el('div', { class: 'block-move' }, [
+            el('button', {
+                class: 'btn btn-outline btn-small',
+                type: 'button',
+                text: '↑ Move up',
+                disabled: entryIndex === 0,
+                onclick: () => moveExercise(entryIndex, -1),
+            }),
+            el('button', {
+                class: 'btn btn-outline btn-small',
+                type: 'button',
+                text: '↓ Move down',
+                disabled: entryIndex === session.entries.length - 1,
+                onclick: () => moveExercise(entryIndex, 1),
+            }),
         ]),
 
         progressBadge,
