@@ -1,5 +1,5 @@
 import { database, DEFAULTS, uid } from './db.js';
-import { prescriptionFor } from './prescription.js';
+import { prescriptionFor, clampRest, REST_MIN, REST_MAX } from './prescription.js';
 import { alternativesFor } from './alternatives.js';
 import { state, loadWorkouts, findExercise, lastPerformance, lastNote } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
@@ -109,7 +109,7 @@ function entryFromTemplate(templateEntry) {
         muscleGroup: exercise?.muscleGroup || '',
         attachment: exercise?.attachment || '',
         equipment: exercise?.equipment || '',
-        restSeconds: templateEntry.restSeconds,
+        restSeconds: clampRest(templateEntry.restSeconds),
         targetReps: templateEntry.reps,
         // Snapshotted at session start, same as targetReps — the fixed bar
         // "ready to progress" checks every set against, independent of
@@ -501,7 +501,7 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress, weightCo
             playSetComplete();
             // Warm-ups are a ramp-up, not a working set — no need to eat into
             // your session standing around a rest timer built for the real sets.
-            if (!set.warmup) startRest(entry.restSeconds);
+            if (!set.warmup) startRest(clampRest(entry.restSeconds));
         } else if (isResting()) {
             stopRest();
         }
@@ -666,6 +666,8 @@ function initDragHandle(handle, block) {
 // --- Exercise blocks -----------------------------------------------------
 
 function exerciseBlock(entry, entryIndex) {
+    // A session started before rest was limited to 2–3 minutes comes out in range.
+    entry.restSeconds = clampRest(entry.restSeconds);
     const meta = [entry.equipment, entry.attachment].filter(Boolean).join(' · ');
     const ghost = ghostText(entry.exerciseId);
 
@@ -702,26 +704,31 @@ function exerciseBlock(entry, entryIndex) {
           ])
         : null;
 
-    // Scoped to the template, not the session — bound straight to the
-    // template's own copy so it stays in sync with the builder, and only
-    // shows up for exercises still actually in this template (not one added
-    // ad hoc mid-workout, or a workout with no template at all).
-    const templateNoteField = templateEntry
-        ? noteField({
-              label: 'Plan note',
-              placeholder: 'e.g. this week: pause reps',
-              value: templateEntry.note || '',
-              onSave: async (value) => {
-                  templateEntry.note = value;
-                  await database.saveTemplate(template);
-              },
-          })
-        : null;
+    // Every exercise gets one. Where the plan has a slot for it — including the
+    // slot a swapped-in exercise took over — the note is bound straight to the
+    // template's own copy so it stays in sync with the builder. With no slot to
+    // hang it on (a quick workout, an exercise added mid-session) it's kept on
+    // the workout entry instead.
+    const planSlot = template?.exercises.find((e) => e.exerciseId === (entry.swappedFromId ?? entry.exerciseId));
+    const templateNoteField = noteField({
+        label: 'Plan note',
+        placeholder: 'e.g. this week: pause reps',
+        value: (planSlot ? planSlot.note : entry.planNote) || '',
+        onSave: async (value) => {
+            if (planSlot) {
+                planSlot.note = value;
+                await database.saveTemplate(template);
+            } else {
+                entry.planNote = value;
+                await persist();
+            }
+        },
+    });
 
     const restControl = stepper({
-        value: entry.restSeconds,
-        min: 5, // 0 silently meant "don't start a timer" — never a real choice
-        max: 600,
+        value: clampRest(entry.restSeconds),
+        min: REST_MIN,
+        max: REST_MAX,
         step: 15,
         suffix: 's',
         label: 'rest',
@@ -789,11 +796,12 @@ function exerciseBlock(entry, entryIndex) {
             el('div', { class: 'row-controls' }, [
                 editToggle,
                 el('button', {
-                    class: 'icon-btn',
+                    class: 'link-btn swap-toggle',
                     type: 'button',
-                    'aria-label': 'Swap exercise',
+                    text: 'Swap',
+                    'aria-label': `Swap ${entry.exerciseName} for an alternative`,
                     onclick: () => swapExercise(entryIndex),
-                }, ['⇄']),
+                }),
                 el('button', {
                     class: 'icon-btn danger',
                     type: 'button',
@@ -1011,6 +1019,9 @@ async function applySwap(index, exerciseId) {
         equipment: exercise.equipment || '',
         note: '',
     });
+    // A plan note kept on the entry was about the old exercise; one on the
+    // plan's slot is still the slot's, so it's left where it is.
+    delete entry.planNote;
     if (exerciseId === originalId) {
         delete entry.swappedFromId;
         delete entry.swappedFrom;

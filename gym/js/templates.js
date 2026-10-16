@@ -5,7 +5,7 @@ import { labelledStepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
 import { formatRest } from './units.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
-import { findPreset, prescriptionFor } from './prescription.js';
+import { findPreset, prescriptionFor, clampRest, REST_MIN, REST_MAX } from './prescription.js';
 
 // Working copy of the template being edited. Nothing touches IndexedDB until
 // Save, so backing out of the sheet discards cleanly.
@@ -62,9 +62,9 @@ function renderRows() {
             },
         });
         const restField = labelledStepper('Rest', {
-            value: entry.restSeconds,
-            min: 5, // 0 silently meant "don't start a timer" — never a real choice
-            max: 600,
+            value: clampRest(entry.restSeconds),
+            min: REST_MIN,
+            max: REST_MAX,
             step: 15,
             suffix: 's',
             onChange: (value) => { entry.restSeconds = value; },

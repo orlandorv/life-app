@@ -4,7 +4,7 @@ const DB_VERSION = 3;
 export const DEFAULTS = {
     sets: 3,
     reps: 10,
-    restSeconds: 90,
+    restSeconds: 150, // mid-point of the 2–3 minute rest the app allows (see prescription.js)
     // Middle of the plan's own "1-2 RIR on compounds, ~1 on isolation" range —
     // a neutral starting point until a template sets something more specific.
     rir: 2,

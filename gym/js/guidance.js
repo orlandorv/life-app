@@ -28,7 +28,8 @@ export function repRangeGuidance(topReps) {
 }
 
 export function rirGuidance(rir) {
-    if (rir >= 2) return 'Target 1–2 RIR — stop a couple of reps short, don’t chase failure.';
+    if (rir >= 3) return 'Target ~3 RIR — heavy and hard to recover from, so stop well short of failure.';
+    if (rir === 2) return 'Target 1–2 RIR — stop a couple of reps short, don’t chase failure.';
     if (rir === 1) return 'Target ~1 RIR — failure only on a final safe set.';
-    return 'Training to failure — the plan avoids this on squats, presses and rows.';
+    return 'Go to failure on the last set — fine on a machine or cable, not on squats, presses or rows.';
 }

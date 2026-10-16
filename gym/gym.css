@@ -1176,9 +1176,16 @@ form.modal-body .modal-actions {
     display: flex;
 }
 
-.edit-toggle {
+.edit-toggle,
+.swap-toggle {
     padding: 8px 6px;
     font-size: 13px;
+}
+
+/* Two text buttons sit side by side here, so give them room to read as two. */
+.exercise-block-head .row-controls {
+    gap: 8px;
+    align-items: center;
 }
 
 .set-check {

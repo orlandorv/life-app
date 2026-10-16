@@ -1,5 +1,6 @@
 import { database } from './db.js';
 import { DEFAULT_EXERCISES, SUPERSEDED_NOTES } from './seed.js';
+import { clampRest } from './prescription.js';
 import { setUnit } from './units.js';
 import { loadBarWeights } from './plates.js';
 
@@ -33,6 +34,13 @@ export async function loadExercises() {
 
 export async function loadTemplates() {
     state.templates = (await database.getTemplates()).sort((a, b) => a.name.localeCompare(b.name));
+    // Plans saved before rest was limited to 2–3 minutes come out in range;
+    // the stored copy is rewritten the next time the plan is saved.
+    state.templates.forEach((template) => {
+        template.exercises?.forEach((entry) => {
+            if (typeof entry === 'object') entry.restSeconds = clampRest(entry.restSeconds);
+        });
+    });
     emit('templates');
     return state.templates;
 }
