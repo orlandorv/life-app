@@ -553,10 +553,22 @@ async function removeSet(entry, index, label, refreshSets) {
 // A minimal FLIP-style sortable: the dragged block follows the pointer via a
 // transform recomputed fresh every move (so it stays correct through however
 // many DOM swaps happen mid-drag, with no cumulative offset math to get
-// wrong); whichever sibling it crosses gets a one-shot slide animation into
-// its vacated spot. On release the final DOM order is written back into
+// wrong); whichever blocks it crosses get a one-shot slide animation into
+// their vacated spots. On release the final DOM order is written back into
 // session.entries and a normal render() gives every block fresh, correct
 // index-bound handlers again.
+//
+// Two rules keep a drag from getting stranded on a phone, and both were
+// learned the hard way:
+//  - The dragged block is never moved in the DOM. Taking a node out of the
+//    document (which insertBefore does, even to put it straight back) makes the
+//    browser drop the finger's hold on it, and the "finger lifted" event then
+//    goes somewhere else — leaving the list collapsed and the block stuck to a
+//    finger that isn't there. Swapping places moves the blocks it crossed
+//    instead.
+//  - Move and release are listened for on the window, not on the handle, for
+//    the one finger that started the drag, with backups (touch end, window
+//    losing focus, a new touch) in case an end event is lost anyway.
 
 /** The block's top position with no drag transform applied, for re-anchoring. */
 function naturalTop(block) {
@@ -567,18 +579,19 @@ function naturalTop(block) {
     return top;
 }
 
-/** Slides `sib` from its pre-move position to wherever `mutate()` puts it. */
-function flipSibling(sib, mutate) {
-    const before = sib.getBoundingClientRect();
+/** Slides each of `nodes` from where it was to wherever `mutate()` puts it. */
+function flipSiblings(nodes, mutate) {
+    const before = nodes.map((node) => node.getBoundingClientRect().top);
     mutate();
-    const after = sib.getBoundingClientRect();
-    const dy = before.top - after.top;
-    if (!dy) return;
-    sib.style.transition = 'none';
-    sib.style.transform = `translateY(${dy}px)`;
-    requestAnimationFrame(() => {
-        sib.style.transition = 'transform 0.18s ease-out';
-        sib.style.transform = '';
+    nodes.forEach((node, i) => {
+        const dy = before[i] - node.getBoundingClientRect().top;
+        if (!dy) return;
+        node.style.transition = 'none';
+        node.style.transform = `translateY(${dy}px)`;
+        requestAnimationFrame(() => {
+            node.style.transition = 'transform 0.18s ease-out';
+            node.style.transform = '';
+        });
     });
 }
 
@@ -610,6 +623,7 @@ function showMovedBlock(entryKey, { editing = false } = {}) {
 
 function initDragHandle(handle, block) {
     let pressed = false; // finger is down on the handle
+    let pointerId = null; // ...which finger, so a second one can't hijack the drag
     let dragging = false; // ...and has moved far enough to be a drag
     let startY = 0;
     let lastY = 0;
@@ -622,27 +636,38 @@ function initDragHandle(handle, block) {
         block.style.transform = `translateY(${dy}px) scale(1.02)`;
     };
 
-    /** Swaps at most one sibling per call — pointermove fires often enough
-     *  that a fast drag still catches up within a couple of events. */
+    /**
+     * If the dragged block has crossed the middle of a neighbour, puts it on the
+     * other side of every block it passed. It does that by moving *those* blocks
+     * around it — the dragged block itself must stay where it is in the DOM (see
+     * the note at the top of this section).
+     */
     const checkSwap = () => {
         const container = block.parentElement;
         if (!container) return false;
 
-        const draggedRect = block.getBoundingClientRect();
-        const draggedCenter = draggedRect.top + draggedRect.height / 2;
+        const blocks = [...container.children].filter((child) => child.classList.contains('exercise-block'));
+        const index = blocks.indexOf(block);
+        const rect = block.getBoundingClientRect();
+        const draggedCenter = rect.top + rect.height / 2;
+        const centreOf = (node) => {
+            const box = node.getBoundingClientRect();
+            return box.top + box.height / 2;
+        };
 
-        for (const sib of container.children) {
-            if (sib === block) continue;
-            const sibRect = sib.getBoundingClientRect();
-            const sibCenter = sibRect.top + sibRect.height / 2;
-            const draggedIsBefore = Boolean(block.compareDocumentPosition(sib) & Node.DOCUMENT_POSITION_FOLLOWING);
-
-            if (draggedIsBefore && draggedCenter > sibCenter) {
-                flipSibling(sib, () => container.insertBefore(block, sib.nextSibling));
+        // Dragged up past the first block whose middle is below it...
+        for (let i = 0; i < index; i++) {
+            if (draggedCenter < centreOf(blocks[i])) {
+                const passed = blocks.slice(i, index);
+                flipSiblings(passed, () => block.after(...passed));
                 return true;
             }
-            if (!draggedIsBefore && draggedCenter < sibCenter) {
-                flipSibling(sib, () => container.insertBefore(block, sib));
+        }
+        // ...or down past the last block whose middle is above it.
+        for (let i = blocks.length - 1; i > index; i--) {
+            if (draggedCenter > centreOf(blocks[i])) {
+                const passed = blocks.slice(index + 1, i + 1);
+                flipSiblings(passed, () => block.before(...passed));
                 return true;
             }
         }
@@ -708,7 +733,12 @@ function initDragHandle(handle, block) {
     };
 
     const onMove = (event) => {
-        if (!pressed) return;
+        if (!pressed || event.pointerId !== pointerId) return;
+        // A mouse released outside the window never reports it; don't keep dragging.
+        if (event.pointerType === 'mouse' && event.buttons === 0) {
+            finish();
+            return;
+        }
         lastY = event.clientY;
         if (!dragging) {
             if (Math.abs(lastY - startY) < DRAG_START_PX) return;
@@ -719,16 +749,49 @@ function initDragHandle(handle, block) {
         follow();
     };
 
-    const finish = async () => {
+    const onEnd = (event) => {
+        if (event.pointerId === pointerId) finish();
+    };
+
+    // A second finger, or any new press, means the first one is long gone.
+    const onStrayDown = (event) => {
+        if (event.pointerId !== pointerId) finish();
+    };
+
+    // Touch events as a second opinion: some browsers drop the pointer-level end
+    // of a gesture the document still sees finish.
+    const onTouchEnd = (event) => {
+        if (event.touches.length === 0) finish();
+    };
+
+    const onLeave = () => finish();
+    const onHide = () => {
+        if (document.hidden) finish();
+    };
+
+    const listeners = [
+        ['pointermove', onMove],
+        ['pointerup', onEnd],
+        ['pointercancel', onEnd],
+        ['pointerdown', onStrayDown],
+        ['touchend', onTouchEnd],
+        ['touchcancel', onTouchEnd],
+        ['blur', onLeave],
+        ['pagehide', onLeave],
+        ['visibilitychange', onHide],
+    ];
+    const listen = () => listeners.forEach(([type, fn]) => window.addEventListener(type, fn, { capture: true, passive: false }));
+    const unlisten = () => listeners.forEach(([type, fn]) => window.removeEventListener(type, fn, { capture: true }));
+
+    async function finish() {
         if (!pressed) return;
         const wasDragging = dragging;
         pressed = false;
         dragging = false;
+        pointerId = null;
         cancelAnimationFrame(scrollFrame);
         scrollFrame = null;
-        handle.removeEventListener('pointermove', onMove);
-        handle.removeEventListener('pointerup', finish);
-        handle.removeEventListener('pointercancel', finish);
+        unlisten();
 
         if (!wasDragging) return; // a tap — nothing to put back
 
@@ -745,27 +808,26 @@ function initDragHandle(handle, block) {
         }
         render();
         showMovedBlock(block.dataset.entryKey);
-    };
+    }
 
     handle.addEventListener('pointerdown', (event) => {
         if (event.button !== undefined && event.button !== 0) return;
+        if (pressed) return; // already tracking a finger
         event.preventDefault();
+        event.stopPropagation(); // our own stray-press check must not see this one
         pressed = true;
         dragging = false;
+        pointerId = event.pointerId;
         startY = lastY = event.clientY;
         try {
-            // Keeps the drag alive even if the finger slides off the small
-            // handle mid-gesture. Not load-bearing for the drag itself —
-            // some environments (and any pointer id the browser doesn't
-            // recognize as currently active) reject this, so a failure here
-            // shouldn't take the rest of the gesture down with it.
+            // Keeps the events coming to the handle even if the finger slides
+            // off it. Not load-bearing — they're also caught on the window — and
+            // some environments reject it, which shouldn't take the gesture down.
             handle.setPointerCapture(event.pointerId);
         } catch {
             // ignored — see above
         }
-        handle.addEventListener('pointermove', onMove);
-        handle.addEventListener('pointerup', finish);
-        handle.addEventListener('pointercancel', finish);
+        listen();
     });
 }
 
