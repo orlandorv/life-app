@@ -1,5 +1,5 @@
 import { state, saveProgressLedger } from './store.js';
-import { isLoggedWork } from './records.js';
+import { isLoggedWork } from './strength.js';
 import { weekStart } from './volume.js';
 import { MUSCLE_GROUPS } from './seed.js';
 import { evaluateBadges } from './badges.js';

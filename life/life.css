@@ -45,6 +45,20 @@
     --card-border: rgba(64, 44, 24, 0.07);
     --shadow: var(--card-shadow);
 
+    /* Strength levels (Gym's muscle map): one terracotta hue, light to dark, so
+       the order reads in the colour. Validated as an ordinal ramp on white —
+       monotone lightness, every step apart, the lightest still 2:1 on the card.
+       Dark mode flips the anchor (highest = brightest) and is validated on its
+       own surface; it isn't an automatic inversion. `none` is "no data". */
+    --level-0: #DEAA93;
+    --level-1: #CE8D6F;
+    --level-2: #BC6F4C;
+    --level-3: #AA5224;
+    --level-4: #943600;
+    --level-5: #762100;
+    --level-none: #E2DBD1;
+    --map-body: var(--bg-secondary);
+
     --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     /* New York on Apple devices: gives titles a voice without a web font,
        which a fully offline app couldn't count on having. */
@@ -80,6 +94,14 @@
 
         --card-shadow: none;
         --card-border: rgba(255, 244, 230, 0.07);
+
+        --level-0: #794B36;
+        --level-1: #9A5D41;
+        --level-2: #BC6F4C;
+        --level-3: #DC855D;
+        --level-4: #F79E75;
+        --level-5: #FFBC9A;
+        --level-none: #3A352F;
     }
 }
 

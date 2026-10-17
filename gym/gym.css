@@ -2370,3 +2370,251 @@ button.badge-tile:active {
         animation: none;
     }
 }
+
+/* --- Strength map (Records) ----------------------------------------------- */
+
+.strength-card {
+    margin-bottom: 20px;
+}
+
+.strength-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.strength-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.strength-sub,
+.strength-note,
+.strength-hint,
+.strength-footnote {
+    margin: 6px 0 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.strength-footnote {
+    margin-top: 14px;
+    font-size: 12px;
+}
+
+.strength-summary {
+    margin: 12px 0 0;
+    font-size: 13px;
+}
+
+.strength-muted {
+    color: var(--text-secondary);
+}
+
+.strength-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.strength-edit .strength-form {
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.strength-form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* The two views, side by side. */
+.strength-figures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 12px 0 8px;
+}
+
+.strength-figure {
+    margin: 0;
+    text-align: center;
+}
+
+.strength-figure figcaption {
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.map-svg {
+    display: block;
+    width: 100%;
+    max-width: 210px;
+    height: auto;
+    margin: 0 auto;
+}
+
+.map-body {
+    fill: var(--map-body);
+}
+
+/* A level is its --level-* colour. The ring in the card's own colour is the gap
+   between neighbouring muscles; the selected one gets an ink outline. */
+.map-region {
+    cursor: pointer;
+    outline: none;
+    --fill: var(--level-none);
+}
+
+.map-region[data-level="0"] { --fill: var(--level-0); }
+.map-region[data-level="1"] { --fill: var(--level-1); }
+.map-region[data-level="2"] { --fill: var(--level-2); }
+.map-region[data-level="3"] { --fill: var(--level-3); }
+.map-region[data-level="4"] { --fill: var(--level-4); }
+.map-region[data-level="5"] { --fill: var(--level-5); }
+
+.map-region path {
+    fill: var(--fill);
+    stroke: var(--bg-raised);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}
+
+.map-region.selected path,
+.map-region:focus-visible path {
+    stroke: var(--text-primary);
+    stroke-width: 2.25;
+}
+
+.strength-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.strength-legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.level-swatch {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--level-none);
+}
+
+.level-swatch[data-level="0"] { background: var(--level-0); }
+.level-swatch[data-level="1"] { background: var(--level-1); }
+.level-swatch[data-level="2"] { background: var(--level-2); }
+.level-swatch[data-level="3"] { background: var(--level-3); }
+.level-swatch[data-level="4"] { background: var(--level-4); }
+.level-swatch[data-level="5"] { background: var(--level-5); }
+
+.strength-detail-slot {
+    margin-top: 12px;
+    padding: 12px 14px;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+}
+
+.strength-detail-slot .strength-hint {
+    margin: 0;
+}
+
+.strength-detail-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.strength-detail-head .level-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+}
+
+.strength-detail-title {
+    font-weight: 650;
+}
+
+.strength-detail-level {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.strength-detail-line {
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.strength-meter {
+    height: 6px;
+    margin-top: 10px;
+    border-radius: 3px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.strength-meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--primary);
+}
+
+.strength-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 12px;
+}
+
+.strength-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 6px 4px;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+
+.strength-row:last-child {
+    border-bottom: none;
+}
+
+.strength-row.selected {
+    font-weight: 650;
+}
+
+.strength-row-name {
+    flex: 1;
+}
+
+.strength-row-level {
+    font-size: 13px;
+    color: var(--text-secondary);
+}

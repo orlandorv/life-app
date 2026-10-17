@@ -2,21 +2,11 @@ import { state, findExercise } from './store.js';
 import { MUSCLE_GROUPS } from './seed.js';
 import { $, el, clear } from '../../life/dom.js';
 import { formatWeight, getUnit, toDisplay } from './units.js';
+import { isLoggedWork, estimateOneRepMax } from './strength.js';
+import { renderStrengthMap } from './body-map.js';
 
 /** Bucket for records whose workout never recorded a muscle group. */
 const OTHER = 'Other';
-
-/**
- * Only sets that were actually performed count anywhere in Records: ticked
- * off, carrying real weight, and not a warm-up.
- *
- * Finishing a workout already strips unticked sets and warm-ups before
- * saving, so this is belt-and-braces for anything that arrives by another
- * route — a restored backup, or a workout logged before warm-ups existed.
- */
-export function isLoggedWork(set) {
-    return Boolean(set.done) && !set.warmup && set.weightKg > 0;
-}
 
 /**
  * Heaviest logged set per exercise, across every completed workout. Ties on
@@ -60,26 +50,9 @@ export function computeRecords() {
     return best;
 }
 
-/**
- * Epley (weight × (1 + reps/30)), fed *effective* reps — logged reps plus the
- * RIR left in the tank, since a set stopped 2 short predicts a heavier max
- * than the same set taken to failure.
- *
- * Above ~12 effective reps the formula drifts badly high, so those sets are
- * left out entirely rather than quietly reported: a "1RM" extrapolated from a
- * 20-rep calf raise is noise, and no estimate beats a wrong one.
- */
-const MAX_EFFECTIVE_REPS = 12;
-
 /** Whole units only — "101.33 kg" would imply precision an estimate lacks. */
 function formatEstimate(kg) {
     return `${Math.round(toDisplay(kg))} ${getUnit()}`;
-}
-
-export function estimateOneRepMax(set) {
-    const effectiveReps = set.reps + (set.rir ?? 0);
-    if (!(set.weightKg > 0) || effectiveReps < 1 || effectiveReps > MAX_EFFECTIVE_REPS) return null;
-    return set.weightKg * (1 + effectiveReps / 30);
 }
 
 /**
@@ -153,6 +126,13 @@ function recordCard(record, estimate) {
 
 export function renderRecords() {
     const container = clear($('#prs-body'));
+
+    // The muscle map sits above the records and loads on its own (it reads the
+    // profile and your latest weigh-in), so the list below never waits on it.
+    const mapHost = el('div', { class: 'strength-host' });
+    container.append(mapHost);
+    renderStrengthMap(mapHost);
+
     const records = [...computeRecords().values()];
     const estimates = computeOneRepMaxes();
 
