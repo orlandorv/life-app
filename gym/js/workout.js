@@ -1,7 +1,7 @@
 import { database, DEFAULTS, uid } from './db.js';
 import { prescriptionFor, clampRest, REST_MIN, REST_MAX } from './prescription.js';
 import { alternativesFor } from './alternatives.js';
-import { state, loadWorkouts, findExercise, lastPerformance, lastPlanPerformance, lastNote } from './store.js';
+import { state, on, loadWorkouts, findExercise, lastPerformance, lastPlanPerformance, slotOf, lastNote } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
@@ -381,6 +381,38 @@ function fillBlankWorkingWeights(source, weightControls, unit) {
     });
 }
 
+/** Puts last time's reps behind a reps stepper's number, replacing any already there. */
+function paintRepsGhost(repsStepper, lastReps) {
+    const box = repsStepper.querySelector('.stepper-value');
+    box.querySelector('.reps-ghost')?.remove();
+    if (!lastReps) return;
+    box.append(
+        el('span', {
+            class: 'reps-ghost',
+            text: `last ${lastReps}`,
+            'aria-label': `Last time in this plan: ${lastReps} reps`,
+        }),
+    );
+}
+
+/**
+ * Brings every "last N" on screen up to date with the saved workouts, in place
+ * — without rebuilding the blocks, so nothing you're in the middle of (a half-
+ * typed note, a ticked set, your scroll position) is touched. Runs whenever the
+ * saved workouts are reloaded: a workout finished, one edited or deleted in
+ * History, a backup restored.
+ */
+function refreshPlanHints() {
+    if (!session?.templateId) return;
+    document.querySelectorAll('#today-body .exercise-block').forEach((block) => {
+        const entry = session.entries.find((e) => e.exerciseId === block.dataset.entryKey);
+        if (!entry) return;
+        const last = lastPlanPerformance(slotOf(entry), session.templateId);
+        const rows = [...block.querySelectorAll('.set-row')].filter((row) => !row.classList.contains('set-row-warmup'));
+        rows.forEach((row, i) => paintRepsGhost(row.children[2], last?.sets[i]?.reps ?? null));
+    });
+}
+
 function setRow(entry, set, index, label, refreshSets, refreshProgress, weightControls, lastReps = null) {
     const unit = getUnit();
 
@@ -418,15 +450,7 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress, weightCo
     // Last time's reps for this set in this plan, faded behind the number: a
     // caption to read, never a value — it isn't focusable, selectable or
     // tappable, and it isn't what gets saved.
-    if (lastReps) {
-        repsStepper.querySelector('.stepper-value').append(
-            el('span', {
-                class: 'reps-ghost',
-                text: `last ${lastReps}`,
-                'aria-label': `Last time in this plan: ${lastReps} reps`,
-            }),
-        );
-    }
+    paintRepsGhost(repsStepper, lastReps);
 
     const weightStepper = stepper({
         value: toDisplay(set.weightKg, unit),
@@ -934,11 +958,12 @@ function exerciseBlock(entry, entryIndex) {
     // Lets one row write into its siblings' inputs directly, rather than
     // rebuilding the list mid-edit and yanking the field out from under you.
     const weightControls = [];
-    // Read once per block, not per row: it walks the workout history.
-    const lastInPlan = lastPlanPerformance(entry.exerciseId, session.templateId);
     const refreshSets = () => {
         clear(setList);
         weightControls.length = 0;
+        // Looked up on every redraw (once per block, not per row — it walks the
+        // workout history), so adding or removing a set never uses stale data.
+        const lastInPlan = lastPlanPerformance(slotOf(entry), session.templateId);
         let workingCount = 0;
         let warmupCount = 0;
         entry.sets.forEach((set, index) => {
@@ -1404,6 +1429,9 @@ export function hasActiveSession() {
 
 export function initWorkout({ onWorkoutFinished } = {}) {
     onFinished = onWorkoutFinished;
+
+    // The "last N" on each set follows the saved workouts wherever they change.
+    on('workouts', refreshPlanHints);
 
     $('#start-empty-btn').addEventListener('click', () => startWorkout(null));
 

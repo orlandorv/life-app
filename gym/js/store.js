@@ -104,16 +104,27 @@ export function lastPerformance(exerciseId) {
 }
 
 /**
- * What you did the last time this exercise came up in a workout started from
- * this plan — working sets only, in order — or null if it hasn't been done in
- * it yet. Scoped to the plan on purpose: the same lift can be a heavy 4×6 in
- * Push and a lighter 3×12 in Upper, and each plan should show its own.
+ * The plan slot a workout entry belongs to: the exercise the plan asked for,
+ * which is the one it was swapped *from* when it was swapped.
  */
-export function lastPlanPerformance(exerciseId, templateId) {
+export const slotOf = (entry) => entry.swappedFromId ?? entry.exerciseId;
+
+/**
+ * What you did the last time this slot of this plan was done — working sets
+ * only, in order — or null if it hasn't been done in it yet. Scoped to the plan
+ * on purpose: the same lift can be a heavy 4×6 in Push and a lighter 3×12 in
+ * Upper, and each plan should show its own.
+ *
+ * Matched by slot, not by exercise, so a session where the slot was swapped
+ * (the incline bench was taken, so it was done on the flat bench) still counts
+ * as the last time that slot was done. Otherwise the numbers would skip it and
+ * fall back to a workout from weeks ago.
+ */
+export function lastPlanPerformance(slotId, templateId) {
     if (!templateId) return null;
     for (const workout of state.workouts) {
         if (workout.templateId !== templateId) continue;
-        const entry = workout.entries?.find((e) => e.exerciseId === exerciseId);
+        const entry = workout.entries?.find((e) => slotOf(e) === slotId);
         const done = entry?.sets.filter((s) => s.done && !s.warmup);
         if (done?.length) return { date: workout.startedAt, sets: done };
     }
