@@ -2618,3 +2618,20 @@ button.badge-tile:active {
     font-size: 13px;
     color: var(--text-secondary);
 }
+
+
+/* --- Recommended reps / RIR on listed exercises -------------------------- */
+
+.rec-line {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.detail-sub {
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}

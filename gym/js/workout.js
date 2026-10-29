@@ -1,5 +1,5 @@
 import { database, DEFAULTS, uid } from './db.js';
-import { prescriptionFor, clampRest, REST_MIN, REST_MAX } from './prescription.js';
+import { prescriptionFor, repsAndRir, clampRest, REST_MIN, REST_MAX } from './prescription.js';
 import { alternativesFor } from './alternatives.js';
 import { state, on, loadWorkouts, findExercise, lastPerformance, lastPlanPerformance, slotOf, lastNote } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
@@ -902,12 +902,10 @@ function exerciseBlock(entry, entryIndex) {
     // Sits with the template note, reading the rep range and RIR this
     // exercise is actually programmed at — worth more mid-set than in the
     // builder, where the numbers were set in the first place.
-    const guidanceHint = templateEntry
-        ? el('div', { class: 'guidance-hint' }, [
-              el('div', { text: repRangeGuidance(entry.targetReps ?? DEFAULTS.reps) }),
-              el('div', { text: rirGuidance(entry.targetRir ?? DEFAULTS.rir) }),
-          ])
-        : null;
+    const guidanceHint = el('div', { class: 'guidance-hint' }, [
+        el('div', { text: repRangeGuidance(entry.targetReps ?? DEFAULTS.reps) }),
+        el('div', { text: rirGuidance(entry.targetRir ?? DEFAULTS.rir) }),
+    ]);
 
     // Every exercise gets one. Where the plan has a slot for it — including the
     // slot a swapped-in exercise took over — the note is bound straight to the
@@ -1154,6 +1152,22 @@ async function removeExercise(index) {
     render();
 }
 
+/**
+ * The reps, RIR and rest an exercise should be set to when it takes a slot in
+ * the workout. Where the plan itself has the exercise — notably when swapping
+ * back to what it asked for — those are the plan's own numbers, since a plan is
+ * the user's data. Otherwise it's the exercise's recommendation, in the plan's
+ * rep scheme if it has one: a cable fly shouldn't inherit a barbell press's
+ * heavy, low-rep targets just because it took its place.
+ */
+function targetsForSwap(exercise) {
+    const template = session.templateId ? state.templates.find((t) => t.id === session.templateId) : null;
+    const slot = template?.exercises.find((e) => e.exerciseId === exercise.id);
+    if (slot) return { reps: slot.reps, rir: slot.rir ?? DEFAULTS.rir, restSeconds: clampRest(slot.restSeconds) };
+    const { reps, rir, restSeconds } = prescriptionFor(exercise, template?.preset);
+    return { reps, rir, restSeconds };
+}
+
 // Which exercise the open swap sheet is for — the sheet is static markup
 // (shown via the modal stack, like every other), so it has to be remembered.
 let swapIndex = null;
@@ -1192,6 +1206,7 @@ function swapExercise(index) {
         list.append(el('div', { class: 'empty-state small', text: 'No close substitute in your library — browse all exercises instead.' }));
     }
     options.forEach(({ exercise, note }) => {
+        const targets = targetsForSwap(exercise);
         list.append(
             el('button', { class: 'picker-row', type: 'button', dataset: { id: exercise.id } }, [
                 el('span', { class: 'muscle-dot', dataset: { muscle: exercise.muscleGroup } }),
@@ -1202,6 +1217,8 @@ function swapExercise(index) {
                         text: [exercise.equipment, exercise.attachment].filter(Boolean).join(' · '),
                     }),
                     note ? el('div', { class: 'picker-note', text: note }) : null,
+                    // What the swap will set, so it's no surprise afterwards.
+                    el('div', { class: 'rec-line', text: `Sets to ${repsAndRir(targets.reps, targets.rir)}` }),
                 ]),
                 el('span', { class: 'picker-add', text: '⇄' }),
             ]),
@@ -1259,19 +1276,37 @@ async function applySwap(index, exerciseId) {
         entry.swappedFrom = originalName;
     }
 
+    // The slot keeps its set count, but the new exercise brings its own reps,
+    // RIR and rest: what suits a heavy barbell lift doesn't suit a cable
+    // isolation, and these are also what "ready to progress" is judged against.
+    const targets = targetsForSwap(exercise);
+    entry.targetReps = targets.reps;
+    entry.targetRir = targets.rir;
+    entry.restSeconds = targets.restSeconds;
+
+    // Same seeding as starting it from a plan: weights and RIR from what was
+    // last lifted on this exercise (blank / the target if never), reps at the target.
     const previous = lastPerformance(exerciseId)?.sets ?? [];
     const lastKnown = previous.at(-1)?.weightKg ?? 0;
+    const seedRir = previous.at(-1)?.rir ?? targets.rir;
     let working = 0;
     entry.sets.forEach((set) => {
         set.done = false;
         set.completedAt = null;
-        set.weightKg = set.warmup ? 0 : (previous[working++]?.weightKg ?? lastKnown);
+        if (set.warmup) {
+            set.weightKg = 0;
+            return;
+        }
+        const last = previous[working++];
+        set.weightKg = last?.weightKg ?? lastKnown;
+        set.reps = targets.reps;
+        set.rir = last?.rir ?? seedRir;
     });
 
     await persist();
     render();
     syncElapsedTimer();
-    toast(`Swapped to ${exercise.name}`);
+    toast(`Swapped to ${exercise.name} · ${repsAndRir(targets.reps, targets.rir)}`);
     return true;
 }
 

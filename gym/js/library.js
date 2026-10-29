@@ -3,6 +3,9 @@ import { MUSCLE_GROUPS, EQUIPMENT } from './seed.js';
 import { state, loadExercises, findExercise } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { demoLink } from './demo-link.js';
+import { recommendationFor } from './prescription.js';
+import { repRangeGuidance, rirGuidance } from './guidance.js';
+import { formatRest } from './units.js';
 
 let pendingMediaFile = null;
 let pendingMediaCleared = false;
@@ -59,6 +62,9 @@ function exerciseCard(exercise) {
     return el('button', { class: 'card exercise-card', type: 'button', dataset: { id: exercise.id } }, [
         el('div', { class: 'card-title', text: exercise.name }),
         el('div', { class: 'badge-row' }, badges),
+        // What a workout would start this exercise at, so every listed
+        // exercise says how to train it, not only the ones already in a plan.
+        el('div', { class: 'rec-line', text: recommendationFor(exercise).summary }),
     ]);
 }
 
@@ -104,6 +110,15 @@ async function openDetails(exerciseId) {
                 el('span', { class: 'muscle-dot', dataset: { muscle: exercise.muscleGroup } }),
                 exercise.muscleGroup,
             ]),
+        ]),
+    );
+    const rec = recommendationFor(exercise);
+    body.append(
+        el('div', { class: 'detail-field' }, [
+            el('div', { class: 'detail-label', text: 'Recommended' }),
+            el('div', { class: 'detail-value', text: `${rec.summary} · rest ${formatRest(rec.restSeconds)}` }),
+            el('div', { class: 'detail-sub', text: repRangeGuidance(rec.reps) }),
+            el('div', { class: 'detail-sub', text: rirGuidance(rec.rir) }),
         ]),
     );
     body.append(field('Equipment', exercise.equipment));

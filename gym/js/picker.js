@@ -1,4 +1,5 @@
 import { state } from './store.js';
+import { recommendationFor } from './prescription.js';
 import { $, el, clear, openModal, closeModal, onModalClosed } from '../../life/dom.js';
 
 // One picker sheet shared by the template builder and mid-workout "add
@@ -33,6 +34,7 @@ function render() {
                         class: 'picker-meta',
                         text: [exercise.muscleGroup, exercise.equipment, exercise.attachment].filter(Boolean).join(' · '),
                     }),
+                    el('div', { class: 'rec-line', text: recommendationFor(exercise).summary }),
                 ]),
                 el('span', { class: 'picker-add', text: '+' }),
             ]),

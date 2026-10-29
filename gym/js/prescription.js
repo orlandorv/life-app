@@ -8,6 +8,8 @@
  * into the range (6 → 4–6, 10 → 6–10, 15 → 10–15).
  */
 
+import { repRange, rirLabel } from './guidance.js';
+
 export const ROLES = ['main', 'secondary', 'isolation'];
 
 // Rest between sets is always 2–3 minutes: long enough to recover for the next
@@ -222,6 +224,25 @@ export function prescriptionFor(exercise, presetId = DEFAULT_PRESET) {
         restSeconds: clampRest(base.restSeconds + (adjust.restSeconds ?? 0)),
         rir: Math.min(3, Math.max(role === 'isolation' ? 0 : 1, base.rir + (adjust.rir ?? 0))),
     };
+}
+
+/**
+ * What's recommended for an exercise, in the form lists want to show it: the
+ * same numbers a new plan entry or a mid-workout exercise starts with
+ * (`prescriptionFor`), with the rep range and RIR worded the way a workout
+ * words them. `summary` is the compact line ("3 × 6–10 reps · ~1 RIR").
+ */
+export function recommendationFor(exercise, presetId = DEFAULT_PRESET) {
+    const { sets, reps, restSeconds, rir } = prescriptionFor(exercise, presetId);
+    const { low, high } = repRange(reps);
+    const range = low === high ? `${high}` : `${low}–${high}`;
+    return { sets, reps, restSeconds, rir, range, summary: `${sets} × ${range} reps · ${rirLabel(rir)}` };
+}
+
+/** "6–10 reps · 1–2 RIR": a target's reps and RIR, worded as everywhere else. */
+export function repsAndRir(reps, rir) {
+    const { low, high } = repRange(reps);
+    return `${low === high ? high : `${low}–${high}`} reps · ${rirLabel(rir)}`;
 }
 
 /** Ids with their own nudge — exposed for tests. */

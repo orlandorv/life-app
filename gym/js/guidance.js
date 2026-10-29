@@ -22,6 +22,20 @@ function rangeBottom(topReps) {
     return Math.max(1, Math.min(topReps - 1, Math.round(topReps * 0.65)));
 }
 
+/** The rep range a top of `topReps` stands for: 6 → 4–6, 10 → 6–10, 15 → 10–15. */
+export function repRange(topReps) {
+    if (!(topReps > 1)) return { low: topReps, high: topReps };
+    return { low: rangeBottom(topReps), high: topReps };
+}
+
+/** "1–2 RIR" style short form of rirGuidance(), for compact lists. */
+export function rirLabel(rir) {
+    if (rir >= 3) return '~3 RIR';
+    if (rir === 2) return '1–2 RIR';
+    if (rir === 1) return '~1 RIR';
+    return '0 RIR';
+}
+
 export function repRangeGuidance(topReps) {
     if (!(topReps > 1)) return `Work up to ${topReps} rep${topReps === 1 ? '' : 's'} per set.`;
     return `Work in the ${rangeBottom(topReps)}–${topReps} rep range — add weight once every set reaches ${topReps}.`;
