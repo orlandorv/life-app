@@ -1,6 +1,7 @@
 import { lifeDb, uid } from '../life/db.js';
 import { localDayId } from '../life/dates.js';
 import { isRoutine, routineProgress, stepsForDay } from './routine.js';
+import { ANYTIME, isTimeOfDay } from './times.js';
 
 /**
  * In-memory mirror of Habits, in the same style as nutrition/store.js. `done`
@@ -63,32 +64,38 @@ function cleanSteps(steps = []) {
         });
 }
 
-/** Optional fields are left off entirely when empty, so a plain habit stays plain. */
-function withExtras(habit, { note, steps }) {
+/**
+ * Optional fields are left off entirely when empty, so a plain habit stays
+ * plain. That includes the time of day: "all day" is the absence of one, which
+ * is also what every habit made before it existed already is.
+ */
+function withExtras(habit, { note, steps, timeOfDay }) {
     const next = { ...habit };
     delete next.note;
     delete next.steps;
+    delete next.timeOfDay;
+    if (isTimeOfDay(timeOfDay) && timeOfDay !== ANYTIME) next.timeOfDay = timeOfDay;
     if (note?.trim()) next.note = note.trim();
     const cleaned = cleanSteps(steps);
     if (cleaned.length) next.steps = cleaned;
     return next;
 }
 
-export async function addHabit({ name, days, note, steps }) {
+export async function addHabit({ name, days, note, steps, timeOfDay }) {
     const habit = withExtras({
         id: uid(),
         name: name.trim(),
         days: cleanDays(days),
         startDay: localDayId(),
         createdAt: new Date().toISOString(),
-    }, { note, steps });
+    }, { note, steps, timeOfDay });
     await lifeDb.put('habits', habit);
     state.habits.push(habit);
     return habit;
 }
 
-export async function updateHabit(habit, { name, days, note, steps }) {
-    const updated = withExtras({ ...habit, name: name.trim(), days: cleanDays(days) }, { note, steps });
+export async function updateHabit(habit, { name, days, note, steps, timeOfDay }) {
+    const updated = withExtras({ ...habit, name: name.trim(), days: cleanDays(days) }, { note, steps, timeOfDay });
     await lifeDb.put('habits', updated);
     state.habits = state.habits.map((existing) => (existing.id === habit.id ? updated : existing));
 

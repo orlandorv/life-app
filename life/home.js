@@ -10,6 +10,7 @@ import { dayTotals, hasTarget } from '../nutrition/totals.js';
 import { state as habitsState, loadHabits, loadLogs, loadTicks, doneDays, tickedSteps, toggleHabit } from '../habits/store.js';
 import { isScheduled, currentStreak } from '../habits/streaks.js';
 import { isRoutine, routineProgress } from '../habits/routine.js';
+import { timeRank } from '../habits/times.js';
 import { openRoutine } from '../habits/routine-sheet.js';
 import { state as bodyState, loadEntries, entryFor } from '../body/store.js';
 import { trendSeries, weeklyLogReminder } from '../body/stats.js';
@@ -254,7 +255,9 @@ function habitsBlock(today) {
         ]);
     }
 
-    const due = habitsState.habits.filter((habit) => isScheduled(habit, today));
+    // In the day's order (morning first, all day last); the sort is stable, so
+    // habits keep their own order within a time of day.
+    const due = habitsState.habits.filter((habit) => isScheduled(habit, today)).sort((a, b) => timeRank(a) - timeRank(b));
     if (!due.length) {
         return block('habits', 'Habits', 'habits', [
             figure('Rest day'),

@@ -8,6 +8,8 @@
  * bare Gym backup, so files made before Life existed still restore.
  */
 
+import { isTimeOfDay } from '../habits/times.js';
+
 export const LIFE_FORMAT = 'life-backup';
 export const LIFE_VERSION = 1;
 export const GYM_FORMAT = 'gym-tracker-backup';
@@ -67,6 +69,7 @@ const ROW_CHECKS = {
         DAY.test(row.startDay) &&
         isWeekdays(row.days) &&
         isOptionalText(row.note) &&
+        (row.timeOfDay === undefined || isTimeOfDay(row.timeOfDay)) &&
         (row.steps === undefined || (Array.isArray(row.steps) && row.steps.every(isStep))),
     habitLogs: (row) => isText(row.id) && isText(row.habitId) && DAY.test(row.day),
     routineTicks: (row) =>

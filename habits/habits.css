@@ -465,3 +465,40 @@
     background: var(--bg);
     border-top: 1px solid var(--card-border);
 }
+
+/* --- Time of day --------------------------------------------------------- */
+
+/* A heading over each time-of-day group: the name, a hint for "All day", and
+   on Today how many of the group are done. */
+.habits-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 22px 4px 8px;
+}
+
+.habits-group-head .life-eyebrow {
+    margin: 0;
+}
+
+.habits-group-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.habits-group-count {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--text-secondary);
+}
+
+/* The heading right under the summary or day bar needs less air above it. */
+.habits-summary + .habits-group-head,
+.life-daybar + .habits-group-head {
+    margin-top: 16px;
+}
+
+.habit-when button {
+    padding-inline: 4px;
+}

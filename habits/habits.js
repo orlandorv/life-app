@@ -19,6 +19,7 @@ import { EVERY_DAY, isScheduled, currentStreak, longestStreak, weekCells, weekTa
 import { isRoutine, routineProgress } from './routine.js';
 import { openRoutine } from './routine-sheet.js';
 import { stepEditor } from './step-editor.js';
+import { TIMES, ANYTIME, timeOf, groupByTime } from './times.js';
 
 /**
  * Habits: recurring things you tick off. Two views of the same data — Today
@@ -155,9 +156,25 @@ function todayView() {
                 }),
             ]),
         ]),
-        el('div', { class: 'life-list' }, due.map((habit) => habitRow(habit, today))),
     );
+    // One card per time of day, in the day's order; "All day" habits last.
+    groupByTime(due).forEach((group) => {
+        const done = group.habits.filter((habit) => doneDays(habit.id).has(state.day)).length;
+        view.append(
+            groupHead(group, `${done} of ${group.habits.length}`),
+            el('div', { class: 'life-list' }, group.habits.map((habit) => habitRow(habit, today))),
+        );
+    });
     return view;
+}
+
+/** A time-of-day heading, with how many of its habits are done on Today. */
+function groupHead(group, count = null) {
+    return el('div', { class: 'habits-group-head' }, [
+        el('h2', { class: 'life-eyebrow', text: group.label }),
+        group.hint ? el('span', { class: 'habits-group-hint', text: group.hint }) : null,
+        count ? el('span', { class: 'habits-group-count', text: count }) : null,
+    ]);
 }
 
 function shiftDay(direction) {
@@ -234,7 +251,9 @@ function weekView() {
         }),
     ]);
 
-    view.append(el('div', { class: 'stack' }, state.habits.map((habit) => weekCard(habit, today))));
+    groupByTime(state.habits).forEach((group) => {
+        view.append(groupHead(group), el('div', { class: 'stack' }, group.habits.map((habit) => weekCard(habit, today))));
+    });
     return view;
 }
 
@@ -290,6 +309,7 @@ function openHabitModal(habit = null) {
 
 function habitForm(habit) {
     const selected = new Set(habit?.days ?? EVERY_DAY);
+    let timeOfDay = habit ? timeOf(habit) : ANYTIME;
 
     const name = el('input', {
         class: 'form-input',
@@ -314,12 +334,31 @@ function habitForm(habit) {
         }),
     );
 
-    const sync = () =>
+    const sync = () => {
         chips.forEach((chip, index) => {
             const on = selected.has(index);
             chip.classList.toggle('on', on);
             chip.setAttribute('aria-pressed', String(on));
         });
+        timeButtons.forEach((button) => {
+            const on = button.dataset.time === timeOfDay;
+            button.classList.toggle('active', on);
+            button.setAttribute('aria-pressed', String(on));
+        });
+    };
+
+    // When in the day it belongs. "All day" is for one that can be done at any point.
+    const timeButtons = TIMES.map((time) =>
+        el('button', {
+            type: 'button',
+            text: time.label,
+            dataset: { time: time.id },
+            onclick: () => {
+                timeOfDay = time.id;
+                sync();
+            },
+        }),
+    );
 
     const note = el('input', {
         class: 'form-input',
@@ -373,7 +412,7 @@ function habitForm(habit) {
             return;
         }
 
-        const values = { name: name.value, days: [...selected], note: note.value, steps: editor.value() };
+        const values = { name: name.value, days: [...selected], note: note.value, steps: editor.value(), timeOfDay };
         closeModal('habit-modal');
 
         if (habit) {
@@ -405,6 +444,11 @@ function habitForm(habit) {
             el('span', { class: 'stepper-label', text: 'Repeats on' }),
             el('div', { class: 'habit-chips' }, chips),
             el('div', { class: 'habit-presets' }, [preset('Every day', EVERY_DAY), preset('Weekdays', WEEKDAYS)]),
+        ]),
+        el('div', { class: 'stepper-field' }, [
+            el('span', { class: 'stepper-label', text: 'When' }),
+            el('div', { class: 'segmented segmented-fill habit-when' }, timeButtons),
+            el('p', { class: 'hint', text: 'All day is for a habit you can do at any point in the day.' }),
         ]),
         el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Note (optional)' }), note]),
         el('div', { class: 'stepper-field' }, [

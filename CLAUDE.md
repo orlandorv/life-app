@@ -16,7 +16,7 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/share.js` — `shareOrDownload(file, title)`: hands a generated file to the Web Share API, falling back to a plain download. Shared by Backup and Tasks' calendar export — both need the same "must start straight from the tap on iOS" handling.
 - `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
 - `body/` — the Body section: `body.js` (screen + entry sheet), `store.js`, `stats.js` (pure trend/weekly-average/chart-geometry/reminder maths, unit-testable in Node), `chart.js` (hand-built SVG: the weight line chart and the daily bar chart), `health-import.js` (pure: parse Apple Health text, plan the save) + `health-sheet.js` (Paste from Health UI and setup guide), `body.css`.
-- `habits/` — the Habits section: `habits.js` (Today/Week views + habit sheet), `store.js`, `streaks.js` and `routine.js` (pure schedule/streak and routine-step maths, unit-testable in Node), `routine-sheet.js` (a routine's checklist, also opened from Today), `step-editor.js`, `habits.css`.
+- `habits/` — the Habits section: `habits.js` (Today/Week views + habit sheet), `store.js`, `streaks.js`, `routine.js` and `times.js` (pure schedule/streak, routine-step and time-of-day maths, unit-testable in Node), `routine-sheet.js` (a routine's checklist, also opened from Today), `step-editor.js`, `habits.css`.
 - `nutrition/` — the Nutrition section: `nutrition.js` (diary + add-food sheet), `store.js` (state and writes), `portions.js` and `totals.js` (pure food/portion/meal and total maths, unit-testable in Node), `whole-foods.js` (the built-in whole-food list and its search), `colombian-foods.js` (its Colombian rows, from ICBF's table) and `stores.js` (the UK supermarkets), all pure, `off.js` (Open Food Facts client), `scanner.js` (camera barcode scanning), `nutrition.css`.
 - `vendor/zxing/` — ZXing barcode decoder (`@zxing/library` 0.23.0 UMD, Apache-2.0, LICENSE alongside). Vendored because there's no build step; loaded lazily by `nutrition/scanner.js` on first scan and deliberately **not** in `APP_SHELL`.
 - `videos/` — the Videos section: `videos.js` (grouped list + add/edit/rename sheets), `store.js`, `organize.js` (pure grouping and YouTube-link parsing, unit-testable in Node), `oembed.js` (best-effort title lookup), `videos.css`.
@@ -104,6 +104,14 @@ A habit may carry optional `note` and `steps: [{id, text, detail?, days?}]`; a h
 - **One rule keeps them consistent:** a routine is done on a day exactly when every step due that day is ticked. `setStepDone()` maintains it tick by tick; `toggleHabit()` (the week grid, Today) ticks or clears all of that day's steps; `updateHabit()` re-checks *today* after an edit. Use `toggleHabit`, not the low-level `toggleDone`, from UI.
 - Step ids survive edits, so reordering or rewording steps keeps today's ticks.
 - Personal routines are not in the repo (it's public for GitHub Pages): they're imported as a `life-backup` file. `.gitignore` excludes `*-backup-*.json` and `life-routines*.json`.
+
+### Time of day (`habits/times.js`)
+
+A habit may carry `timeOfDay`: `'morning'`, `'afternoon'` or `'night'`; with none it is **All day** — can be done at any point in the day (`'anytime'`, which is never stored). Today and Week group habits under those four headings in that order (`groupByTime()`: empty groups are left out, and habits keep their own order within a group), Today shows "N of M" done per group beside the overall summary, and the home screen's Habits card lists the day in the same order (`timeRank()`). Chosen with the **When** picker in the add/edit sheet; new habits start on All day.
+
+- **It's only a label for organising the checklist.** It doesn't change when a habit is due, how streaks run, or when it can be ticked — a morning habit can still be ticked at night (and it backfills past days like any other).
+- **No migration:** every habit made before this has no `timeOfDay`, which already means All day. Choosing All day again *removes* the field rather than saving `'anytime'` (`withExtras()` in `store.js`, same rule as `note` and `steps`).
+- `ROW_CHECKS.habits` in `backup-format.js` accepts the field absent or one of the three and rejects anything else, via `isTimeOfDay()`. Additive, so `LIFE_VERSION` is unchanged and older backups import as they were.
 
 ### Today (`life/home.js`)
 
