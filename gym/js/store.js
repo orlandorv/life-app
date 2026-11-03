@@ -13,6 +13,9 @@ export const state = {
     checkins: [],
     activeWorkout: null,
     progressLedger: null,
+    // Lift goals (see goals.js). Kept in the settings store, so they ride along
+    // in every backup with no schema change.
+    goals: [],
 };
 
 const listeners = new Map();
@@ -146,6 +149,19 @@ export function lastNote(exerciseId) {
     return null;
 }
 
+export async function loadGoals() {
+    const goals = await database.getSetting('goals', []);
+    state.goals = Array.isArray(goals) ? goals : [];
+    emit('goals');
+    return state.goals;
+}
+
+export async function saveGoals(goals) {
+    await database.setSetting('goals', goals);
+    state.goals = goals;
+    emit('goals');
+}
+
 export async function bootstrap() {
     await database.init();
     await database.seedExercises(DEFAULT_EXERCISES);
@@ -154,5 +170,5 @@ export async function bootstrap() {
     await database.excludeExampleTemplatesOnce();
     setUnit(await database.getSetting('unit', 'kg'));
     await loadBarWeights();
-    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger()]);
+    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger(), loadGoals()]);
 }

@@ -8,6 +8,8 @@ import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
 import { demoLink } from './demo-link.js';
+import { goalStatus, reachedGoalIds, sortGoals } from './goals.js';
+import { goalLabel, goalProgressText } from './goals-ui.js';
 import { computeProgress, syncProgressLedger } from './progress.js';
 import { showWorkoutSummary } from './rewards.js';
 import { startRest, stopRest, isResting } from './timer.js';
@@ -210,6 +212,7 @@ async function finishWorkout() {
     // sheet what this workout actually earned.
     const finished = session;
     const before = computeProgress();
+    const goalsBefore = reachedGoalIds(state.goals, state.workouts);
 
     await database.saveWorkout(session);
     session = null;
@@ -220,7 +223,11 @@ async function finishWorkout() {
     render();
     playWorkoutFinished();
 
-    await showWorkoutSummary(before, computeProgress(), finished);
+    // Lift goals this workout reached, listed in the summary sheet itself.
+    const goalsReached = state.goals
+        .filter((goal) => !goalsBefore.has(goal.id) && goalStatus(goal, state.workouts).reached)
+        .map((goal) => `${findExercise(goal.exerciseId)?.name ?? goal.exerciseName} ${goalLabel(goal)}`);
+    await showWorkoutSummary(before, computeProgress(), finished, { goalsReached });
     // After the summary, so the Progress tab redraws with the newly earned
     // badges already marked as seen.
     onFinished?.();
@@ -379,6 +386,23 @@ function fillBlankWorkingWeights(source, weightControls, unit) {
         set.weightKg = source.weightKg;
         control.setValue(toDisplay(set.weightKg, unit));
     });
+}
+
+/**
+ * The goal line under an exercise's name: the nearest goal not yet reached on
+ * it ("Goal 100 kg · 90% there"), or nothing when it has none left. Reached
+ * goals are left to the Records tab and the "goal reached" moment on finishing.
+ */
+function paintGoalLine(node, exerciseId) {
+    const open = sortGoals(state.goals.filter((goal) => goal.exerciseId === exerciseId), state.workouts).find(
+        ({ status }) => !status.reached,
+    );
+    node.hidden = !open;
+    node.textContent = open ? `Goal ${goalLabel(open.goal)} · ${goalProgressText(open.goal, open.status, { short: true })}` : '';
+}
+
+function refreshGoalLines() {
+    document.querySelectorAll('#today-body .goal-line').forEach((node) => paintGoalLine(node, node.dataset.exercise));
 }
 
 /** Puts last time's reps behind a reps stepper's number, replacing any already there. */
@@ -1001,6 +1025,11 @@ function exerciseBlock(entry, entryIndex) {
                 meta ? el('div', { class: 'exercise-block-meta', text: meta }) : null,
                 entry.swappedFrom ? el('div', { class: 'exercise-block-meta', text: `Swapped from ${entry.swappedFrom}` }) : null,
                 demoLink(entry.exerciseId),
+                (() => {
+                    const line = el('div', { class: 'goal-line', dataset: { exercise: entry.exerciseId } });
+                    paintGoalLine(line, entry.exerciseId);
+                    return line;
+                })(),
             ]),
             el('div', { class: 'row-controls' }, [
                 editToggle,
@@ -1467,6 +1496,9 @@ export function initWorkout({ onWorkoutFinished } = {}) {
 
     // The "last N" on each set follows the saved workouts wherever they change.
     on('workouts', refreshPlanHints);
+    // So does each exercise's goal line, and it follows the goals themselves.
+    on('workouts', refreshGoalLines);
+    on('goals', refreshGoalLines);
 
     $('#start-empty-btn').addEventListener('click', () => startWorkout(null));
 

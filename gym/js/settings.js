@@ -1,5 +1,5 @@
 import { database } from './db.js';
-import { loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger } from './store.js';
+import { loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger, loadGoals } from './store.js';
 import { $, el, clear, openModal, confirmSheet, toast } from '../../life/dom.js';
 import { getUnit, setUnit } from './units.js';
 
@@ -81,7 +81,7 @@ async function importBackup(file) {
     }
 
     setUnit(await database.getSetting('unit', getUnit()));
-    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger()]);
+    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger(), loadGoals()]);
     onDataChanged?.();
     onUnitChanged?.();
     toast('Backup imported');

@@ -2635,3 +2635,137 @@ button.badge-tile:active {
     line-height: 1.4;
     color: var(--text-secondary);
 }
+
+/* --- Goals (Records tab) ------------------------------------------------ */
+
+.goals-card {
+    margin-bottom: 20px;
+}
+
+.goals-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.goals-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.goals-note {
+    margin: 6px 0 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.goals-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+}
+
+/* Each goal is one button: tap anywhere on it to edit. */
+.goal-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: none;
+    font: inherit;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+
+.goal-row:last-child {
+    border-bottom: none;
+    padding-bottom: 4px;
+}
+
+.goal-row-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.goal-name {
+    font-weight: 650;
+}
+
+.goal-target {
+    flex-shrink: 0;
+    font-family: var(--font-rounded);
+    font-weight: 650;
+    color: var(--primary);
+}
+
+.goal-row.reached .goal-target {
+    color: var(--success);
+}
+
+.goal-meter {
+    display: block;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+.goal-meter-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--primary);
+}
+
+.goal-row.reached .goal-meter-fill {
+    background: var(--success);
+}
+
+.goal-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* The sheet */
+.goal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.goal-form-row {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 10px;
+}
+
+.goal-exercise {
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.goal-exercise.placeholder {
+    color: var(--text-secondary);
+}
+
+.goal-best {
+    margin: 0;
+}
+
+/* Under an exercise's name in a live workout. */
+.goal-line {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+}

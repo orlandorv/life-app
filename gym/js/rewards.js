@@ -330,7 +330,12 @@ function xpLine(label, xp, className = '') {
  * the sheet keeps meaning "look at this" rather than becoming the thing you
  * dismiss four times a week.
  */
-export async function showWorkoutSummary(before, after, workout) {
+/**
+ * `goalsReached` is a label per lift goal this workout reached ("Barbell Bench
+ * Press 100 kg"); reaching one is always worth the sheet, so it's listed there
+ * with the other highlights rather than in a toast the sheet would cover.
+ */
+export async function showWorkoutSummary(before, after, workout, { goalsReached = [] } = {}) {
     const gained = after.xpTotal - before.xpTotal;
     const session = after.sessions.find((candidate) => candidate.workout.id === workout.id);
 
@@ -351,7 +356,7 @@ export async function showWorkoutSummary(before, after, workout) {
     const questsWere = questsForWeek(weekId, before.weeks, ledger).filter((quest) => quest.done).length;
     const questsCleared = questsDone.length - questsWere;
 
-    const notable = levelledUp || fresh.length > 0 || records > 0 || questsCleared > 0 || weekCompleted;
+    const notable = levelledUp || fresh.length > 0 || records > 0 || questsCleared > 0 || weekCompleted || goalsReached.length > 0;
 
     if (!notable) {
         toast(`+${gained} XP · Level ${after.level}`);
@@ -391,6 +396,8 @@ export async function showWorkoutSummary(before, after, workout) {
             text: `🔥 Week complete — ${after.streak} week${after.streak > 1 ? 's' : ''} running`,
         }));
     }
+
+    goalsReached.forEach((label) => body.append(el('p', { class: 'summary-highlight', text: `✅ Goal reached: ${label}` })));
 
     if (records > 0) {
         body.append(el('p', { class: 'summary-highlight', text: `🏆 ${records} new personal record${records > 1 ? 's' : ''}` }));

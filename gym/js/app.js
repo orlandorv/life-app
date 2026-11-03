@@ -1,5 +1,5 @@
 import { database } from './db.js';
-import { bootstrap, loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger } from './store.js';
+import { bootstrap, loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger, loadGoals } from './store.js';
 import { getUnit, setUnit } from './units.js';
 import { $$ } from '../../life/dom.js';
 import { initLibrary, renderLibrary, releaseMediaUrls } from './library.js';
@@ -51,7 +51,7 @@ function renderAll() {
  */
 export async function reloadGym() {
     setUnit(await database.getSetting('unit', getUnit()));
-    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger()]);
+    await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger(), loadGoals()]);
     renderAll();
 }
 

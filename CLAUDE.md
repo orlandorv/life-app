@@ -196,6 +196,15 @@ The **Swap** button (beside Edit) on an exercise in a live workout opens `#swap-
 - **Notes:** every exercise block in a live workout has both a *Note for next time* (`entry.note`, carried to the next session) and a *Plan note*. The plan note is bound to the template's slot when there is one — a swapped-in exercise uses the slot of what it replaced (`swappedFromId`) — and otherwise (quick workout, exercise added mid-session) is kept on the workout entry as `entry.planNote`, cleared on a swap since it was about the old exercise.
 - The entry records `swappedFromId`/`swappedFrom`, shown as "Swapped from …" and offered first in the sheet as the way back. The plan itself is never changed — next session it still asks for the original.
 
+### Lift goals (`goals.js`, `goals-ui.js`)
+
+A goal is a lift target — "Bench Press 100 kg", "Squat 140 kg × 3": `{ id, exerciseId, exerciseName, targetKg, reps (1–12), createdAt }`, kept as the Gym setting `goals` (`loadGoals()`/`saveGoals()` in `store.js`, emitting `goals`), so backups carry it with no schema change and every import path reloads it. Shown as a **Goals** card at the top of the Records tab (tap a goal to edit or delete it), a "Goal 100 kg · 90% there" line under that exercise's name in a live workout (repainted in place on `goals`/`workouts`), and a "✅ Goal reached" line in the summary sheet of the workout that reaches it (passed to `showWorkoutSummary()` as `goalsReached`, which always counts as worth showing the sheet — it returns as soon as the sheet opens, so a toast after it would be covered by it).
+
+- **Reached is a real set, never an estimate**: a logged working set (`isLoggedWork()`) at or above the target weight for at least the target reps; the *earliest* such set is when it was reached, worked out from history every time (never stored), so editing or deleting a workout in History can un-reach it. An estimated max above the target doesn't count — "bench 100 kg" isn't done until 100 kg has been on the bar.
+- **Progress** is the best estimated max (`estimateOneRepMax()`, the Records cards' estimate) over what the target set represents (`targetEstimate()`: Epley at 0 RIR), held at 99% until it's really reached, so the bar moves every session without lying.
+- Matched by the exercise actually done (`entry.exerciseId`), not the plan slot — a goal is about a lift. The card lists open goals first, closest to done at the top, then reached ones.
+- The sheet's exercise comes from the shared picker; a new goal's target starts a little above the best estimated max on a round number, until one is typed.
+
 ### Strength map (`strength.js`, `strength-standards.js`, `body-shapes.js`, `body-map.js`)
 
 At the top of the Records tab, a front and back figure with each muscle shaded by how strong it is for **this person**: their best lift for that muscle, set against strength standards adjusted for bodyweight, age and sex. Tap a muscle (or its row in the list under the figures) for the best lift, the set it came from, and what the next level takes.

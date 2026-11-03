@@ -4,6 +4,7 @@ import { $, el, clear } from '../../life/dom.js';
 import { formatWeight, getUnit, toDisplay } from './units.js';
 import { isLoggedWork, estimateOneRepMax } from './strength.js';
 import { renderStrengthMap } from './body-map.js';
+import { goalsCard } from './goals-ui.js';
 
 /** Bucket for records whose workout never recorded a muscle group. */
 const OTHER = 'Other';
@@ -126,6 +127,10 @@ function recordCard(record, estimate) {
 
 export function renderRecords() {
     const container = clear($('#prs-body'));
+
+    // Goals first: they're what you're working toward, and the most likely
+    // reason to open this tab mid-week.
+    container.append(goalsCard({ onChanged: renderRecords }));
 
     // The muscle map sits above the records and loads on its own (it reads the
     // profile and your latest weigh-in), so the list below never waits on it.
