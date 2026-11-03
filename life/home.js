@@ -20,6 +20,8 @@ import { state as tasksState, loadTasks } from '../tasks/store.js';
 import { nextTask, overdueCount, dueCount, taskDateLabel } from '../tasks/organize.js';
 import { loadEntries as loadJournal, entryFor as journalEntryFor, saveEntry as saveJournalEntry } from '../journal/store.js';
 import { MOODS, SCALE, moodLabel, energyLabel } from '../journal/insights.js';
+import { state as inboxState, loadNotes } from '../inbox/store.js';
+import { sortNotes } from '../inbox/organize.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -69,7 +71,7 @@ export async function renderHome() {
 
     try {
         await Promise.all([gymReady(), lifeDb.init()]);
-        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks(), loadJournal()]);
+        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks(), loadJournal(), loadNotes()]);
     } catch (error) {
         console.error(error);
         return;
@@ -87,6 +89,7 @@ export async function renderHome() {
         journalBlock(today),
         videosBlock(),
         tasksBlock(today),
+        inboxBlock(),
     );
 }
 
@@ -245,6 +248,24 @@ function nutritionBlock() {
         ]),
         el('p', { class: 'life-sub', text: note, style: 'margin-top: 12px' }),
         action('Log food', '#/nutrition/log', food.entries.length > 0),
+    ]);
+}
+
+// --- Inbox --------------------------------------------------------------------
+
+/** How many notes, the newest (or pinned) one, and a quick way to jot another. */
+function inboxBlock() {
+    const notes = sortNotes(inboxState.notes);
+    if (!notes.length) {
+        return block('inbox', 'Inbox', 'inbox', [
+            el('p', { class: 'life-sub', text: 'Ideas and things to remember, out of your head.' }),
+            action('Jot something down', '#/inbox/new'),
+        ]);
+    }
+    return block('inbox', 'Inbox', 'inbox', [
+        figure(String(notes.length), notes.length === 1 ? 'note' : 'notes'),
+        el('p', { class: 'life-sub life-inbox-latest', text: notes[0].text }),
+        action('Jot something down', '#/inbox/new', true),
     ]);
 }
 

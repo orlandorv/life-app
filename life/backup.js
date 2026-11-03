@@ -145,6 +145,7 @@ function importMessage(info) {
         [counts.videos, 'video'],
         [counts.tasks, 'task'],
         [counts.journalDays, 'journal day'],
+        [counts.notes, 'note'],
     ]
         .filter(([n]) => n > 0)
         .map(([n, one, many]) => `${n} ${n === 1 ? one : many ?? `${one}s`}`);

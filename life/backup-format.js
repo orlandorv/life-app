@@ -25,6 +25,7 @@ export const LIFE_STORES = {
     videos: 'id',
     tasks: 'id',
     journalEntries: 'day',
+    notes: 'id',
     settings: 'key',
 };
 
@@ -99,6 +100,7 @@ const ROW_CHECKS = {
         (row.calendarSequence === undefined || (Number.isInteger(row.calendarSequence) && row.calendarSequence >= 0)),
     settings: (row) => isText(row.key),
     journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note),
+    notes: (row) => isText(row.id) && isText(row.text) && isText(row.createdAt) && isOptionalText(row.updatedAt) && (row.pinned === undefined || isBoolean(row.pinned)),
 };
 
 function checkLife(life) {
@@ -173,6 +175,7 @@ export function summarize(info) {
         videos: count(info.life?.videos),
         tasks: count(info.life?.tasks),
         journalDays: count(info.life?.journalEntries),
+        notes: count(info.life?.notes),
     };
 }
 
