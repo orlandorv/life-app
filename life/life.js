@@ -7,6 +7,7 @@ import { enterHabits } from '../habits/habits.js';
 import { enterBody } from '../body/body.js';
 import { enterVideos } from '../videos/videos.js';
 import { enterTasks } from '../tasks/tasks.js';
+import { enterJournal } from '../journal/journal.js';
 import { initBackup, renderBackupBanner } from './backup.js';
 
 /**
@@ -29,6 +30,8 @@ const SECTIONS = [
     { id: 'body', enter: (action) => gymBoot.then(() => enterBody(action)) },
     { id: 'videos', enter: enterVideos },
     { id: 'tasks', enter: enterTasks },
+    // Reads finished workouts for its patterns, which Gym loads while booting.
+    { id: 'journal', enter: () => gymBoot.then(() => enterJournal()) },
 ];
 
 let gymReady = false;

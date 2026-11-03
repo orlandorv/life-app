@@ -1,0 +1,195 @@
+/* Journal section. Tokens, .btn, .form-input, .stepper-label, .life-surface,
+   .life-list, .life-empty and .life-daybar come from life/life.css and gym/gym.css. */
+
+.journal-card,
+.journal-insights {
+    padding: 16px 18px 18px;
+    margin-top: 16px;
+}
+
+.journal-card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.journal-card-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.journal-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--primary);
+}
+
+.journal-field + .journal-field {
+    margin-top: 16px;
+}
+
+.journal-field .stepper-label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* A 1–5 scale: five equal buttons, the chosen one filled with the section colour. */
+.journal-scale {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+
+.journal-scale button {
+    min-height: 44px;
+    padding: 6px 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.journal-scale button.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--on-accent);
+}
+
+.journal-note-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.journal-saved {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.journal-note {
+    width: 100%;
+    resize: vertical;
+    line-height: 1.4;
+}
+
+/* Patterns */
+.journal-insights .life-eyebrow {
+    margin: 0 0 8px;
+}
+
+.journal-insight-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.journal-insight-list li + li {
+    margin-top: 6px;
+}
+
+.journal-muted {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.journal-insights > .journal-muted:first-of-type {
+    margin-top: 0;
+}
+
+/* Recent */
+.journal-recent-title {
+    margin: 24px 4px 8px;
+}
+
+.journal-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    font: inherit;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+
+.journal-row.current {
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.journal-row-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.journal-row-day {
+    font-weight: 650;
+}
+
+.journal-row-levels {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+/* The note's first couple of lines; the rest is a tap away. */
+.journal-row-note {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.journal-empty {
+    margin-top: 24px;
+}
+
+/* Today's card: one-tap mood straight from the home screen. */
+.life-journal-scale {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.life-journal-scale button {
+    min-height: 40px;
+    padding: 4px 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+/* The home card's line under the mood: energy and the start of the note. */
+.life-journal-note {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

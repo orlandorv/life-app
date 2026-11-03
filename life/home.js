@@ -18,6 +18,8 @@ import { state as videosState, loadVideos } from '../videos/store.js';
 import { unwatchedCount, nextToWatch } from '../videos/organize.js';
 import { state as tasksState, loadTasks } from '../tasks/store.js';
 import { nextTask, overdueCount, dueCount, taskDateLabel } from '../tasks/organize.js';
+import { loadEntries as loadJournal, entryFor as journalEntryFor, saveEntry as saveJournalEntry } from '../journal/store.js';
+import { MOODS, SCALE, moodLabel, energyLabel } from '../journal/insights.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -67,7 +69,7 @@ export async function renderHome() {
 
     try {
         await Promise.all([gymReady(), lifeDb.init()]);
-        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks()]);
+        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks(), loadJournal()]);
     } catch (error) {
         console.error(error);
         return;
@@ -82,6 +84,7 @@ export async function renderHome() {
         nutritionBlock(),
         habitsBlock(today),
         bodyBlock(today),
+        journalBlock(today),
         videosBlock(),
         tasksBlock(today),
     );
@@ -243,6 +246,60 @@ function nutritionBlock() {
         el('p', { class: 'life-sub', text: note, style: 'margin-top: 12px' }),
         action('Log food', '#/nutrition/log', food.entries.length > 0),
     ]);
+}
+
+// --- Journal ------------------------------------------------------------------
+
+/**
+ * Today's check-in. Until there's a mood, five buttons save one with a single
+ * tap; after, it shows how the day was and opens the journal for the rest.
+ */
+function journalBlock(today) {
+    const entry = journalEntryFor(today);
+
+    if (entry?.mood) {
+        const detail = [energyLabel(entry.energy) ? `Energy ${energyLabel(entry.energy).toLowerCase()}` : null, entry.note]
+            .filter(Boolean)
+            .join(' · ');
+        return block('journal', 'Journal', 'journal', [
+            figure(moodLabel(entry.mood), 'today'),
+            detail ? el('p', { class: 'life-sub life-journal-note', text: detail }) : null,
+            action(entry.note ? 'Open journal' : 'Add a note', '#/journal', true),
+        ]);
+    }
+
+    return block('journal', 'Journal', 'journal', [
+        el('p', { class: 'life-sub', text: 'How are you today?' }),
+        el(
+            'div',
+            { class: 'life-journal-scale', role: 'group', 'aria-label': 'Mood today' },
+            SCALE.map((level) =>
+                el('button', {
+                    type: 'button',
+                    text: MOODS[level - 1],
+                    'aria-label': `Mood today: ${MOODS[level - 1]} (${level} of 5)`,
+                    onclick: async () => {
+                        try {
+                            await saveJournalEntry({ day: today, mood: level, energy: entry?.energy, note: entry?.note });
+                        } catch (error) {
+                            console.error(error);
+                            return;
+                        }
+                        refreshJournalBlock(today);
+                    },
+                }),
+            ),
+        ),
+    ]);
+}
+
+/** Redraws just the Journal block, so the others don't replay their entrance. */
+function refreshJournalBlock(today) {
+    const section = document.querySelector('.life-block[data-tone="journal"]');
+    if (!section) return;
+    const next = journalBlock(today);
+    next.style.animation = 'none';
+    section.replaceWith(next);
 }
 
 // --- Habits -------------------------------------------------------------------

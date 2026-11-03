@@ -144,6 +144,7 @@ function importMessage(info) {
         [counts.bodyDays, 'body log day'],
         [counts.videos, 'video'],
         [counts.tasks, 'task'],
+        [counts.journalDays, 'journal day'],
     ]
         .filter(([n]) => n > 0)
         .map(([n, one, many]) => `${n} ${n === 1 ? one : many ?? `${one}s`}`);

@@ -24,6 +24,7 @@ export const LIFE_STORES = {
     routineTicks: 'id',
     videos: 'id',
     tasks: 'id',
+    journalEntries: 'day',
     settings: 'key',
 };
 
@@ -44,6 +45,7 @@ const isNumberOrNull = (value) => value === null || value === undefined || (Numb
 const isWeekdays = (days) => Array.isArray(days) && days.every((d) => Number.isInteger(d) && d >= 0 && d <= 6);
 const isOptionalText = (value) => value === undefined || value === null || typeof value === 'string';
 const isBoolean = (value) => typeof value === 'boolean';
+const isLevelOrNull = (value) => value === null || value === undefined || (Number.isInteger(value) && value >= 1 && value <= 5);
 
 /** A routine step: an id and text, optionally a detail line and the weekdays it applies. */
 const isStep = (step) =>
@@ -96,6 +98,7 @@ const ROW_CHECKS = {
         isText(row.createdAt) &&
         (row.calendarSequence === undefined || (Number.isInteger(row.calendarSequence) && row.calendarSequence >= 0)),
     settings: (row) => isText(row.key),
+    journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note),
 };
 
 function checkLife(life) {
@@ -169,6 +172,7 @@ export function summarize(info) {
         bodyDays: count(info.life?.bodyEntries),
         videos: count(info.life?.videos),
         tasks: count(info.life?.tasks),
+        journalDays: count(info.life?.journalEntries),
     };
 }
 

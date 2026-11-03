@@ -12,7 +12,7 @@
 import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -98,6 +98,12 @@ class LifeDatabase {
                 if (!db.objectStoreNames.contains('tasks')) {
                     const store = db.createObjectStore('tasks', { keyPath: 'id' });
                     store.createIndex('date', 'date', { unique: false });
+                }
+
+                // v7 — Journal. One check-in per local day, keyed by it like
+                // Body's entries: `mood`/`energy` 1–5 or null, optional `note`.
+                if (!db.objectStoreNames.contains('journalEntries')) {
+                    db.createObjectStore('journalEntries', { keyPath: 'day' });
                 }
             };
         }).catch((error) => {
