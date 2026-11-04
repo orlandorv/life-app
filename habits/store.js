@@ -2,6 +2,7 @@ import { lifeDb, uid } from '../life/db.js';
 import { localDayId } from '../life/dates.js';
 import { isRoutine, routineProgress, stepsForDay } from './routine.js';
 import { ANYTIME, isTimeOfDay } from './times.js';
+import { EVERY_DAY, isWeekly } from './streaks.js';
 
 /**
  * In-memory mirror of Habits, in the same style as nutrition/store.js. `done`
@@ -67,13 +68,20 @@ function cleanSteps(steps = []) {
 /**
  * Optional fields are left off entirely when empty, so a plain habit stays
  * plain. That includes the time of day: "all day" is the absence of one, which
- * is also what every habit made before it existed already is.
+ * is also what every habit made before it existed already is. A weekly target
+ * ("3 times a week") is the same: absent means fixed days, as every older habit
+ * is. With a target the habit is available every day, so `days` is every day.
  */
-function withExtras(habit, { note, steps, timeOfDay }) {
+function withExtras(habit, { note, steps, timeOfDay, weeklyTarget }) {
     const next = { ...habit };
     delete next.note;
     delete next.steps;
     delete next.timeOfDay;
+    delete next.weeklyTarget;
+    if (isWeekly({ weeklyTarget })) {
+        next.weeklyTarget = weeklyTarget;
+        next.days = [...EVERY_DAY];
+    }
     if (isTimeOfDay(timeOfDay) && timeOfDay !== ANYTIME) next.timeOfDay = timeOfDay;
     if (note?.trim()) next.note = note.trim();
     const cleaned = cleanSteps(steps);
@@ -81,21 +89,21 @@ function withExtras(habit, { note, steps, timeOfDay }) {
     return next;
 }
 
-export async function addHabit({ name, days, note, steps, timeOfDay }) {
+export async function addHabit({ name, days, note, steps, timeOfDay, weeklyTarget }) {
     const habit = withExtras({
         id: uid(),
         name: name.trim(),
         days: cleanDays(days),
         startDay: localDayId(),
         createdAt: new Date().toISOString(),
-    }, { note, steps, timeOfDay });
+    }, { note, steps, timeOfDay, weeklyTarget });
     await lifeDb.put('habits', habit);
     state.habits.push(habit);
     return habit;
 }
 
-export async function updateHabit(habit, { name, days, note, steps, timeOfDay }) {
-    const updated = withExtras({ ...habit, name: name.trim(), days: cleanDays(days) }, { note, steps, timeOfDay });
+export async function updateHabit(habit, { name, days, note, steps, timeOfDay, weeklyTarget }) {
+    const updated = withExtras({ ...habit, name: name.trim(), days: cleanDays(days) }, { note, steps, timeOfDay, weeklyTarget });
     await lifeDb.put('habits', updated);
     state.habits = state.habits.map((existing) => (existing.id === habit.id ? updated : existing));
 

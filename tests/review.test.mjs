@@ -234,3 +234,20 @@ test('a number never parts from its unit when the line wraps', () => {
         assert.ok(raw.includes(piece), `${JSON.stringify(piece)} is not glued together in: ${raw}`);
     }
 });
+
+test('a weekly habit counts its ticks against the target, not against days', () => {
+    const weeklyHabit = { id: 'run', days: everyDay, startDay: '2026-01-01', weeklyTarget: 3 };
+    const dailyHabit = habit('read', everyDay);
+    const done = new Map([
+        ['run', new Set(['2026-11-03', '2026-11-05', '2026-11-07', '2026-11-08'])], // four ticks: more than asked
+        ['read', new Set(['2026-11-02', '2026-11-03'])], // 2 of 7
+    ]);
+    const r = review({ habits: [weeklyHabit, dailyHabit], done });
+    // weekly: 3 of 3 (an extra day isn't 4 of 3); daily: 2 of 7
+    assert.deepEqual(r.habits, { done: 5, due: 10, full: 1 });
+});
+
+test('a weekly habit that has not been touched is simply short of its target', () => {
+    const r = review({ habits: [{ id: 'run', days: everyDay, startDay: '2026-01-01', weeklyTarget: 2 }], done: new Map() });
+    assert.deepEqual(r.habits, { done: 0, due: 2, full: 0 });
+});

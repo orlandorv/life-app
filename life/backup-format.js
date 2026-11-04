@@ -71,6 +71,7 @@ const ROW_CHECKS = {
         isText(row.name) &&
         DAY.test(row.startDay) &&
         isWeekdays(row.days) &&
+        (row.weeklyTarget === undefined || (Number.isInteger(row.weeklyTarget) && row.weeklyTarget >= 1 && row.weeklyTarget <= 6)) &&
         isOptionalText(row.note) &&
         (row.timeOfDay === undefined || isTimeOfDay(row.timeOfDay)) &&
         (row.steps === undefined || (Array.isArray(row.steps) && row.steps.every(isStep))),

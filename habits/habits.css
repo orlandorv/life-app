@@ -197,6 +197,8 @@
     background: color-mix(in srgb, var(--danger) 12%, var(--bg-secondary));
 }
 .habit-cell.future { opacity: 0.4; }
+/* A weekly habit's unticked past day: nothing was due, so nothing was missed. */
+.habit-cell.free { border-color: var(--border); }
 .habit-cell.off { border: none; background: var(--bg-secondary); }
 
 .habit-week-best {
@@ -236,6 +238,15 @@
     background: var(--primary);
     border-color: var(--primary);
     color: var(--on-accent);
+}
+
+.habit-mode {
+    margin-bottom: 12px;
+}
+
+/* Six numbers, not seven days. */
+.habit-chips-target {
+    grid-template-columns: repeat(6, 1fr);
 }
 
 .habit-presets {
@@ -501,4 +512,13 @@
 
 .habit-when button {
     padding-inline: 4px;
+}
+
+/* A weekly habit whose week is already done: still there to tick, but quiet. */
+.habit-row.week-met .habit-name {
+    color: var(--text-secondary);
+}
+
+.habit-weekly {
+    font-variant-numeric: tabular-nums;
 }

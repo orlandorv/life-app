@@ -8,7 +8,7 @@ import { getUnit, toDisplay, formatNumber } from '../gym/js/units.js';
 import { state as food, loadDay, loadDays, loadTargets } from '../nutrition/store.js';
 import { dayTotals, hasTarget } from '../nutrition/totals.js';
 import { state as habitsState, loadHabits, loadLogs, loadTicks, doneDays, tickedSteps, toggleHabit } from '../habits/store.js';
-import { isScheduled, currentStreak } from '../habits/streaks.js';
+import { isScheduled, isDue, isWeekly, weekCount, weekTarget, currentStreak } from '../habits/streaks.js';
 import { isRoutine, routineProgress } from '../habits/routine.js';
 import { timeRank } from '../habits/times.js';
 import { openRoutine } from '../habits/routine-sheet.js';
@@ -388,11 +388,21 @@ function habitsBlock(today) {
 
     // In the day's order (morning first, all day last); the sort is stable, so
     // habits keep their own order within a time of day.
-    const due = habitsState.habits.filter((habit) => isScheduled(habit, today)).sort((a, b) => timeRank(a) - timeRank(b));
-    if (!due.length) {
+    const listed = habitsState.habits.filter((habit) => isScheduled(habit, today));
+    if (!listed.length) {
         return block('habits', 'Habits', 'habits', [
             figure('Rest day'),
             el('p', { class: 'life-sub', text: 'Nothing scheduled for today.' }),
+        ]);
+    }
+
+    // What's still asked of you today. A weekly habit whose week is done drops
+    // off (until the week turns over) unless you ticked it today.
+    const due = listed.filter((habit) => isDue(habit, doneDays(habit.id), today)).sort((a, b) => timeRank(a) - timeRank(b));
+    if (!due.length) {
+        return block('habits', 'Habits', 'habits', [
+            figure('Week done'),
+            el('p', { class: 'life-sub', text: 'Your weekly habits are done for this week.' }),
         ]);
     }
 
@@ -420,8 +430,11 @@ function refreshHabitsBlock(today) {
 function habitRow(habit, today) {
     const done = doneDays(habit.id).has(today);
     const streak = currentStreak(habit, doneDays(habit.id), today);
+    const weekly = isWeekly(habit);
     const routine = isRoutine(habit);
     const progress = routine ? routineProgress(habit, tickedSteps(habit.id, today), today) : null;
+    const week = weekly ? weekStartId(today) : null;
+    const weeklyText = weekly ? `${weekCount(habit, doneDays(habit.id), week)} of ${weekTarget(habit, week)} this week` : null;
 
     return el(
         'button',
@@ -452,11 +465,12 @@ function habitRow(habit, today) {
             el('span', { class: 'life-habit-name' }, [
                 habit.name,
                 routine && !done ? el('small', { text: `${progress.done} of ${progress.total} steps` }) : null,
+                !routine && weekly && !done ? el('small', { text: weeklyText }) : null,
             ]),
             streak > 1
-                ? el('span', { class: 'life-habit-streak', 'aria-label': `${streak} in a row` }, [
+                ? el('span', { class: 'life-habit-streak', 'aria-label': weekly ? `${streak} weeks in a row` : `${streak} in a row` }, [
                     icon('flame', { size: 14 }),
-                    String(streak),
+                    weekly ? `${streak}w` : String(streak),
                 ])
                 : null,
             routine ? icon('chevron', { size: 16, className: 'life-habit-open' }) : null,

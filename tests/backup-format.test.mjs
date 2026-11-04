@@ -57,6 +57,9 @@ test('optional fields: absent or valid is fine, an invalid value is not', () => 
     assert.doesNotThrow(() => inspectBackup(file(life({ habits: [plain] }))));
     assert.doesNotThrow(() => inspectBackup(file(life({ habits: [{ ...habit, timeOfDay: 'morning' }] }))));
     assert.throws(() => inspectBackup(file(life({ habits: [{ ...habit, timeOfDay: 'dawn' }] }))), /damaged/);
+    // a weekly target is a whole number of times, 1 to 6
+    for (const ok of [1, 3, 6]) assert.doesNotThrow(() => inspectBackup(file(life({ habits: [{ ...habit, days: [0, 1, 2, 3, 4, 5, 6], weeklyTarget: ok }] }))), String(ok));
+    for (const bad of [0, 7, 2.5, '3', null]) assert.throws(() => inspectBackup(file(life({ habits: [{ ...habit, weeklyTarget: bad }] }))), /damaged/, String(bad));
     assert.throws(() => inspectBackup(file(life({ journalEntries: [{ ...SAMPLE.journalEntries, mood: 9 }] }))), /damaged/);
     assert.throws(() => inspectBackup(file(life({ notes: [{ ...SAMPLE.notes, text: '' }] }))), /damaged/);
 });

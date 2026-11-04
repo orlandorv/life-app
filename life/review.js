@@ -1,6 +1,6 @@
 import { addDays, localDayId, weekdayIndex, weekStartId } from './dates.js';
 import { average, weeklyAverages } from '../body/stats.js';
-import { weekCells } from '../habits/streaks.js';
+import { weekCells, weekProgress, isWeekly } from '../habits/streaks.js';
 import { dayTotals, hasTarget } from '../nutrition/totals.js';
 import { hasContent, isLevel, moodLabel, energyLabel } from '../journal/insights.js';
 import { entryMetBar } from '../gym/js/progression.js';
@@ -76,6 +76,15 @@ function habitsSummary({ habits, done, weekStart, today }) {
     let dueCount = 0;
     let full = 0;
     for (const habit of habits) {
+        // A weekly habit has no due days, just a target for the week.
+        if (isWeekly(habit)) {
+            const progress = weekProgress(habit, done.get(habit.id) ?? new Set(), weekStart, today);
+            if (!progress.due) continue;
+            doneCount += progress.done;
+            dueCount += progress.due;
+            if (progress.done === progress.due) full += 1;
+            continue;
+        }
         // Days still to come this week aren't due yet, so they can't count against you.
         const cells = weekCells(habit, done.get(habit.id) ?? new Set(), weekStart, today).filter((cell) => cell.state !== 'off' && cell.state !== 'future');
         if (!cells.length) continue;

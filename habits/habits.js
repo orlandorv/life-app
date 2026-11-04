@@ -15,7 +15,19 @@ import {
     deleteHabit,
     toggleHabit,
 } from './store.js';
-import { EVERY_DAY, isScheduled, currentStreak, longestStreak, weekCells, weekTally } from './streaks.js';
+import {
+    EVERY_DAY,
+    MAX_WEEKLY_TARGET,
+    isScheduled,
+    isDue,
+    isWeekly,
+    weekCount,
+    weekTarget,
+    currentStreak,
+    longestStreak,
+    weekCells,
+    weekProgress,
+} from './streaks.js';
 import { isRoutine, routineProgress } from './routine.js';
 import { openRoutine } from './routine-sheet.js';
 import { stepEditor } from './step-editor.js';
@@ -116,17 +128,21 @@ function emptyState() {
     ]);
 }
 
-/** "3 in a row" with a flame, or nothing for a streak that hasn't started. */
-function streakBadge(n) {
+/** "3 in a row" (or "3 weeks in a row" for a weekly habit) with a flame, or nothing for a streak that hasn't started. */
+function streakBadge(n, weekly = false) {
     if (n < 1) return null;
-    return el('span', { class: 'habit-streak' }, [icon('flame', { size: 14 }), `${n} in a row`]);
+    return el('span', { class: 'habit-streak' }, [icon('flame', { size: 14 }), weekly ? `${n} week${n > 1 ? 's' : ''} in a row` : `${n} in a row`]);
 }
 
 // --- Today ------------------------------------------------------------------
 
 function todayView() {
     const today = localDayId();
-    const due = state.habits.filter((habit) => isScheduled(habit, state.day));
+    // Everything that can be ticked on this day, and of those what is still asked
+    // of you: a weekly habit whose week is already done stays listed (you can
+    // always do more) but isn't counted, so a finished week doesn't nag.
+    const listed = state.habits.filter((habit) => isScheduled(habit, state.day));
+    const due = listed.filter((habit) => isDue(habit, doneDays(habit.id), state.day));
     const doneCount = due.filter((habit) => doneDays(habit.id).has(state.day)).length;
 
     const view = el('div', { class: 'habits-view' }, [
@@ -138,12 +154,12 @@ function todayView() {
         }),
     ]);
 
-    if (!due.length) {
+    if (!listed.length) {
         view.append(el('p', { class: 'hint', text: 'Nothing scheduled for this day.' }));
         return view;
     }
 
-    view.append(
+    if (due.length) view.append(
         el('div', { class: 'habits-summary' }, [
             el('div', { class: 'habits-summary-head' }, [
                 el('span', { class: 'habits-summary-title', text: doneCount === due.length ? 'All done' : 'Done' }),
@@ -158,10 +174,11 @@ function todayView() {
         ]),
     );
     // One card per time of day, in the day's order; "All day" habits last.
-    groupByTime(due).forEach((group) => {
-        const done = group.habits.filter((habit) => doneDays(habit.id).has(state.day)).length;
+    groupByTime(listed).forEach((group) => {
+        const dueHere = group.habits.filter((habit) => due.includes(habit));
+        const done = dueHere.filter((habit) => doneDays(habit.id).has(state.day)).length;
         view.append(
-            groupHead(group, `${done} of ${group.habits.length}`),
+            groupHead(group, dueHere.length ? `${done} of ${dueHere.length}` : null),
             el('div', { class: 'life-list' }, group.habits.map((habit) => habitRow(habit, today))),
         );
     });
@@ -185,8 +202,21 @@ function shiftDay(direction) {
 function habitRow(habit, today) {
     const done = doneDays(habit.id).has(state.day);
     // A streak is "as of now", so it only belongs on today's checklist, not on a past day.
-    const streak = state.day === today ? streakBadge(currentStreak(habit, doneDays(habit.id), today)) : null;
+    const weekly = isWeekly(habit);
+    const streak = state.day === today ? streakBadge(currentStreak(habit, doneDays(habit.id), today), weekly) : null;
     const routine = isRoutine(habit);
+
+    // A weekly habit says how its week is going, and when it's done for the week.
+    const week = weekly ? weekStartId(state.day) : null;
+    const weekDone = weekly ? weekCount(habit, doneDays(habit.id), week) : 0;
+    const weekGoal = weekly ? weekTarget(habit, week) : 0;
+    const weekMet = weekly && weekDone >= weekGoal;
+    const weeklyLine = weekly
+        ? el('span', {
+              class: 'habit-sub habit-weekly',
+              text: weekMet ? `Done for the week · ${weekDone} of ${weekGoal}` : `${weekDone} of ${weekGoal} this week`,
+          })
+        : null;
     const progress = routine ? routineProgress(habit, tickedSteps(habit.id, state.day), state.day) : null;
 
     // A routine's circle shows how far through it you are until it's done.
@@ -205,7 +235,7 @@ function habitRow(habit, today) {
           ? el('span', { class: 'habit-sub habit-note', text: habit.note })
           : null;
 
-    return el('div', { class: `habit-row${done ? ' done' : ''}${routine ? ' routine' : ''}` }, [
+    return el('div', { class: `habit-row${done ? ' done' : ''}${routine ? ' routine' : ''}${weekMet && !done ? ' week-met' : ''}` }, [
         el(
             'button',
             {
@@ -222,7 +252,7 @@ function habitRow(habit, today) {
             },
             [
                 el('span', { class: 'habit-circle' }, [circle]),
-                el('span', { class: 'habit-text' }, [el('span', { class: 'habit-name', text: habit.name }), sub, streak]),
+                el('span', { class: 'habit-text' }, [el('span', { class: 'habit-name', text: habit.name }), sub, weeklyLine, streak]),
                 routine ? icon('chevron', { size: 18, className: 'habit-open' }) : null,
             ],
         ),
@@ -265,7 +295,7 @@ function shiftWeek(days) {
 function weekCard(habit, today) {
     const done = doneDays(habit.id);
     const cells = weekCells(habit, done, state.week, today);
-    const tally = weekTally(cells);
+    const tally = weekProgress(habit, done, state.week, today);
     const best = longestStreak(habit, done, today);
 
     return el('div', { class: 'habit-week' }, [
@@ -278,14 +308,15 @@ function weekCard(habit, today) {
             { class: 'habit-week-grid' },
             cells.map((cell, index) => weekCell(habit, cell, index)),
         ),
-        best > 0 ? el('div', { class: 'habit-week-best', text: `Best run: ${best}` }) : null,
+        best > 0 ? el('div', { class: 'habit-week-best', text: `Best run: ${best}${isWeekly(habit) ? ` week${best > 1 ? 's' : ''}` : ''}` }) : null,
     ]);
 }
 
 function weekCell(habit, cell, index) {
     // Off and future days can't be ticked; a due day up to today can, which
     // is how a forgotten one gets filled in.
-    const tappable = ['done', 'open', 'missed'].includes(cell.state);
+    const tappable = ['done', 'open', 'missed', 'free'].includes(cell.state);
+    const spoken = cell.state === 'off' ? 'not scheduled' : cell.state === 'free' ? 'not done' : cell.state;
 
     return el('div', { class: 'habit-cell-col' }, [
         el('span', { class: 'habit-cell-letter', text: DAY_LETTERS[index] }),
@@ -293,7 +324,7 @@ function weekCell(habit, cell, index) {
             class: `habit-cell ${cell.state}`,
             type: 'button',
             disabled: !tappable,
-            'aria-label': `${habit.name}, ${DAY_NAMES[index]}, ${cell.state === 'off' ? 'not scheduled' : cell.state}`,
+            'aria-label': `${habit.name}, ${DAY_NAMES[index]}, ${spoken}`,
             onclick: () => save(() => toggleHabit(habit, cell.day)),
         }, [cell.state === 'done' ? icon('check', { size: 16 }) : null]),
     ]);
@@ -310,6 +341,9 @@ function openHabitModal(habit = null) {
 function habitForm(habit) {
     const selected = new Set(habit?.days ?? EVERY_DAY);
     let timeOfDay = habit ? timeOf(habit) : ANYTIME;
+    // On certain days, or a number of times a week on whichever days you like.
+    let mode = habit && isWeekly(habit) ? 'weekly' : 'days';
+    let target = habit && isWeekly(habit) ? habit.weeklyTarget : 3;
 
     const name = el('input', {
         class: 'form-input',
@@ -334,12 +368,52 @@ function habitForm(habit) {
         }),
     );
 
+    const targetChips = Array.from({ length: MAX_WEEKLY_TARGET }, (_, index) =>
+        el('button', {
+            class: 'habit-chip',
+            type: 'button',
+            'aria-label': `${index + 1} time${index ? 's' : ''} a week`,
+            text: String(index + 1),
+            onclick: () => {
+                target = index + 1;
+                sync();
+            },
+        }),
+    );
+
+    const modeButtons = [
+        ['days', 'On certain days'],
+        ['weekly', 'Times a week'],
+    ].map(([id, label]) =>
+        el('button', {
+            type: 'button',
+            text: label,
+            dataset: { mode: id },
+            onclick: () => {
+                mode = id;
+                sync();
+            },
+        }),
+    );
+
     const sync = () => {
         chips.forEach((chip, index) => {
             const on = selected.has(index);
             chip.classList.toggle('on', on);
             chip.setAttribute('aria-pressed', String(on));
         });
+        targetChips.forEach((chip, index) => {
+            const on = target === index + 1;
+            chip.classList.toggle('on', on);
+            chip.setAttribute('aria-pressed', String(on));
+        });
+        modeButtons.forEach((button) => {
+            const on = button.dataset.mode === mode;
+            button.classList.toggle('active', on);
+            button.setAttribute('aria-pressed', String(on));
+        });
+        daysBlock.hidden = mode !== 'days';
+        weeklyBlock.hidden = mode !== 'weekly';
         timeButtons.forEach((button) => {
             const on = button.dataset.time === timeOfDay;
             button.classList.toggle('active', on);
@@ -400,6 +474,15 @@ function habitForm(habit) {
             },
         });
 
+    const daysBlock = el('div', {}, [
+        el('div', { class: 'habit-chips' }, chips),
+        el('div', { class: 'habit-presets' }, [preset('Every day', EVERY_DAY), preset('Weekdays', WEEKDAYS)]),
+    ]);
+    const weeklyBlock = el('div', {}, [
+        el('div', { class: 'habit-chips habit-chips-target' }, targetChips),
+        el('p', { class: 'hint', text: 'Any days you like, Monday to Sunday. Its streak counts the weeks you hit it.' }),
+    ]);
+
     const submit = async (event) => {
         event.preventDefault();
         if (!name.value.trim()) {
@@ -407,12 +490,19 @@ function habitForm(habit) {
             name.focus();
             return;
         }
-        if (!selected.size) {
+        if (mode === 'days' && !selected.size) {
             toast('Pick at least one day');
             return;
         }
 
-        const values = { name: name.value, days: [...selected], note: note.value, steps: editor.value(), timeOfDay };
+        const values = {
+            name: name.value,
+            days: mode === 'weekly' ? EVERY_DAY : [...selected],
+            weeklyTarget: mode === 'weekly' ? target : null,
+            note: note.value,
+            steps: editor.value(),
+            timeOfDay,
+        };
         closeModal('habit-modal');
 
         if (habit) {
@@ -441,9 +531,10 @@ function habitForm(habit) {
     return el('form', { class: 'habit-form', onsubmit: submit }, [
         el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Name' }), name]),
         el('div', { class: 'stepper-field' }, [
-            el('span', { class: 'stepper-label', text: 'Repeats on' }),
-            el('div', { class: 'habit-chips' }, chips),
-            el('div', { class: 'habit-presets' }, [preset('Every day', EVERY_DAY), preset('Weekdays', WEEKDAYS)]),
+            el('span', { class: 'stepper-label', text: 'Repeats' }),
+            el('div', { class: 'segmented segmented-fill habit-mode' }, modeButtons),
+            daysBlock,
+            weeklyBlock,
         ]),
         el('div', { class: 'stepper-field' }, [
             el('span', { class: 'stepper-label', text: 'When' }),
