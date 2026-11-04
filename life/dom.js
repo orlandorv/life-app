@@ -40,26 +40,139 @@ export function clear(node) {
 
 const stack = [];
 const closeHandlers = new Map();
+// Modal id → the element that had focus when it opened, so closing the sheet
+// puts you back where you were (a keyboard or VoiceOver user would otherwise
+// land at the top of the page).
+const openers = new Map();
+
+const TEXT_ENTRY = 'input, textarea, select, [contenteditable]';
+const FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const NOT_CONTENT = new Set(['SCRIPT', 'STYLE', 'LINK', 'META']);
+
+/**
+ * Gives a sheet the semantics a screen reader needs, once: it is a dialog (the
+ * confirm sheet an alertdialog), it is modal, and it is named by its heading.
+ * Done here from the existing markup so none of the 23 sheets needs editing.
+ */
+function describeModal(modal) {
+    const panel = modal.querySelector('.modal-content');
+    if (!panel || panel.hasAttribute('role')) return;
+    const alert = modal.id === 'confirm-modal';
+    panel.setAttribute('role', alert ? 'alertdialog' : 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    const heading = modal.querySelector('.modal-header h2');
+    if (heading) {
+        heading.id ||= `${modal.id}-heading`;
+        panel.setAttribute('aria-labelledby', heading.id);
+    }
+    if (alert) panel.setAttribute('aria-describedby', 'confirm-body');
+    // Focusable by script only: opening a sheet moves focus here rather than to
+    // a field, so the on-screen keyboard doesn't rise unasked.
+    panel.setAttribute('tabindex', '-1');
+}
+
+function releaseBackground(node) {
+    node.inert = false;
+    node.removeAttribute('aria-hidden');
+    delete node.dataset.modalInert;
+}
+
+/**
+ * Makes everything outside the top sheet unreachable (not focusable, not
+ * clickable, not read out), except the toast, which has to be heard over it.
+ * With no sheet open it releases everything it ever marked, so a missed close
+ * can't leave the app frozen.
+ */
+function syncBackground() {
+    const top = stack.length ? document.getElementById(stack[stack.length - 1]) : null;
+    const toastNode = document.getElementById('toast');
+    const wanted = new Set();
+    for (let node = top; node && node !== document.body; node = node.parentElement) {
+        for (const sibling of node.parentElement.children) {
+            if (sibling !== node && sibling !== toastNode && !NOT_CONTENT.has(sibling.tagName)) wanted.add(sibling);
+        }
+    }
+    for (const node of document.querySelectorAll('[data-modal-inert]')) {
+        if (!wanted.has(node)) releaseBackground(node);
+    }
+    for (const node of wanted) {
+        node.inert = true;
+        node.setAttribute('aria-hidden', 'true');
+        node.dataset.modalInert = '';
+    }
+}
+
+/** Back to what had focus before the sheet opened, if that's still sensible. */
+function restoreFocus(id) {
+    const opener = openers.get(id);
+    openers.delete(id);
+    // Never to a text field: on iOS that would raise the keyboard for no reason.
+    if (opener?.isConnected && !opener.closest('[inert]') && !opener.matches(TEXT_ENTRY)) {
+        opener.focus({ preventScroll: true });
+    }
+    if (stack.length && (!document.activeElement || document.activeElement === document.body)) {
+        document.getElementById(stack[stack.length - 1])?.querySelector('.modal-content')?.focus({ preventScroll: true });
+    }
+}
 
 export function openModal(id) {
     const modal = document.getElementById(id);
     if (!modal || stack.includes(id)) return;
+    const active = document.activeElement;
+    openers.set(id, active && active !== document.body ? active : null);
+    describeModal(modal);
     modal.style.zIndex = String(200 + stack.length * 10);
     modal.classList.add('active');
     stack.push(id);
     document.body.classList.add('modal-open');
+    syncBackground();
+    modal.querySelector('.modal-content')?.focus({ preventScroll: true });
 }
 
 export function closeModal(id) {
     const target = id || stack[stack.length - 1];
-    if (!target) return;
-    const index = stack.indexOf(target);
-    if (index === -1) return;
+    const index = target ? stack.indexOf(target) : -1;
+    if (index === -1) {
+        if (!stack.length) syncBackground();
+        return;
+    }
+    const wasTop = index === stack.length - 1;
     document.getElementById(target)?.classList.remove('active');
     stack.splice(index, 1);
     if (stack.length === 0) document.body.classList.remove('modal-open');
+    syncBackground();
+    if (wasTop) restoreFocus(target);
+    else openers.delete(target);
     closeHandlers.get(target)?.forEach((handler) => handler());
 }
+
+/** Keeps Tab inside the top sheet: from its last control it wraps to the first, and back. */
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || !stack.length) return;
+    const modal = document.getElementById(stack[stack.length - 1]);
+    const panel = modal?.querySelector('.modal-content');
+    if (!panel) return;
+    const items = $$(FOCUSABLE, panel).filter((node) => node.getClientRects().length > 0);
+    if (!items.length) {
+        event.preventDefault();
+        panel.focus({ preventScroll: true });
+        return;
+    }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || active === panel)) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+    } else if (!panel.contains(active)) {
+        event.preventDefault();
+        first.focus();
+    }
+});
 
 /**
  * Fires once the given modal actually closes, however that happens (Done
@@ -89,7 +202,7 @@ let toastTimer = null;
 export function toast(message) {
     let node = document.getElementById('toast');
     if (!node) {
-        node = el('div', { id: 'toast', class: 'toast' });
+        node = el('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' });
         document.body.append(node);
     }
     node.textContent = message;

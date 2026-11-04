@@ -441,6 +441,10 @@ textarea.form-input {
     overflow: hidden;
 }
 
+.modal-content:focus {
+    outline: none;
+}
+
 .modal-content.narrow {
     max-width: 420px;
     margin: auto;
