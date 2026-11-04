@@ -1513,6 +1513,17 @@ body.resting-room #app {
     padding: 14px 16px;
 }
 
+/* The card opens that lift's history. */
+.pr-card-open {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pr-card-open:active {
+    transform: scale(0.985);
+    opacity: 0.85;
+}
+
 .pr-card-top {
     display: flex;
     align-items: flex-start;
@@ -2821,4 +2832,146 @@ button.badge-tile:active {
     font-size: 12px;
     font-weight: 600;
     color: var(--primary);
+}
+
+/* --- A lift's history (opened from a card on the PRs tab) ------------------- */
+
+.lift-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.lift-segmented {
+    width: 100%;
+}
+
+.lift-segmented button {
+    flex: 1;
+    padding-inline: 8px;
+}
+
+.lift-segmented button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.lift-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.lift-grid {
+    stroke: var(--border);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+}
+
+.lift-tick,
+.lift-axis {
+    fill: var(--text-secondary);
+    font-size: 10px;
+    font-family: inherit;
+}
+
+.lift-line {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.55;
+}
+
+.lift-dot {
+    fill: var(--primary);
+}
+
+.lift-dot.best {
+    fill: var(--primary);
+}
+
+/* A ring round a new best: a shape, so it isn't only a colour difference. */
+.lift-best-ring {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 1.5;
+}
+
+.lift-chart-note,
+.lift-chart-empty {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.lift-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 16px 0 6px;
+}
+
+.lift-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+}
+
+.lift-stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.lift-stat-value {
+    font-size: 15px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.lift-sessions-label {
+    margin: 18px 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.lift-session {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9px 0;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+
+.lift-session:first-child {
+    border-top: none;
+}
+
+.lift-session-day {
+    flex: 0 0 96px;
+    color: var(--text-secondary);
+}
+
+.lift-session-top {
+    flex: 1;
+    font-weight: 650;
+}
+
+.lift-session-extra {
+    color: var(--text-secondary);
+    font-size: 13px;
 }

@@ -5,6 +5,7 @@ import { formatWeight, getUnit, toDisplay } from './units.js';
 import { isLoggedWork, estimateOneRepMax } from './strength.js';
 import { renderStrengthMap } from './body-map.js';
 import { goalsCard } from './goals-ui.js';
+import { openLiftSheet } from './lift-sheet.js';
 
 /** Bucket for records whose workout never recorded a muscle group. */
 const OTHER = 'Other';
@@ -92,7 +93,23 @@ function recordCard(record, estimate) {
     const exercise = findExercise(record.exerciseId);
     const when = new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
-    return el('div', { class: 'card pr-card' }, [
+    // The whole card opens the lift's history. A div acting as a button (a real
+    // <button> can't hold the block content inside it); its name is its text.
+    const open = () => openLiftSheet(record.exerciseId, record.exerciseName);
+    const behaviour = {
+        class: 'card pr-card pr-card-open',
+        role: 'button',
+        tabindex: 0,
+        onclick: open,
+        onkeydown: (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                open();
+            }
+        },
+    };
+
+    return el('div', behaviour, [
         el('div', { class: 'pr-card-top' }, [
             el('div', {}, [
                 el('div', { class: 'card-title', text: record.exerciseName }),

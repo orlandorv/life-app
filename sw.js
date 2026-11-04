@@ -1,7 +1,7 @@
 // Bump this on every deploy that changes any cached file. Old caches are
 // dropped automatically on activate, so this one line is the whole release
 // process — nothing else in here needs to change per deploy.
-const CACHE_VERSION = 'v90';
+const CACHE_VERSION = 'v91';
 const CACHE_NAME = `life-${CACHE_VERSION}`;
 
 // Registered as a relative path from index.html, so these resolve under
@@ -88,6 +88,9 @@ const APP_SHELL = [
     './gym/js/plate-math.js',
     './gym/js/progression.js',
     './gym/js/warmup.js',
+    './gym/js/lift-history.js',
+    './gym/js/lift-chart.js',
+    './gym/js/lift-sheet.js',
     './gym/js/guidance.js',
     './gym/js/prescription.js',
     './gym/js/alternatives.js',
