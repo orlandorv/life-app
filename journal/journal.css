@@ -174,7 +174,7 @@
 }
 
 .life-journal-scale button {
-    min-height: 40px;
+    min-height: 44px;
     padding: 4px 2px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);

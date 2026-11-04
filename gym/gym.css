@@ -313,7 +313,7 @@ button.card:active {
 .btn-block { width: 100%; }
 
 .btn-small {
-    min-height: 38px;
+    min-height: 44px;
     padding: 8px 14px;
     border-radius: 12px;
     font-size: 14px;
@@ -688,7 +688,7 @@ form.modal-body .modal-actions {
    work with next to reps and weight. */
 .stepper-compact .stepper-btn {
     width: 22px;
-    min-height: 40px;
+    min-height: 44px;
     font-size: 15px;
 }
 
@@ -703,8 +703,8 @@ form.modal-body .modal-actions {
 /* Reps/weight steppers in the set row give up a little button width to the
    RIR column alongside them — without this "10" clips down to "1". */
 .stepper-set .stepper-btn {
-    width: 30px;
-    min-height: 40px;
+    width: 28px;
+    min-height: 44px;
 }
 
 .stepper-set .stepper-input {
@@ -1048,7 +1048,7 @@ form.modal-body .modal-actions {
 
 .exercise-drag-handle {
     flex-shrink: 0;
-    width: 40px;
+    width: 44px;
     height: 48px;
     display: flex;
     align-items: center;
@@ -1113,12 +1113,19 @@ form.modal-body .modal-actions {
     flex-direction: column;
 }
 
+/* The set rows and their header share one column template. Weight gets the extra
+   room because it is the number that needs it (102.5 is five characters); reps
+   is two digits. RIR is a single digit. 44px for the tick. */
+:root {
+    --set-columns: 20px 1.3fr 1fr 56px 44px;
+}
+
 .set-row {
     display: grid;
-    grid-template-columns: 22px 1fr 1fr 56px 44px;
+    grid-template-columns: var(--set-columns);
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 6px 8px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -1172,8 +1179,8 @@ form.modal-body .modal-actions {
 /* Swaps in for the set number while the block is in edit mode. */
 .set-remove {
     display: none;
-    width: 30px;
-    height: 34px;
+    width: 28px;
+    height: 44px;
     margin-left: -4px;
     align-items: center;
     justify-content: center;
@@ -1195,9 +1202,9 @@ form.modal-body .modal-actions {
     display: flex;
 }
 
-.edit-toggle,
-.swap-toggle {
-    padding: 8px 6px;
+.link-btn.edit-toggle,
+.link-btn.swap-toggle {
+    padding: 15px 6px;
     font-size: 13px;
 }
 
@@ -1208,8 +1215,8 @@ form.modal-body .modal-actions {
 }
 
 .set-check {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     border: 1.5px solid var(--border);
     background: var(--bg-raised);
@@ -1398,9 +1405,9 @@ form.modal-body .modal-actions {
 
 .stepper-head {
     display: grid;
-    grid-template-columns: 22px 1fr 1fr 56px 44px;
-    gap: 6px;
-    padding: 10px 12px 2px;
+    grid-template-columns: var(--set-columns);
+    gap: 4px;
+    padding: 10px 8px 2px;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.4px;
@@ -1432,7 +1439,7 @@ form.modal-body .modal-actions {
     display: block;
     background: none;
     border: none;
-    padding: 2px 0 0;
+    padding: 5px 0;
     font-family: inherit;
     font-size: 13px;
     font-weight: 650;

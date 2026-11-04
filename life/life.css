@@ -18,7 +18,7 @@
     --bg-secondary: #EFEAE3;
     --border: #E5DED4;
     --text-primary: #1F1B17;
-    --text-secondary: #766D63;
+    --text-secondary: #6F675D;
 
     /* One colour per section. Inside a section `--primary` becomes its colour
        (see the body[data-section] rules below), so buttons, links, steppers
@@ -38,9 +38,9 @@
        dark ink in dark mode, where the fills are lighter. */
     --on-accent: #FFFFFF;
 
-    --success: #37784D;
+    --success: #36754B;
     --danger: #B83A30;
-    --warning: #9A6515;
+    --warning: #8F5E14;
     --accent: var(--body);
 
     --card-shadow: 0 1px 2px rgba(64, 44, 24, 0.05), 0 8px 24px -12px rgba(64, 44, 24, 0.14);
@@ -135,6 +135,34 @@ html {
     outline-offset: 2px;
 }
 
+/* Tap targets: a fingertip needs about 44px. A control that is drawn smaller
+   keeps its look and borrows the empty space round it for the tap: an invisible
+   ::after, centred, never smaller than 44x44. It paints nothing and moves
+   nothing. Only for controls with free space round them: a small neighbour's
+   pseudo-element would paint over (and steal taps from) the control next to it,
+   so crowded rows (the set rows, the plan editor's step tools) get real size
+   instead. */
+.icon-btn,
+.segmented button {
+    position: relative;
+}
+
+.icon-btn::after,
+.segmented button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+}
+
+/* The step tools sit shoulder to shoulder, so no borrowing there. */
+.step-edit-tools .icon-btn::after {
+    content: none;
+}
+
 /* Components below set display explicitly, which would otherwise win over the
    hidden attribute's UA `display: none`. */
 [hidden] {
@@ -188,6 +216,7 @@ body.modal-open {
     max-width: 640px;
     margin: 0 auto;
     padding: max(10px, env(safe-area-inset-top)) 14px 6px;
+    min-height: 44px;
     background: color-mix(in srgb, var(--bg) 86%, transparent);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -348,8 +377,8 @@ body.modal-open {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: -4px -6px 12px;
-    padding: 4px 6px;
+    margin: -8px -6px 8px;
+    padding: 8px 6px;
     border-radius: 12px;
     color: var(--text-primary);
     text-decoration: none;

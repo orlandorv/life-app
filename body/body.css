@@ -92,7 +92,7 @@
 }
 
 .body-links .link-btn {
-    padding: 4px 0;
+    padding: 6px 0;
     font-size: 14px;
 }
 
@@ -182,7 +182,7 @@
     justify-content: space-between;
     gap: 12px;
     width: 100%;
-    padding: 10px 14px;
+    padding: 13px 14px;
     text-align: left;
     font-family: inherit;
     color: var(--text-primary);
