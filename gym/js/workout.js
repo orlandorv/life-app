@@ -5,10 +5,11 @@ import { state, on, loadWorkouts, findExercise, lastPerformance, lastPlanPerform
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
 import { openPicker } from './picker.js';
-import { openPlateCalculator } from './plates.js';
+import { openPlateCalculator, getBarWeight } from './plates.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
 import { demoLink } from './demo-link.js';
-import { entryMetBar } from './progression.js';
+import { entryMetBar, suggestNext, suggestionText, suggestionStillUseful, shiftToTop } from './progression.js';
+import { icon } from '../../life/icons.js';
 import { mayWarnAboutSave, SAVE_FAILED } from '../../life/storage-errors.js';
 import { goalStatus, reachedGoalIds, sortGoals } from './goals.js';
 import { goalLabel, goalProgressText } from './goals-ui.js';
@@ -527,6 +528,7 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress, weightCo
             }
 
             updateBanner();
+            refreshProgress();
             persist();
         },
     });
@@ -997,12 +999,47 @@ function exerciseBlock(entry, entryIndex) {
     });
     syncSaveBack();
 
-    const progressBadge = el('div', {
-        class: 'progress-badge',
-        hidden: true,
-        text: '🎯 Ready to progress — every set hit target reps at your RIR. Add a little weight next time.',
+    const progressBadge = el('div', { class: 'progress-badge', hidden: true }, [
+        icon('trend', { size: 18 }),
+        el('span', { text: 'Ready to progress — every set hit target reps at your RIR. Add a little weight next time.' }),
+    ]);
+
+    // What to lift today, from how the last comparable session went. A quiet
+    // line with one button; it only ever *offers* — nothing changes until Use.
+    let suggestion = null;
+    const hintText = el('span', { class: 'progress-hint-text' });
+    const hintUse = el('button', { class: 'btn btn-outline btn-small', type: 'button' });
+    const suggestionHint = el('div', { class: 'progress-hint', hidden: true }, [hintText, hintUse]);
+
+    const paintSuggestion = () => {
+        const todo = entry.sets.filter((set) => !set.warmup && !set.done);
+        const started = entry.sets.some((set) => !set.warmup && set.done);
+        const top = Math.max(0, ...todo.map((set) => set.weightKg));
+        const show = Boolean(suggestion) && !started && todo.length > 0 && suggestionStillUseful(suggestion, top);
+        suggestionHint.hidden = !show;
+        if (!show) return;
+        hintText.textContent = suggestionText(suggestion);
+        hintUse.textContent = `Use ${formatNumber(suggestion.to)} ${suggestion.unit}`;
+    };
+
+    hintUse.addEventListener('click', () => {
+        if (!suggestion) return;
+        const unit = getUnit();
+        const targets = weightControls.filter(({ set }) => !set.warmup && !set.done);
+        const next = shiftToTop(targets.map(({ set }) => set.weightKg), suggestion.toKg);
+        targets.forEach(({ set, control }, i) => {
+            set.weightKg = next[i];
+            control.setValue(toDisplay(set.weightKg, unit));
+        });
+        paintSuggestion();
+        persist();
+        updateBanner();
     });
-    const refreshProgress = () => { progressBadge.hidden = !isReadyToProgress(entry); };
+
+    const refreshProgress = () => {
+        progressBadge.hidden = !isReadyToProgress(entry);
+        paintSuggestion();
+    };
 
     // Rebuilt in place rather than via a full render(), so removing a set
     // doesn't reset scroll position or drop you out of edit mode.
@@ -1016,6 +1053,7 @@ function exerciseBlock(entry, entryIndex) {
         // Looked up on every redraw (once per block, not per row — it walks the
         // workout history), so adding or removing a set never uses stale data.
         const lastInPlan = lastPlanPerformance(slotOf(entry), session.templateId);
+        suggestion = suggestNext({ entry, history: state.workouts, unit: getUnit(), bar: getBarWeight(getUnit()) });
         let workingCount = 0;
         let warmupCount = 0;
         entry.sets.forEach((set, index) => {
@@ -1098,6 +1136,7 @@ function exerciseBlock(entry, entryIndex) {
         ]),
 
         progressBadge,
+        suggestionHint,
         carriedNote(entry),
         ghost ? el('div', { class: 'ghost-hint', text: ghost }) : null,
 

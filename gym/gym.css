@@ -1262,6 +1262,9 @@ form.modal-body .modal-actions {
 /* --- Progression ------------------------------------------------------ */
 
 .progress-badge {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
     margin: 10px 12px 0;
     padding: 10px 12px;
     border-radius: 10px;
@@ -1285,6 +1288,30 @@ form.modal-body .modal-actions {
         opacity: 1;
         transform: none;
     }
+}
+
+.progress-badge .life-icon {
+    margin-top: 1px;
+}
+
+/* What to lift today: a quiet line and one button, before any set is ticked. */
+.progress-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 10px 12px 0;
+    padding: 6px 6px 6px 12px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.progress-hint .btn {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* --- Exercise notes --------------------------------------------------- */

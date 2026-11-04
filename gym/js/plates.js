@@ -17,6 +17,11 @@ export async function loadBarWeights() {
     barWeights = { ...DEFAULT_BAR, ...(saved || {}) };
 }
 
+/** The bar weight in use for a unit (display units), as last set in the calculator. */
+export function getBarWeight(unit) {
+    return barWeights[unit] ?? DEFAULT_BAR[unit];
+}
+
 function renderResult(container, target, bar, unit) {
     clear(container);
     const result = platesPerSide(target, bar, unit);
