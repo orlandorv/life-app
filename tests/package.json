@@ -1,0 +1,5 @@
+{
+    "type": "module",
+    "private": true,
+    "description": "Zero-dependency tests: run from the repo root with `node --test tests/`. This file only makes the .mjs/.js here load as ES modules without touching the repo root, where server.js is CommonJS."
+}
