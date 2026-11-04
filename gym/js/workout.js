@@ -8,6 +8,7 @@ import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
 import { demoLink } from './demo-link.js';
+import { entryMetBar } from './progression.js';
 import { mayWarnAboutSave, SAVE_FAILED } from '../../life/storage-errors.js';
 import { goalStatus, reachedGoalIds, sortGoals } from './goals.js';
 import { goalLabel, goalProgressText } from './goals-ui.js';
@@ -118,6 +119,10 @@ function entryFromTemplate(templateEntry) {
         equipment: exercise?.equipment || '',
         restSeconds: clampRest(templateEntry.restSeconds),
         targetReps: templateEntry.reps,
+        // How many working sets were asked for, fixed at session start like the
+        // targets: sets can be added or removed mid-session, and "did you do what
+        // was asked" has to be judged against what was asked.
+        targetSets: templateEntry.sets,
         // Snapshotted at session start, same as targetReps — the fixed bar
         // "ready to progress" checks every set against, independent of
         // whatever set.rir gets edited to mid-session.
@@ -354,9 +359,7 @@ function heaviestWorkingWeight(entry) {
 }
 
 function isReadyToProgress(entry) {
-    const working = entry.sets.filter((s) => !s.warmup);
-    if (!working.length || !Number.isFinite(entry.targetReps)) return false;
-    return working.every((s) => s.done && s.reps >= entry.targetReps && s.rir >= (entry.targetRir ?? 0));
+    return entryMetBar(entry, { live: true });
 }
 
 function carriedNote(entry) {

@@ -4,6 +4,7 @@ import { weekStart } from './volume.js';
 import { MUSCLE_GROUPS } from './seed.js';
 import { evaluateBadges } from './badges.js';
 import { questXpForWeeks, generateQuests } from './quests.js';
+import { entryMetBar } from './progression.js';
 
 /**
  * Everything the Progress tab shows — XP, levels, streaks, per-week and
@@ -127,19 +128,7 @@ function workoutTotals(workout) {
  * uses, so the XP agrees with what the workout screen already told you.
  */
 function progressionCount(workout) {
-    let count = 0;
-
-    for (const entry of workout.entries || []) {
-        const working = (entry.sets || []).filter(isWorkingSet);
-        if (!working.length || !Number.isFinite(entry.targetReps)) continue;
-
-        const targetRir = entry.targetRir ?? 0;
-        if (working.every((set) => set.reps >= entry.targetReps && (set.rir ?? 0) >= targetRir)) {
-            count += 1;
-        }
-    }
-
-    return count;
+    return (workout.entries || []).filter((entry) => entryMetBar(entry)).length;
 }
 
 // --- Personal records ----------------------------------------------------

@@ -2,61 +2,19 @@ import { database } from './db.js';
 import { $, el, clear, openModal } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
 import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNumber } from './units.js';
+import { PLATE_SIZES, DEFAULT_BAR, platesPerSide } from './plate-math.js';
 
 /**
- * What to hang on each side of the bar to hit a target weight.
- *
- * All of this works in *display* units rather than the app's usual kg — you
- * load 20 kg plates on a 20 kg bar, or 45 lb plates on a 45 lb bar, and
- * converting between them would invent plate sizes that don't exist in the
- * rack.
+ * The plate calculator: what to hang on each side of the bar to hit a target
+ * weight. The maths (plate sizes, `platesPerSide`) lives in plate-math.js, in
+ * display units — see the note there.
  */
-
-const PLATE_SIZES = {
-    kg: [25, 20, 15, 10, 5, 2.5, 1.25],
-    lb: [45, 35, 25, 10, 5, 2.5],
-};
-
-const DEFAULT_BAR = { kg: 20, lb: 45 };
-
-// Plate maths lands on values like 12.499999999999998; every comparison here
-// is fuzzed rather than exact so a clean 12.5 doesn't get reported as short.
-const EPSILON = 1e-6;
 
 let barWeights = { ...DEFAULT_BAR };
 
 export async function loadBarWeights() {
     const saved = await database.getSetting('barWeights', null);
     barWeights = { ...DEFAULT_BAR, ...(saved || {}) };
-}
-
-/**
- * Greedy largest-first, which is optimal for the standard doubling-ish plate
- * sets above. Returns the plates for ONE side, plus what that actually
- * loads to — the target isn't always reachable (a 61 kg target on a 20 kg
- * bar leaves 0.5 kg per side that no plate covers).
- */
-export function platesPerSide(target, bar, unit = getUnit()) {
-    const perSide = (target - bar) / 2;
-    if (perSide < -EPSILON) return { belowBar: true, plates: [], loaded: bar, exact: false };
-
-    const plates = [];
-    let remaining = perSide;
-
-    for (const size of PLATE_SIZES[unit]) {
-        const count = Math.floor((remaining + EPSILON) / size);
-        if (count > 0) {
-            plates.push({ size, count });
-            remaining -= count * size;
-        }
-    }
-
-    return {
-        belowBar: false,
-        plates,
-        loaded: target - remaining * 2,
-        exact: remaining < EPSILON,
-    };
 }
 
 function renderResult(container, target, bar, unit) {
