@@ -311,14 +311,24 @@ export function noteField({ label, placeholder = '', value = '', onSave }) {
 
 // --- Steppers ------------------------------------------------------------
 
+// A click this soon after a finger or mouse was last on the button is the tail of
+// that same press, which has already acted; a long hold ends in a click too.
+const POINTER_CLICK_WINDOW_MS = 600;
+
 /**
  * Wires press-and-hold repeat onto a +/- button. Uses pointer events so it
  * works for both touch and mouse, and cancels on pointercancel (which fires
  * when iOS decides a touch became a scroll).
+ *
+ * A press acts on pointerdown, so a plain `click` is only ever one that no
+ * pointer made: Enter or Space from a keyboard, or a switch or screen reader
+ * activating the button. Those did nothing before; now they step once.
  */
 export function bindHold(button, action) {
     let timeout = null;
     let interval = null;
+    let held = false;
+    let lastPointerAt = -Infinity;
 
     const stop = () => {
         clearTimeout(timeout);
@@ -327,8 +337,16 @@ export function bindHold(button, action) {
         interval = null;
     };
 
+    const release = () => {
+        held = false;
+        lastPointerAt = performance.now();
+        stop();
+    };
+
     button.addEventListener('pointerdown', (event) => {
         event.preventDefault();
+        held = true;
+        lastPointerAt = performance.now();
         action();
         timeout = setTimeout(() => {
             interval = setInterval(action, 90);
@@ -336,6 +354,11 @@ export function bindHold(button, action) {
     });
 
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((type) => {
-        button.addEventListener(type, stop);
+        button.addEventListener(type, release);
+    });
+
+    button.addEventListener('click', () => {
+        if (held || performance.now() - lastPointerAt < POINTER_CLICK_WINDOW_MS) return;
+        action();
     });
 }

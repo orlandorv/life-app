@@ -633,6 +633,15 @@ form.modal-body .modal-actions {
     background: color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
+/* The stepper clips what overflows it, so the ring sits inside the button. */
+.stepper-btn:focus-visible {
+    outline-offset: -4px;
+}
+
+.stepper:focus-within {
+    border-color: var(--primary);
+}
+
 .stepper-value {
     flex: 1;
     min-width: 0;

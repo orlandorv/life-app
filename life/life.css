@@ -120,6 +120,19 @@ body[data-section="inbox"] { --primary: var(--inbox); }
 
 html {
     -webkit-text-size-adjust: 100%;
+    /* Taps act at once instead of waiting to see whether it's a double-tap zoom
+       (pinch zoom is untouched). */
+    touch-action: manipulation;
+}
+
+/* A visible mark for keyboard, switch and screen-reader focus, in the section's
+   colour. :focus-visible leaves taps and clicks alone, so nothing rings on a
+   phone unless something other than a finger moved focus there. Text fields
+   have their own focus style (border + glow) and sheets take focus by script,
+   both of which set `outline: none` more specifically than this. */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
 /* Components below set display explicitly, which would otherwise win over the
