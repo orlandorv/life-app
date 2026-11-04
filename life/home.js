@@ -5,7 +5,7 @@ import { localDayId, weekStartId, addDays } from './dates.js';
 import { state as gymState } from '../gym/js/store.js';
 import { computeProgress } from '../gym/js/progress.js';
 import { getUnit, toDisplay, formatNumber } from '../gym/js/units.js';
-import { state as food, loadDay, loadTargets } from '../nutrition/store.js';
+import { state as food, loadDay, loadDays, loadTargets } from '../nutrition/store.js';
 import { dayTotals, hasTarget } from '../nutrition/totals.js';
 import { state as habitsState, loadHabits, loadLogs, loadTicks, doneDays, tickedSteps, toggleHabit } from '../habits/store.js';
 import { isScheduled, currentStreak } from '../habits/streaks.js';
@@ -18,10 +18,11 @@ import { state as videosState, loadVideos } from '../videos/store.js';
 import { unwatchedCount, nextToWatch } from '../videos/organize.js';
 import { state as tasksState, loadTasks } from '../tasks/store.js';
 import { nextTask, overdueCount, dueCount, taskDateLabel } from '../tasks/organize.js';
-import { loadEntries as loadJournal, entryFor as journalEntryFor, saveEntry as saveJournalEntry } from '../journal/store.js';
+import { state as journalState, loadEntries as loadJournal, entryFor as journalEntryFor, saveEntry as saveJournalEntry } from '../journal/store.js';
 import { MOODS, SCALE, moodLabel, energyLabel } from '../journal/insights.js';
 import { state as inboxState, loadNotes } from '../inbox/store.js';
 import { sortNotes } from '../inbox/organize.js';
+import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -69,9 +70,16 @@ export async function renderHome() {
     const today = localDayId(now);
     renderHeader(now);
 
+    // The week's food is only needed for the Sunday review.
+    let weekFood = new Map();
+
     try {
         await Promise.all([gymReady(), lifeDb.init()]);
         await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks(), loadJournal(), loadNotes()]);
+        if (isReviewDay(today)) {
+            const weekStart = weekStartId(today);
+            weekFood = await loadDays(Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)));
+        }
     } catch (error) {
         console.error(error);
         return;
@@ -81,7 +89,7 @@ export async function renderHome() {
     if (token !== renderToken) return;
 
     document.getElementById('life-today').replaceChildren(
-        ...[weighInReminder()].filter(Boolean),
+        ...[weighInReminder(), reviewCard(today, weekFood)].filter(Boolean),
         gymBlock(today),
         nutritionBlock(),
         habitsBlock(today),
@@ -136,6 +144,51 @@ function weighInReminder() {
         el('p', { class: 'life-reminder-text' }, [el('strong', { text: 'Weekly weigh-in' }), text]),
         // Body itself, not straight into the sheet, so pasting from Health is one tap away too.
         el('a', { class: 'btn btn-small life-reminder-action', href: '#/body', text: 'Log now' }),
+    ]);
+}
+
+// --- Weekly review ---------------------------------------------------------------
+
+const dayDate = (dayId) => {
+    const [year, month, day] = dayId.split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
+/** Sundays: how the week went, one row per section, each opening its section. */
+function reviewCard(today, weekFood) {
+    if (!isReviewDay(today)) return null;
+
+    const review = buildWeeklyReview({
+        today,
+        gymWeek: computeProgress().currentWeek,
+        workouts: gymState.workouts,
+        bodyEntries: bodyState.entries,
+        nutritionDays: weekFood,
+        targets: food.targets,
+        habits: habitsState.habits,
+        done: habitsState.done,
+        journalEntries: journalState.entries,
+    });
+    if (!review) return null;
+
+    const short = (dayId) => dayDate(dayId).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
+    return el('section', { class: 'life-review life-surface', 'aria-label': 'Your week' }, [
+        el('div', { class: 'life-review-head' }, [
+            el('h2', { class: 'life-review-title', text: 'Your week' }),
+            el('span', { class: 'life-review-range', text: `${short(review.weekStart)} – ${short(review.weekEnd)}` }),
+        ]),
+        ...reviewRows(review, { unit: getUnit() }).map((row) =>
+            el('a', { class: 'life-review-row', href: `#/${row.tone}`, dataset: { tone: row.tone } }, [
+                el('span', { class: 'life-chip' }, [icon(row.icon, { size: 19 })]),
+                el('span', { class: 'life-review-text' }, [
+                    el('span', { class: 'life-review-label', text: row.label }),
+                    el('span', { class: 'life-review-main', text: row.text }),
+                    row.detail ? el('span', { class: 'life-review-detail', text: row.detail }) : null,
+                ]),
+                icon('chevron', { size: 16 }),
+            ]),
+        ),
     ]);
 }
 

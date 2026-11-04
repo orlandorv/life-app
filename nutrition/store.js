@@ -29,6 +29,17 @@ export async function loadDay(day) {
     state.entries = entries.sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
 }
 
+/**
+ * What was eaten on each of several days, as a Map of day -> entries. Read-only:
+ * it leaves `state.day` and `state.entries` (the day the Nutrition screen is
+ * showing) alone, so the weekly review can look back without moving it.
+ */
+export async function loadDays(days) {
+    const byDay = new Map();
+    await Promise.all(days.map(async (day) => byDay.set(day, await lifeDb.byIndex('nutritionEntries', 'day', day))));
+    return byDay;
+}
+
 /** Most recently used first — the foods you're likely to want again. */
 export async function loadFoods() {
     const foods = await lifeDb.getAll('foods');
