@@ -1,5 +1,6 @@
 import { bootGym, reloadGym } from '../gym/js/app.js';
-import { closeModal } from './dom.js';
+import { closeModal, toast } from './dom.js';
+import { isStorageError, mayWarnAboutSave, SAVE_FAILED } from './storage-errors.js';
 import { hydrateIcons } from './icons.js';
 import { initHome, renderHome } from './home.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
@@ -110,9 +111,26 @@ function showFatal(error) {
     document.body.prepend(banner);
 }
 
+/**
+ * Failed writes that nothing caught. Only storage-looking errors get a toast,
+ * at most one per half minute: a generic "something went wrong" on every
+ * stray error would be noise, and the app can't promise the data is safe.
+ */
+function warnAboutFailedSaves() {
+    const warn = (reason) => {
+        if (isStorageError(reason) && mayWarnAboutSave()) toast(SAVE_FAILED);
+    };
+    window.addEventListener('unhandledrejection', (event) => warn(event.reason));
+    window.addEventListener('error', (event) => warn(event.error));
+}
+
 async function start() {
     registerServiceWorker();
     initModalChrome();
+    warnAboutFailedSaves();
+    // Ask the browser to keep this app's data when the phone is short of space.
+    // Best effort: iOS may decline, and nothing depends on the answer.
+    navigator.storage?.persist?.().catch(() => {});
 
     // Started before the first route so a section that needs Gym's data (Body
     // reads its weight unit) can wait on it, even on a direct load of its URL.

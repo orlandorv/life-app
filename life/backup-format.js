@@ -181,7 +181,7 @@ export function summarize(info) {
 
 // --- When to nudge ---------------------------------------------------------------
 
-export const NUDGE_AFTER_DAYS = 14;
+export const NUDGE_AFTER_DAYS = 7;
 
 /** Whole days since `lastBackupAt`, or null if there has never been one. */
 export function backupAgeDays(lastBackupAt, now = new Date()) {

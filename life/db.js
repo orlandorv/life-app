@@ -170,9 +170,11 @@ class LifeDatabase {
 
     /** Is there anything here worth backing up? Settings alone don't count. */
     async hasAnyData() {
-        const counts = await Promise.all(
-            ['foods', 'nutritionEntries', 'habits', 'bodyEntries', 'videos', 'tasks'].map((name) => this.count(name)),
-        );
+        // Every store but settings (device preferences, not your data), taken from
+        // LIFE_STORES so a new section can't be forgotten here — Journal and Inbox
+        // were, and a user with only those was never told to back up.
+        const names = Object.keys(LIFE_STORES).filter((name) => name !== 'settings');
+        const counts = await Promise.all(names.map((name) => this.count(name)));
         return counts.some((n) => n > 0);
     }
 

@@ -8,6 +8,7 @@ import { openPicker } from './picker.js';
 import { openPlateCalculator } from './plates.js';
 import { rirGuidance, repRangeGuidance } from './guidance.js';
 import { demoLink } from './demo-link.js';
+import { mayWarnAboutSave, SAVE_FAILED } from '../../life/storage-errors.js';
 import { goalStatus, reachedGoalIds, sortGoals } from './goals.js';
 import { goalLabel, goalProgressText } from './goals-ui.js';
 import { computeProgress, syncProgressLedger } from './progress.js';
@@ -17,6 +18,9 @@ import { canVibrate, playSetComplete, playWorkoutFinished } from './sfx.js';
 import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNumber, formatWeight, formatDuration, formatStopwatch } from './units.js';
 
 let session = null;
+// True while the finished copy of the session is being written, so a late edit
+// can't land after it and put the old, still-open version back.
+let finishing = false;
 let wakeLock = null;
 let onFinished = null;
 let bannerSub = null;
@@ -133,9 +137,21 @@ function entryFromExercise(exerciseId) {
     return entryFromTemplate({ exerciseId, ...prescriptionFor(findExercise(exerciseId)) });
 }
 
+/**
+ * Saves the open workout. Called from every edit, mostly without awaiting, so
+ * it must never throw: a failed write used to vanish into an unhandled
+ * rejection while the set stayed ticked on screen. Now it says so (at most once
+ * per half minute, so a burst of taps isn't a burst of toasts) and carries on;
+ * the next edit tries again.
+ */
 async function persist() {
-    if (!session) return;
-    await database.saveWorkout(session);
+    if (!session || finishing) return;
+    try {
+        await database.saveWorkout(session);
+    } catch (error) {
+        console.error('Saving the workout failed', error);
+        if (mayWarnAboutSave()) toast(SAVE_FAILED);
+    }
 }
 
 export async function startWorkout(templateId = null) {
@@ -201,20 +217,31 @@ async function finishWorkout() {
     // left a note on ("shoulder twinged, skipped it" is worth keeping). Warm-up
     // sets never make the cut either way — they're a ramp-up, not logged
     // training volume, so History and Records only ever see working sets.
-    session.entries = session.entries
+    //
+    // Built as a copy and only swapped in once it has saved: if the write fails
+    // the workout is still open, with its unticked sets, and Finish can be tried
+    // again instead of leaving a half-finished session that can't be recovered.
+    const entries = session.entries
         .map((entry) => ({ ...entry, sets: entry.sets.filter((s) => s.done && !s.warmup) }))
         .filter((entry) => entry.sets.length > 0 || entry.note?.trim());
-    session.status = 'completed';
-    session.finishedAt = new Date().toISOString();
+    const finished = { ...session, entries, status: 'completed', finishedAt: new Date().toISOString() };
 
     // Snapshotted before the save, while `state.workouts` still excludes this
     // session — diffing the two derived snapshots is what tells the summary
     // sheet what this workout actually earned.
-    const finished = session;
     const before = computeProgress();
     const goalsBefore = reachedGoalIds(state.goals, state.workouts);
 
-    await database.saveWorkout(session);
+    finishing = true;
+    try {
+        await database.saveWorkout(finished);
+    } catch (error) {
+        console.error('Finishing the workout failed', error);
+        toast('Couldn’t save the workout. It’s still open, so try Finish again.');
+        return;
+    } finally {
+        finishing = false;
+    }
     session = null;
     stopRest();
     releaseWakeLock();
