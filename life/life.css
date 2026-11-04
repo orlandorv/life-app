@@ -135,6 +135,34 @@ html {
     outline-offset: 2px;
 }
 
+/* "A new version is ready", shown over whatever you're doing once an update has
+   installed (life/updates.js). Under the notch, above the page's own chrome but
+   below sheets. */
+.update-banner {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    padding: 6px 8px 6px 16px;
+    border-radius: 999px;
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 6px 24px rgba(24, 16, 8, 0.22);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.update-banner .link-btn {
+    padding-inline: 8px;
+}
+
 /* Tap targets: a fingertip needs about 44px. A control that is drawn smaller
    keeps its look and borrows the empty space round it for the tap: an invisible
    ::after, centred, never smaller than 44x44. It paints nothing and moves

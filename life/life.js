@@ -1,6 +1,7 @@
 import { bootGym, reloadGym } from '../gym/js/app.js';
 import { closeModal, toast } from './dom.js';
 import { isStorageError, mayWarnAboutSave, SAVE_FAILED } from './storage-errors.js';
+import { registerServiceWorker } from './updates.js';
 import { hydrateIcons } from './icons.js';
 import { initHome, renderHome } from './home.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
@@ -74,13 +75,6 @@ function route() {
  * registration failure shouldn't block the app from working, it just means
  * no offline support this session.
  */
-function registerServiceWorker() {
-    if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('./sw.js').catch((error) => {
-        console.warn('Service worker registration failed:', error);
-    });
-}
-
 /**
  * Modal chrome shared by every section: the close/cancel buttons, a tap on
  * the backdrop, and Escape. Delegated from the document, so a section's

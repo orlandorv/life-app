@@ -1,7 +1,7 @@
 // Bump this on every deploy that changes any cached file. Old caches are
 // dropped automatically on activate, so this one line is the whole release
 // process — nothing else in here needs to change per deploy.
-const CACHE_VERSION = 'v88';
+const CACHE_VERSION = 'v89';
 const CACHE_NAME = `life-${CACHE_VERSION}`;
 
 // Registered as a relative path from index.html, so these resolve under
@@ -20,6 +20,7 @@ const APP_SHELL = [
     './life/icons.js',
     './life/backup-format.js',
     './life/storage-errors.js',
+    './life/updates.js',
     './life/daybar.js',
     './nutrition/nutrition.css',
     './nutrition/nutrition.js',
@@ -108,33 +109,79 @@ const APP_SHELL = [
     './icons/icon-512.png',
 ];
 
+// How hard installing tries before giving up on a file. The shell is ~100 files,
+// fetched in small groups with a retry or two each, because the likeliest time
+// to install an update is on a gym's spotty wifi.
+const PRECACHE_ATTEMPTS = 3;
+const PRECACHE_PARALLEL = 6;
+const PRECACHE_RETRY_MS = 400;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// A missing file (404) won't appear on a retry; a server hiccup or a dropped
+// connection might.
+const worthRetrying = (status) => status === undefined || status >= 500 || status === 408 || status === 429;
+
+async function precacheOne(cache, url) {
+    let failure = 'no attempt made';
+    for (let attempt = 1; attempt <= PRECACHE_ATTEMPTS; attempt += 1) {
+        let status;
+        try {
+            // no-store: straight to the network, never the browser's HTTP cache,
+            // or an update could install yesterday's file under today's version.
+            const response = await fetch(url, { cache: 'no-store' });
+            status = response.status;
+            if (response.ok) return cache.put(url, response);
+            failure = `${url} -> ${response.status}`;
+        } catch (error) {
+            failure = `${url} -> ${error?.message ?? 'network error'}`;
+        }
+        if (!worthRetrying(status) || attempt === PRECACHE_ATTEMPTS) break;
+        await wait(PRECACHE_RETRY_MS * attempt);
+    }
+    throw new Error(failure);
+}
+
+/** Caches the whole shell, a few files at a time; rejects if any file can't be had. */
+async function precacheShell(cache) {
+    const queue = [...APP_SHELL];
+    const failures = [];
+    const worker = async () => {
+        while (queue.length) {
+            const url = queue.shift();
+            try {
+                await precacheOne(cache, url);
+            } catch (error) {
+                failures.push(error.message);
+            }
+        }
+    };
+    await Promise.all(Array.from({ length: PRECACHE_PARALLEL }, worker));
+    if (failures.length) throw new Error(`${failures.length} app file(s) could not be cached: ${failures.slice(0, 3).join('; ')}`);
+}
+
+// A version is installed whole or not at all. Precaching used to shrug off
+// individual misses and activate anyway; then the update that wasn't quite
+// complete replaced the old, complete one, and a file that never arrived left
+// the app unable to start the next time it opened offline. Now one miss fails
+// the install: the previous version keeps running untouched, nothing half-built
+// is left behind, and the browser tries again the next time the app loads or is
+// brought back to the foreground.
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(async (cache) => {
-            // Deliberately not cache.addAll(APP_SHELL): that's all-or-nothing —
-            // one flaky request out of 23, fetched in a single burst, fails
-            // the whole precache and silently leaves it empty. On a gym's
-            // spotty wifi (the entire reason this exists) that's the most
-            // likely time for exactly that to happen. Caching each file on
-            // its own means a single miss doesn't cost the other 22 — and
-            // whatever didn't make it here still gets picked up the first
-            // time it's actually requested, via the fetch handler below.
-            const results = await Promise.allSettled(
-                APP_SHELL.map(async (url) => {
-                    const response = await fetch(url, { cache: 'no-store' });
-                    if (!response.ok) throw new Error(`${url} -> ${response.status}`);
-                    await cache.put(url, response);
-                }),
-            );
-            const failed = results.filter((r) => r.status === 'rejected');
-            if (failed.length) {
-                console.warn('life sw: some app-shell files failed to precache', failed.map((r) => r.reason?.message));
+        (async () => {
+            try {
+                await precacheShell(await caches.open(CACHE_NAME));
+            } catch (error) {
+                await caches.delete(CACHE_NAME);
+                console.warn('life sw: not installing this version —', error.message);
+                throw error;
             }
             // Don't wait for old tabs to close before this version takes
             // over installing — see the note by clients.claim() below for
             // why that still isn't quite instant for an already-open tab.
             return self.skipWaiting();
-        }),
+        })(),
     );
 });
 
