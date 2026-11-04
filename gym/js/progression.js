@@ -189,7 +189,8 @@ export function suggestNext({ entry, history, unit = 'kg', bar = 20, now = new D
 /** The line shown above the "Use" button. */
 export function suggestionText(suggestion) {
     const { kind, reps, from, to, unit } = suggestion;
-    const show = (value) => `${Math.round(value * 100) / 100} ${unit}`;
+    // A non-breaking space, so a line can never end on a number with its unit orphaned on the next.
+    const show = (value) => `${Math.round(value * 100) / 100}\u00a0${unit}`;
     // Names the weight rather than saying "last time": the set rows already show
     // "Last time" for whichever session came most recently, which may be a
     // different plan at a different weight and rep range.

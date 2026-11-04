@@ -433,12 +433,12 @@ test('high-rep lifts, where no one-rep-max estimate exists, still get a verdict'
 });
 
 test('the wording', () => {
-    assert.equal(suggestionText({ kind: 'progress', reps: 8, from: 60, to: 62.5, unit: 'kg' }), 'At 60 kg every set hit 8 reps. Try 62.5 kg.');
+    assert.equal(suggestionText({ kind: 'progress', reps: 8, from: 60, to: 62.5, unit: 'kg' }), 'At 60\u00a0kg every set hit 8 reps. Try 62.5\u00a0kg.');
     assert.equal(
         suggestionText({ kind: 'deload', reps: 8, from: 100, to: 90, unit: 'kg' }),
-        'At 100 kg, the last 3 sessions fell short of 8 reps a set. Try a lighter 90 kg to rebuild.',
+        'At 100\u00a0kg, the last 3 sessions fell short of 8 reps a set. Try a lighter 90\u00a0kg to rebuild.',
     );
-    assert.equal(suggestionText({ kind: 'progress', reps: 5, from: 135, to: 140, unit: 'lb' }), 'At 135 lb every set hit 5 reps. Try 140 lb.');
+    assert.equal(suggestionText({ kind: 'progress', reps: 5, from: 135, to: 140, unit: 'lb' }), 'At 135\u00a0lb every set hit 5 reps. Try 140\u00a0lb.');
 });
 
 test('a hint stays only while it still says something new', () => {
