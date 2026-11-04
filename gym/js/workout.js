@@ -10,6 +10,7 @@ import { rirGuidance, repRangeGuidance } from './guidance.js';
 import { demoLink } from './demo-link.js';
 import { entryMetBar, suggestNext, suggestionText, suggestionStillUseful, shiftToTop } from './progression.js';
 import { icon } from '../../life/icons.js';
+import { rampFor } from './warmup.js';
 import { mayWarnAboutSave, SAVE_FAILED } from '../../life/storage-errors.js';
 import { goalStatus, reachedGoalIds, sortGoals } from './goals.js';
 import { goalLabel, goalProgressText } from './goals-ui.js';
@@ -1036,9 +1037,33 @@ function exerciseBlock(entry, entryIndex) {
         updateBanner();
     });
 
+    // Warm-ups stepping up to the heaviest working set. Offered only while it
+    // can help: there's a weight to ramp to, no warm-up yet, and nothing ticked.
+    const rampButton = el('button', {
+        class: 'btn btn-outline btn-small',
+        type: 'button',
+        text: 'Ramp',
+        hidden: true,
+        'aria-label': 'Add a warm-up ramp',
+    });
+    const currentRamp = () => {
+        const working = entry.sets.filter((set) => !set.warmup);
+        if (entry.sets.some((set) => set.warmup || set.done)) return [];
+        const heaviest = Math.max(0, ...working.map((set) => set.weightKg));
+        return rampFor({ entry, workingKg: heaviest, unit: getUnit(), bar: getBarWeight(getUnit()) });
+    };
+    const paintRamp = () => { rampButton.hidden = currentRamp().length === 0; };
+    rampButton.addEventListener('click', () => {
+        const ramp = currentRamp();
+        if (!ramp.length) return;
+        insertWarmups(entry, ramp, refreshSets);
+        toast(`Added ${ramp.length} warm-up set${ramp.length > 1 ? 's' : ''}`);
+    });
+
     const refreshProgress = () => {
         progressBadge.hidden = !isReadyToProgress(entry);
         paintSuggestion();
+        paintRamp();
     };
 
     // Rebuilt in place rather than via a full render(), so removing a set
@@ -1165,6 +1190,7 @@ function exerciseBlock(entry, entryIndex) {
                 text: '+ Warm-up',
                 onclick: () => addWarmupSet(entry, refreshSets),
             }),
+            rampButton,
             el('button', {
                 class: 'btn btn-outline btn-small',
                 type: 'button',
@@ -1214,20 +1240,27 @@ function addSet(entry, refreshSets) {
  * "last working set" lookups elsewhere (addSet, ghost text) keep working
  * unchanged via `.at(-1)`.
  */
-function addWarmupSet(entry, refreshSets) {
+function insertWarmups(entry, warmups, refreshSets) {
     const warmupCount = entry.sets.filter((s) => s.warmup).length;
-    const firstWorking = entry.sets.find((s) => !s.warmup);
-    entry.sets.splice(warmupCount, 0, {
-        reps: firstWorking?.reps ?? entry.targetReps ?? DEFAULTS.reps,
-        weightKg: firstWorking?.weightKg ?? 0,
-        done: false,
-        completedAt: null,
-        warmup: true,
-    });
+    entry.sets.splice(
+        warmupCount,
+        0,
+        ...warmups.map(({ reps, weightKg }) => ({ reps, weightKg, done: false, completedAt: null, warmup: true })),
+    );
+    // One save for the lot, however many sets went in.
     persist();
     refreshSets();
     updateBanner();
     syncElapsedTimer();
+}
+
+function addWarmupSet(entry, refreshSets) {
+    const firstWorking = entry.sets.find((s) => !s.warmup);
+    insertWarmups(
+        entry,
+        [{ reps: firstWorking?.reps ?? entry.targetReps ?? DEFAULTS.reps, weightKg: firstWorking?.weightKg ?? 0 }],
+        refreshSets,
+    );
 }
 
 async function removeExercise(index) {

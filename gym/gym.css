@@ -1422,12 +1422,18 @@ form.modal-body .modal-actions {
 
 .block-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 4px 12px 12px;
 }
 
+/* Up to four buttons share the row (+ Warm-up, Ramp, + Add set, Plates): each
+   sizes to its words and shares what's left, and a narrow phone drops the last
+   to a second line instead of breaking a label across three. */
 .block-actions .btn {
-    flex: 1;
+    flex: 1 1 auto;
+    padding-inline: 8px;
+    white-space: nowrap;
 }
 
 .stepper-head {
