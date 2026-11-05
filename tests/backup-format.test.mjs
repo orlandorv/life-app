@@ -34,6 +34,11 @@ const SAMPLE = {
 const life = (overrides = {}) => ({ ...Object.fromEntries(Object.entries(SAMPLE).map(([k, v]) => [k, [v]])), ...overrides });
 const file = (lifeData = life()) => JSON.parse(JSON.stringify(buildBackup({ gym: null, life: lifeData })));
 
+test('the game ledger is portable but the sound preference stays on the phone', () => {
+    assert.ok(DEVICE_SETTINGS.includes('lifeGameDevice'));
+    assert.ok(!DEVICE_SETTINGS.includes('lifeGame'));
+});
+
 test('every store has a sample row here — add one when a store is added', () => {
     assert.deepEqual(Object.keys(SAMPLE).sort(), Object.keys(LIFE_STORES).sort());
 });

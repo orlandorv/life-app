@@ -16,6 +16,14 @@ const DB_NAME = 'LifeDB';
 const DB_VERSION = 11;
 
 
+/** Fired on `window` after a write to something the game scores (never from an import, so a restore can't celebrate). */
+export const DATA_CHANGED_EVENT = 'life-data-changed';
+const GAME_STORES = new Set(['habits', 'habitLogs', 'nutritionEntries', 'journalEntries', 'bodyEntries']);
+
+function announce(storeNames) {
+    if (storeNames.some((name) => GAME_STORES.has(name))) globalThis.dispatchEvent?.(new Event(DATA_CHANGED_EVENT));
+}
+
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
@@ -178,6 +186,9 @@ class LifeDatabase {
         return this._run(storeName, 'readwrite', (tx) => {
             tx.objectStore(storeName).put(value);
             return value;
+        }).then((result) => {
+            announce([storeName]);
+            return result;
         });
     }
 
@@ -186,12 +197,18 @@ class LifeDatabase {
         const names = [...new Set(writes.map(([name]) => name))];
         return this._run(names, 'readwrite', (tx) => {
             for (const [name, row] of writes) tx.objectStore(name).put(row);
+        }).then((result) => {
+            announce(names);
+            return result;
         });
     }
 
     delete(storeName, key) {
         return this._run(storeName, 'readwrite', (tx) => {
             tx.objectStore(storeName).delete(key);
+        }).then((result) => {
+            announce([storeName]);
+            return result;
         });
     }
 

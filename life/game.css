@@ -294,3 +294,46 @@
     font-weight: 400;
     color: var(--text-secondary);
 }
+
+/* A goal just completed: its chip gives a small pop (the global reduced-motion rule flattens it). */
+.life-game-chip.pop {
+    animation: lifeGamePop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+@keyframes lifeGamePop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+.life-game-sound {
+    margin-top: 14px;
+    padding: 4px 2px;
+}
+
+/* The level-up sheet */
+.life-game-up {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0 4px;
+    text-align: center;
+}
+
+.life-game-up .life-game-bar {
+    width: 100%;
+}
+
+.life-game-up-level {
+    font-family: var(--font-rounded);
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+.life-game-up-sub {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+}

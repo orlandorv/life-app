@@ -5,6 +5,7 @@ import { database as gymDb } from '../gym/js/db.js';
 import { state as gymState } from '../gym/js/store.js';
 import { icon } from './icons.js';
 import { shareOrDownload } from './share.js';
+import { muteGame, resyncGame } from './game.js';
 import { buildBackup, inspectBackup, summarize, describeAge, backupAgeDays, needsNudge } from './backup-format.js';
 
 /**
@@ -189,6 +190,8 @@ async function importFile(file) {
     });
     if (!ok) return;
 
+    // A restore can change the level; it must never be announced as an achievement.
+    muteGame();
     let lifeDone = false;
     try {
         await context.gymReady();
@@ -202,10 +205,12 @@ async function importFile(file) {
         console.error(error);
         toast(lifeDone ? `Gym failed to import (${error.message}); the rest was imported` : `Import failed: ${error.message}`);
         await context.reloadGym();
+        await resyncGame();
         return;
     }
 
     await context.reloadGym();
+    await resyncGame();
     await renderSheet();
     renderBackupBanner();
     toast('Backup imported');

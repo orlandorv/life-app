@@ -39,7 +39,7 @@ export const LIFE_STORES = {
  * never travel: restoring an old backup would otherwise reset it to that
  * backup's date and make a fresh one look stale.
  */
-export const DEVICE_SETTINGS = ['lastBackupAt'];
+export const DEVICE_SETTINGS = ['lastBackupAt', 'lifeGameDevice'];
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^\d{2}:\d{2}$/;

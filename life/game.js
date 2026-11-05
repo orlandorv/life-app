@@ -1,4 +1,7 @@
-import { $, el, clear, openModal } from './dom.js';
+import { $, el, clear, openModal, toast } from './dom.js';
+import { lifeDb, DATA_CHANGED_EVENT } from './db.js';
+import { on } from '../gym/js/store.js';
+import { playGoodDay, playLevelUp } from '../gym/js/sfx.js';
 import { icon } from './icons.js';
 import { localDayId, addDays, weekStartId, daysBetween } from './dates.js';
 import { computeGame, saveLedger } from './game-inputs.js';
@@ -27,6 +30,16 @@ const unit = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 /** The state the card and sheet draw from; replaced on every refresh. */
 let current = null;
 
+/** Sound is a preference of this phone, so it is kept out of backups (`DEVICE_SETTINGS`). */
+const DEVICE_KEY = 'lifeGameDevice';
+let soundOn = true;
+/** True while a backup is being restored: a restore can change the level, and must never be announced. */
+let muted = false;
+const UPDATE_DELAY_MS = 250;
+let updateTimer = null;
+let updating = false;
+let updateAgain = false;
+
 /** Works the game out as of today. Safe to call often; reads storage and changes nothing but a first-run ledger. */
 export async function loadGame(today = localDayId()) {
     current = { ...(await computeGame(today)), today };
@@ -52,7 +65,7 @@ function todayBar(day) {
     );
 }
 
-function chip(id, state) {
+function chip(id, state, pop = new Set()) {
     const meta = GOALS[id];
     const day = state.game.today;
     const goal = day.goals.find((g) => g.id === id);
@@ -64,7 +77,7 @@ function chip(id, state) {
         ? `Workout bonus, ${done ? 'earned' : 'not yet'}`
         : `${meta.label}: ${goal.of ? `${goal.done} of ${goal.of}` : done ? 'done' : 'not yet'}`;
 
-    return el('a', { class: `life-game-chip${done ? ' done' : ''}`, href: meta.href, dataset: { goal: id }, 'aria-label': spoken }, [
+    return el('a', { class: `life-game-chip${done ? ' done' : ''}${pop.has(id) ? ' pop' : ''}`, href: meta.href, dataset: { goal: id }, 'aria-label': spoken }, [
         done ? icon('check', { size: 14 }) : icon(meta.icon, { size: 14 }),
         el('span', { text: meta.label }),
         text ? el('small', { text }) : null,
@@ -72,7 +85,7 @@ function chip(id, state) {
 }
 
 /** The card for the top of Today, or null when no goal is switched on. */
-export function gameCard(state = current) {
+export function gameCard(state = current, pop = new Set()) {
     if (!state?.game.today) return null;
     const { game, ledger } = state;
     const day = game.today;
@@ -97,7 +110,7 @@ export function gameCard(state = current) {
             ]),
             day.applies ? todayBar(day) : null,
         ]),
-        chips.length ? el('div', { class: 'life-game-chips' }, chips.map((id) => chip(id, state))) : null,
+        chips.length ? el('div', { class: 'life-game-chips' }, chips.map((id) => chip(id, state, pop))) : null,
     ]);
 }
 
@@ -113,14 +126,31 @@ export function openGameSheet() {
 }
 
 /** Redraws the card on Today and, if open, the sheet, from `current`. */
-export function redrawGame() {
+export function redrawGame(pop = new Set()) {
     const card = document.querySelector('.life-game');
-    const next = gameCard();
+    const next = gameCard(current, pop);
     if (card && next) {
         next.style.animation = 'none';
+        const bars = animateFrom(card, next);
         card.replaceWith(next);
+        bars?.();
     }
     if (document.getElementById('game-modal')?.classList.contains('active')) drawSheet();
+}
+
+/**
+ * Makes the new card's bars start where the old card's were and grow to where they
+ * are now, so a tick visibly fills the bar instead of the card snapping to a new
+ * one. Returns what to run once the new card is in the page.
+ */
+function animateFrom(oldCard, newCard) {
+    const fills = '.life-game-bar-fill, .life-game-seg-fill';
+    const before = [...oldCard.querySelectorAll(fills)];
+    const after = [...newCard.querySelectorAll(fills)];
+    if (!before.length || before.length !== after.length) return null;
+    const targets = after.map((node) => node.style.width);
+    after.forEach((node, i) => { node.style.width = before[i].style.width; });
+    return () => setTimeout(() => after.forEach((node, i) => { node.style.width = targets[i]; }), 30);
 }
 
 /** Recomputes, then redraws. */
@@ -164,6 +194,10 @@ function drawSheet() {
         el('section', {}, [
             el('h3', { class: 'life-eyebrow life-game-h', text: 'What counts' }),
             el('div', { class: 'life-list life-game-goals' }, Object.keys(GOALS).map((id) => goalToggle(id, ledger, today))),
+        ]),
+        el('label', { class: 'life-check life-game-sound' }, [
+            soundBox(),
+            el('span', { class: 'life-game-goal-text' }, [el('span', { text: 'Game sounds' }), el('small', { text: 'A soft chime when you reach a good day or a new level.' })]),
         ]),
         el('p', {
             class: 'hint life-game-explain',
@@ -237,11 +271,144 @@ function goalToggle(id, ledger, today) {
             box.checked = !box.checked;
             return;
         }
-        await refreshGame();
+        await resyncGame(); // switching a goal is not an achievement
     });
     const worth = id === 'workout' ? `+${BONUS.workout} bonus` : `${WEIGHTS[id]} of 100`;
     return el('label', { class: 'life-check life-game-goal' }, [
         box,
         el('span', { class: 'life-game-goal-text' }, [el('span', { text: `${meta.label} · ${worth}` }), el('small', { text: meta.blurb })]),
     ]);
+}
+
+function soundBox() {
+    const box = el('input', { type: 'checkbox' });
+    box.checked = soundOn;
+    box.addEventListener('change', async () => {
+        soundOn = box.checked;
+        try {
+            await lifeDb.saveSetting(DEVICE_KEY, { sound: soundOn });
+        } catch (error) {
+            console.error(error);
+        }
+    });
+    return box;
+}
+
+// --- Feedback: what happens when you do something -------------------------------------
+
+/**
+ * Listens for the things that change a score: a write to a scored store (see
+ * `life/db.js`), and Gym's workouts changing. Each schedules a recompute, which
+ * redraws the card and reacts. Called once at start.
+ */
+export function initGame() {
+    window.addEventListener(DATA_CHANGED_EVENT, scheduleUpdate);
+    on('workouts', scheduleUpdate);
+    lifeDb
+        .init()
+        .then(() => lifeDb.getSetting(DEVICE_KEY, null))
+        .then((stored) => {
+            if (stored && stored.sound === false) soundOn = false;
+        })
+        .catch((error) => console.warn(error));
+}
+
+function scheduleUpdate() {
+    clearTimeout(updateTimer);
+    updateTimer = setTimeout(update, UPDATE_DELAY_MS);
+}
+
+/** Stops announcing things (a restore is about to run). `resyncGame()` ends it. */
+export function muteGame() {
+    muted = true;
+    clearTimeout(updateTimer);
+}
+
+/**
+ * Takes the game as it is now as already seen: the level and today's good day are
+ * recorded without a word, then everything redraws. For a restored backup, which
+ * can change the level, and for switching goals, which isn't an achievement.
+ */
+export async function resyncGame() {
+    clearTimeout(updateTimer);
+    try {
+        const state = await loadGame();
+        if (state.game.today) {
+            const seen = { ...state.ledger, seenLevel: state.game.level.level, lastGoodDay: state.game.today.good ? state.today : state.ledger.lastGoodDay };
+            await saveLedger(seen);
+            current.ledger = seen;
+        }
+        redrawGame();
+    } finally {
+        muted = false;
+    }
+}
+
+/** The goals that went from not done to done between two looks at the same day. */
+function justCompleted(before, after) {
+    if (!before?.game.today || before.today !== after.today) return new Set();
+    const done = (state, id) => {
+        const day = state.game.today;
+        return id === 'workout' ? day.bonuses.includes('workout') : (day.goals.find((g) => g.id === id)?.fraction ?? 0) >= 1;
+    };
+    return new Set(Object.keys(GOALS).filter((id) => !done(before, id) && done(after, id)));
+}
+
+async function update() {
+    if (updating) {
+        updateAgain = true;
+        return;
+    }
+    updating = true;
+    try {
+        const before = current;
+        const state = await loadGame();
+        const { game, ledger, today } = state;
+        if (!game.today) return redrawGame();
+
+        const level = game.level.level;
+        const levelUp = level > ledger.seenLevel;
+        const goodDay = game.today.good && ledger.lastGoodDay !== today;
+        if (muted) return redrawGame();
+
+        // Record what has now been seen first, so a failure to save can never repeat a celebration forever.
+        if (level !== ledger.seenLevel || goodDay) {
+            const seen = { ...ledger, seenLevel: level, lastGoodDay: goodDay ? today : ledger.lastGoodDay };
+            await saveLedger(seen);
+            current.ledger = seen;
+        }
+        redrawGame(justCompleted(before, state));
+
+        // Over another sheet (Gym's workout summary, say) it stays a toast, and quiet, so the two don't talk over each other.
+        const busy = Boolean(document.querySelector('.modal.active'));
+        if (levelUp) {
+            if (busy) toast(`Level ${level}`);
+            else showLevelUp(game);
+            if (soundOn && !busy) playLevelUp();
+        } else if (goodDay) {
+            toast(`Good day · ${game.today.base} / ${MAX_BASE_XP}`);
+            if (soundOn && !busy) playGoodDay();
+        }
+    } catch (error) {
+        console.error(error);
+    } finally {
+        updating = false;
+        if (updateAgain) {
+            updateAgain = false;
+            scheduleUpdate();
+        }
+    }
+}
+
+function showLevelUp(game) {
+    const { level, into, span } = game.level;
+    clear($('#levelup-body')).append(
+        el('div', { class: 'life-game-up' }, [
+            el('div', { class: 'life-game-up-level', text: `Level ${level}` }),
+            el('p', { class: 'life-game-up-sub', text: `${(span - into).toLocaleString()} XP to level ${level + 1}` }),
+            bar(into / span, `Level progress: ${into} of ${span} XP`, 'big'),
+            el('p', { class: 'hint', text: 'Good days build your level. A missed day never takes any of it away.' }),
+        ]),
+    );
+    openModal('levelup-modal');
 }

@@ -101,6 +101,16 @@ export function playBadgeEarned() {
     tone(1318.5, 0.09, 0.26, 0.24);
 }
 
+/**
+ * A good day reached (the game layer). A soft two-note rise that stays well
+ * under the level-up sound: it can happen once a day, and should feel like a nod.
+ */
+export function playGoodDay() {
+    if (!ensureRunning()) return;
+    tone(587.33, 0, 0.14, 0.2);
+    tone(880, 0.1, 0.3, 0.2);
+}
+
 export function initSfx() {
     document.addEventListener('pointerdown', unlockAudio, { once: true });
 }
