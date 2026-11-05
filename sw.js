@@ -1,7 +1,7 @@
 // Bump this on every deploy that changes any cached file. Old caches are
 // dropped automatically on activate, so this one line is the whole release
 // process — nothing else in here needs to change per deploy.
-const CACHE_VERSION = 'v106';
+const CACHE_VERSION = 'v107';
 const CACHE_NAME = `life-${CACHE_VERSION}`;
 
 // Registered as a relative path from index.html, so these resolve under
@@ -73,6 +73,9 @@ const APP_SHELL = [
     './videos/books-organize.js',
     './life/links.js',
     './life/game-rules.js',
+    './life/game-inputs.js',
+    './life/game.js',
+    './life/game.css',
     './life/share.js',
     './tasks/tasks.css',
     './tasks/tasks.js',

@@ -28,6 +28,7 @@ import { sortNotes } from '../inbox/organize.js';
 import { state as wishState, loadItems as loadWishlist } from '../wishlist/store.js';
 import { splitItems, totalOf, formatPrice } from '../wishlist/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
+import { loadGame, gameCard } from './game.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -89,6 +90,7 @@ export async function renderHome() {
             optional(loadNotes()),
             optional(loadWishlist()),
             optional(loadBooks()),
+            optional(loadGame(today)),
             isReviewDay(today)
                 ? optional(loadDays(Array.from({ length: 7 }, (_, i) => addDays(weekStartId(today), i))).then((byDay) => { weekFood = byDay; }))
                 : null,
@@ -107,7 +109,7 @@ export async function renderHome() {
     if (token !== renderToken) return;
 
     document.getElementById('life-today').replaceChildren(
-        ...[weighInReminder(), reviewCard(today, weekFood)].filter(Boolean),
+        ...[weighInReminder(), gameCard(), reviewCard(today, weekFood)].filter(Boolean),
         gymBlock(today),
         nutritionBlock(),
         habitsBlock(today),

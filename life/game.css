@@ -1,0 +1,296 @@
+/* The game layer: the card on Today and its sheet. Tokens, .life-surface,
+   .life-chip, .life-list, .life-check and .life-eyebrow come from life/life.css. */
+
+/* Each goal wears its section's colour. */
+[data-goal="habits"] { --tone: var(--habits); }
+[data-goal="food"] { --tone: var(--nutrition); }
+[data-goal="body"] { --tone: var(--body); }
+[data-goal="journal"] { --tone: var(--journal); }
+[data-goal="workout"] { --tone: var(--gym); }
+
+.life-game {
+    padding: 0;
+    overflow: hidden;
+    --tone: var(--ink);
+}
+
+.life-game-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 16px 16px 14px;
+    border: none;
+    background: none;
+    font: inherit;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.life-game-main:active {
+    background: var(--bg-secondary);
+}
+
+.life-game-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.life-game-level {
+    flex: 1;
+    font-family: var(--font-rounded);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.life-game-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--gym);
+}
+
+.life-game-streak.none {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* The level bar: a calm ink fill on a track. */
+.life-game-bar {
+    display: block;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+.life-game-bar.big {
+    height: 14px;
+}
+
+.life-game-bar-fill {
+    display: block;
+    height: 100%;
+    min-width: 6px;
+    border-radius: 999px;
+    background: var(--ink);
+    transition: width 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.life-game-xp {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.life-game-today {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 6px;
+}
+
+.life-game-today-label {
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.life-game-today-score {
+    font-size: 14px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Today's bar is made of one segment per goal, as wide as the goal is worth. */
+.life-game-today-bar {
+    display: flex;
+    gap: 3px;
+    height: 12px;
+}
+
+.life-game-seg {
+    display: block;
+    position: relative;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tone) 16%, var(--bg-secondary));
+    overflow: hidden;
+}
+
+.life-game-seg-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--tone);
+    transition: width 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Goal chips: where to go to fill the bar. */
+.life-game-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 16px 14px;
+}
+
+.life-game-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 34px;
+    padding: 6px 11px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.life-game-chip small {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.life-game-chip.done {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--tone) 16%, transparent);
+    color: var(--tone);
+}
+
+/* --- The sheet ------------------------------------------------------------------ */
+
+.life-game-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.life-game-hero-level {
+    font-family: var(--font-rounded);
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.life-game-hero-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.life-game-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.life-game-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+}
+
+.life-game-stat strong {
+    font-family: var(--font-rounded);
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+}
+
+.life-game-stat span {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.life-game-explain {
+    margin: 0 0 18px;
+}
+
+.life-game-h {
+    margin: 18px 0 8px;
+}
+
+.life-game-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 11px 16px;
+    font-size: 15px;
+}
+
+.life-game-row-label {
+    flex: 1;
+    font-weight: 600;
+}
+
+.life-game-row-detail {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.life-game-row-xp {
+    min-width: 56px;
+    text-align: right;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Twelve weeks of days, a column a week, Monday at the top. */
+.life-game-heat {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(7, 1fr);
+    grid-template-columns: repeat(12, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.life-game-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: var(--level-none);
+}
+
+.life-game-cell[data-level="0"] { background: var(--level-0); opacity: 0.45; }
+.life-game-cell[data-level="1"] { background: var(--level-1); opacity: 0.7; }
+.life-game-cell[data-level="2"] { background: var(--level-2); }
+.life-game-cell[data-level="4"] { background: var(--level-4); }
+.life-game-cell[data-level="5"] { background: var(--level-5); }
+
+.life-game-goals {
+    overflow: hidden;
+}
+
+.life-game-goal {
+    padding: 12px 16px;
+}
+
+.life-game-goal-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.life-game-goal-text small {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
