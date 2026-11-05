@@ -1078,7 +1078,7 @@ function exerciseBlock(entry, entryIndex) {
         // Looked up on every redraw (once per block, not per row — it walks the
         // workout history), so adding or removing a set never uses stale data.
         const lastInPlan = lastPlanPerformance(slotOf(entry), session.templateId);
-        suggestion = suggestNext({ entry, history: state.workouts, unit: getUnit(), bar: getBarWeight(getUnit()) });
+        suggestion = suggestionFor(entry);
         let workingCount = 0;
         let warmupCount = 0;
         entry.sets.forEach((set, index) => {
@@ -1216,7 +1216,33 @@ function exerciseBlock(entry, entryIndex) {
     ]);
 
     initDragHandle(dragHandle, block);
+
+    // Follow the saved workouts: if History is edited, or a backup restored, while
+    // this workout is open, what the hint was worked out from has changed.
+    suggestionRefreshers.add({
+        block,
+        refresh: () => {
+            suggestion = suggestionFor(entry);
+            paintSuggestion();
+        },
+    });
     return block;
+}
+
+const suggestionFor = (entry) => suggestNext({ entry, history: state.workouts, unit: getUnit(), bar: getBarWeight(getUnit()) });
+
+/**
+ * Each open exercise block's way of redoing its progression hint. Held here (not
+ * found through the DOM like the "last N" captions) because the suggestion lives
+ * in the block's own closure. A block that has been rebuilt or removed is dropped.
+ */
+const suggestionRefreshers = new Set();
+
+function refreshSuggestions() {
+    for (const item of suggestionRefreshers) {
+        if (item.block.isConnected) item.refresh();
+        else suggestionRefreshers.delete(item);
+    }
 }
 
 function addSet(entry, refreshSets) {
@@ -1598,6 +1624,8 @@ export function initWorkout({ onWorkoutFinished } = {}) {
 
     // The "last N" on each set follows the saved workouts wherever they change.
     on('workouts', refreshPlanHints);
+    // And the progression hint, which is worked out from the same history.
+    on('workouts', refreshSuggestions);
     // So does each exercise's goal line, and it follows the goals themselves.
     on('workouts', refreshGoalLines);
     on('goals', refreshGoalLines);
