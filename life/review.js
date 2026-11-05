@@ -46,6 +46,24 @@ function gymSummary({ gymWeek, workouts, weekStart, today }) {
     };
 }
 
+/**
+ * The game's week: good days out of the days that counted (a day nothing applied to
+ * is left out, never counted as a miss), the XP they paid, and the streak. `game` is
+ * what `buildGame` returns; null with no scored day this week.
+ */
+function lifeSummary({ game, weekStart, today }) {
+    if (!game) return null;
+    const week = game.rows.filter((row) => row.day >= weekStart && row.day <= today && row.applies);
+    if (!week.length) return null;
+    return {
+        good: week.filter((row) => row.good).length,
+        days: week.length,
+        xp: week.reduce((sum, row) => sum + row.xp, 0),
+        streak: game.streak,
+        level: game.level.level,
+    };
+}
+
 function bodySummary({ bodyEntries, today }) {
     // Asking for one week gives this week, and nothing at all if it has no data.
     const [thisWeek] = weeklyAverages(bodyEntries, today, 1);
@@ -126,6 +144,7 @@ export function buildWeeklyReview({
     habits = [],
     done = new Map(),
     journalEntries = [],
+    game = null,
 }) {
     const weekStart = weekStartId(today);
     const days = weekDays(weekStart, today);
@@ -133,6 +152,7 @@ export function buildWeeklyReview({
     const review = {
         weekStart,
         weekEnd: today,
+        life: lifeSummary({ game, weekStart, today }),
         gym: gymSummary({ gymWeek, workouts, weekStart, today }),
         body: bodySummary({ bodyEntries, today }),
         nutrition: nutritionSummary({ nutritionDays, targets, days }),
@@ -140,7 +160,7 @@ export function buildWeeklyReview({
         journal: journalSummary({ journalEntries, weekStart, today }),
     };
 
-    return review.gym || review.body || review.nutrition || review.habits || review.journal ? review : null;
+    return review.life || review.gym || review.body || review.nutrition || review.habits || review.journal ? review : null;
 }
 
 // --- Wording ------------------------------------------------------------------
@@ -159,6 +179,17 @@ const NB = '\u00a0';
 export function reviewRows(review, { unit = 'kg', locale } = {}) {
     const rows = [];
     const whole = (value) => Math.round(value).toLocaleString(locale);
+
+    if (review.life) {
+        const { good, days, xp, streak, level } = review.life;
+        rows.push({
+            tone: 'life',
+            icon: 'level',
+            label: 'Life',
+            text: `${plural(good, 'good day')} of ${days}`,
+            detail: [`${whole(xp)}${NB}XP`, streak > 1 ? `${streak}-day streak` : null, `level ${level}`].filter(Boolean).join(' · '),
+        });
+    }
 
     if (review.gym) {
         const { sessions, target, sets, tonnageKg, prs, liftsAtTarget } = review.gym;

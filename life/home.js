@@ -28,7 +28,7 @@ import { sortNotes } from '../inbox/organize.js';
 import { state as wishState, loadItems as loadWishlist } from '../wishlist/store.js';
 import { splitItems, totalOf, formatPrice } from '../wishlist/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
-import { loadGame, gameCard } from './game.js';
+import { loadGame, gameCard, currentGame, openGameSheet } from './game.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -189,6 +189,7 @@ function reviewCard(today, weekFood) {
         habits: habitsState.habits,
         done: habitsState.done,
         journalEntries: journalState.entries,
+        game: currentGame(),
     });
     if (!review) return null;
 
@@ -200,7 +201,8 @@ function reviewCard(today, weekFood) {
             el('span', { class: 'life-review-range', text: `${short(review.weekStart)} – ${short(review.weekEnd)}` }),
         ]),
         ...reviewRows(review, { unit: getUnit() }).map((row) =>
-            el('a', { class: 'life-review-row', href: `#/${row.tone}`, dataset: { tone: row.tone } }, [
+            // The Life row has no section of its own: it opens the game's sheet.
+            el('a', { class: 'life-review-row', href: row.tone === 'life' ? '#/' : `#/${row.tone}`, dataset: { tone: row.tone }, onclick: row.tone === 'life' ? (event) => { event.preventDefault(); openGameSheet(); } : undefined }, [
                 el('span', { class: 'life-chip' }, [icon(row.icon, { size: 19 })]),
                 el('span', { class: 'life-review-text' }, [
                     el('span', { class: 'life-review-label', text: row.label }),
@@ -240,6 +242,9 @@ function gymBlock(today) {
     const targetHit = week && week.sessions >= week.target;
     const streak = progress.streak > 1 ? `${progress.streak}-week streak` : null;
 
+    // Gym keeps its own level and rank; the game card above is separate and says so.
+    const level = gymState.workouts.length ? `Gym level ${progress.level} · ${progress.rank}` : null;
+
     let note = 'A good week starts with one session.';
     if (trainedToday) note = 'Trained today. Nice work.';
     else if (targetHit) note = streak ? `Weekly target hit · ${streak}` : 'Weekly target hit. Anything more is a bonus.';
@@ -265,6 +270,7 @@ function gymBlock(today) {
     return block('gym', 'Gym', 'gym', [
         figure(String(week?.sessions ?? 0), `of ${week?.target ?? 0} sessions this week`),
         el('p', { class: 'life-sub', text: note }),
+        level ? el('p', { class: 'life-sub life-gym-level', text: level }) : null,
         dots,
         next
             ? el('p', {

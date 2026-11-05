@@ -404,6 +404,7 @@ body.modal-open {
 .life-block[data-tone="inbox"] { --tone: var(--inbox); }
 .life-block[data-tone="wishlist"] { --tone: var(--wishlist); }
 
+.life-review-row[data-tone="life"] { --tone: var(--ink); }
 .life-review-row[data-tone="gym"] { --tone: var(--gym); }
 .life-review-row[data-tone="nutrition"] { --tone: var(--nutrition); }
 .life-review-row[data-tone="habits"] { --tone: var(--habits); }

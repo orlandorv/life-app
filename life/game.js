@@ -412,3 +412,6 @@ function showLevelUp(game) {
     );
     openModal('levelup-modal');
 }
+
+/** The game as last computed (for the Sunday review), or null before the first load. */
+export const currentGame = () => current?.game ?? null;

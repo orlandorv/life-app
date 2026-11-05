@@ -253,3 +253,30 @@ test('a weekly habit that has not been touched is simply short of its target', (
     const r = review({ habits: [{ id: 'run', days: everyDay, startDay: '2026-01-01', weeklyTarget: 2 }], done: new Map() });
     assert.deepEqual(r.habits, { done: 0, due: 2, full: 0 });
 });
+
+// --- The game ------------------------------------------------------------------
+
+const gameRow = (day, base, xp, applies = true) => ({ day, applies, base: applies ? base : null, good: applies && base >= 70, xp });
+
+test('the Life row is good days out of the days that counted, the XP they paid, and the streak', () => {
+    const game = {
+        rows: [gameRow('2026-10-30', 100, 100), gameRow(MON, 90, 90), gameRow('2026-11-03', 40, 40), gameRow('2026-11-04', 0, 0, false), gameRow('2026-11-05', 75, 95)],
+        streak: 3,
+        level: { level: 4 },
+    };
+    const r = buildWeeklyReview({ today: SUN, game });
+    assert.deepEqual(r.life, { good: 2, days: 3, xp: 225, streak: 3, level: 4 });
+    const [row] = reviewRows(r);
+    assert.equal(row.label, 'Life');
+    assert.equal(row.text, '2 good days of 3');
+    assert.match(row.detail, /225 XP · 3-day streak · level 4/);
+});
+
+test('days nothing applied to are a gap, not a miss, and a week with none has no Life row', () => {
+    const game = { rows: [gameRow(MON, 0, 0, false), gameRow('2026-11-03', 0, 0, false)], streak: 0, level: { level: 1 } };
+    assert.equal(buildWeeklyReview({ today: SUN, game, journalEntries: [{ day: SUN, mood: 3 }] }).life, null);
+    assert.equal(review({}), null, 'no game at all is still no card');
+    const one = buildWeeklyReview({ today: SUN, game: { rows: [gameRow(MON, 80, 80)], streak: 1, level: { level: 1 } } });
+    assert.equal(reviewRows(one)[0].text, '1 good day of 1');
+    assert.doesNotMatch(reviewRows(one)[0].detail, /streak/, 'a streak of one is not announced');
+});
