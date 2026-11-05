@@ -12,7 +12,7 @@
 import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -109,6 +109,11 @@ class LifeDatabase {
                 // v8 — Inbox. Quick notes; tags are #words in the text, not a field.
                 if (!db.objectStoreNames.contains('notes')) {
                     db.createObjectStore('notes', { keyPath: 'id' });
+                }
+
+                // v9 — Nutrition's saved meals: a name and a list of food snapshots.
+                if (!db.objectStoreNames.contains('savedMeals')) {
+                    db.createObjectStore('savedMeals', { keyPath: 'id' });
                 }
             };
         }).catch((error) => {

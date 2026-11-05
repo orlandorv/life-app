@@ -25,6 +25,7 @@ const SAMPLE = {
     tasks: { id: 't1', title: 'Renew passport', date: '2026-11-10', time: null, done: false, createdAt: '2026-10-01T10:00:00.000Z', calendarSequence: 0 },
     journalEntries: { day: '2026-11-01', mood: 4, energy: null, note: 'Good session' },
     notes: { id: 'i1', text: 'Try a deload #gym', createdAt: '2026-10-01T10:00:00.000Z', pinned: true },
+    savedMeals: { id: 'm1', name: 'Usual breakfast', items: [{ name: 'Oats', kcal: 150, proteinG: 5, carbsG: 27, fatG: 3 }], createdAt: '2026-10-01T10:00:00.000Z' },
     settings: { key: 'someSetting', value: 1 },
 };
 
@@ -95,6 +96,7 @@ test('summarize counts what the import preview shows', () => {
     assert.equal(counts.journalDays, 1);
     assert.equal(counts.notes, 1);
     assert.equal(counts.tasks, 1);
+    assert.equal(counts.savedMeals, 1);
 });
 
 test('the backup reminder: needs data, then waits NUDGE_AFTER_DAYS from the last backup', () => {

@@ -10,6 +10,7 @@
 
 import { isTimeOfDay } from '../habits/times.js';
 import { isValidRepeat } from '../tasks/recurrence.js';
+import { isValidSavedMeal } from '../nutrition/saved-meals.js';
 
 export const LIFE_FORMAT = 'life-backup';
 export const LIFE_VERSION = 1;
@@ -27,6 +28,7 @@ export const LIFE_STORES = {
     tasks: 'id',
     journalEntries: 'day',
     notes: 'id',
+    savedMeals: 'id',
     settings: 'key',
 };
 
@@ -104,6 +106,7 @@ const ROW_CHECKS = {
     settings: (row) => isText(row.key),
     journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note),
     notes: (row) => isText(row.id) && isText(row.text) && isText(row.createdAt) && isOptionalText(row.updatedAt) && (row.pinned === undefined || isBoolean(row.pinned)),
+    savedMeals: isValidSavedMeal,
 };
 
 function checkLife(life) {
@@ -179,6 +182,7 @@ export function summarize(info) {
         tasks: count(info.life?.tasks),
         journalDays: count(info.life?.journalEntries),
         notes: count(info.life?.notes),
+        savedMeals: count(info.life?.savedMeals),
     };
 }
 

@@ -22,7 +22,12 @@ import {
     deleteEntry,
     copyMeal,
     loadDays,
+    loadSavedMeals,
+    saveMeal,
+    deleteSavedMeal,
+    logSavedMeal,
 } from './store.js';
+import { mealSummary, sameName, MAX_NAME } from './saved-meals.js';
 import { dayTotals, hasTarget, progress, kcalFromMacros } from './totals.js';
 import { weekDays, weekSummary, weekBarsLayout } from './week.js';
 import { svg } from '../life/svg.js';
@@ -72,7 +77,7 @@ let weekFood = new Map();
 export function initNutrition() {
     ready ??= (async () => {
         await lifeDb.init();
-        await Promise.all([loadFoods(), loadTargets()]);
+        await Promise.all([loadFoods(), loadTargets(), loadSavedMeals()]);
     })().catch((error) => {
         ready = null;
         throw error;
@@ -361,6 +366,13 @@ function mealSection(meal) {
                 'Copy yesterday',
             ])
             : null,
+        // What's in this meal, kept to log again in one tap.
+        entries.length
+            ? el('button', { class: 'meal-copy meal-save', type: 'button', onclick: () => openSaveMeal(meal.id) }, [
+                icon('list', { size: 16 }),
+                'Save as meal',
+            ])
+            : null,
     ]);
 
     return el('section', { class: 'meal' }, [
@@ -484,6 +496,7 @@ function showSearch() {
             el('button', { class: 'btn btn-outline btn-small', type: 'button', text: 'Quick add', onclick: () => showQuick() }),
             el('button', { class: 'btn btn-outline btn-small', type: 'button', text: 'Create a food', onclick: () => showCreate() }),
         ]),
+        savedMealsBlock(),
         el('div', { class: 'food-chips-label', text: 'Whole foods' }),
         chipRow(
             CATEGORIES.map((category) => ({ id: category, label: category })),
@@ -508,6 +521,110 @@ function showSearch() {
     );
 
     renderResults(results);
+}
+
+// --- Saved meals ---------------------------------------------------------------------------
+
+/** Your saved meals, most recently used first; one tap logs the lot into the meal being added to. */
+function savedMealsBlock() {
+    if (!state.savedMeals.length) return null;
+    return el('div', { class: 'saved-meals' }, [
+        el('div', { class: 'food-chips-label', text: 'My meals' }),
+        el('div', { class: 'life-list' }, state.savedMeals.map(savedMealRow)),
+    ]);
+}
+
+function savedMealRow(saved) {
+    const { foods, kcal } = mealSummary(saved);
+    return el('div', { class: 'saved-meal' }, [
+        el('button', { class: 'saved-meal-main', type: 'button', onclick: () => addSavedMeal(saved) }, [
+            el('span', { class: 'saved-meal-name', text: saved.name }),
+            el('span', { class: 'saved-meal-meta', text: `${foods} ${foods === 1 ? 'food' : 'foods'} · ${fmt(kcal)}\u00a0kcal` }),
+        ]),
+        el('button', { class: 'icon-btn', type: 'button', 'aria-label': `Delete ${saved.name}`, onclick: () => removeSavedMeal(saved) }, [
+            icon('close', { size: 16 }),
+        ]),
+    ]);
+}
+
+async function addSavedMeal(saved) {
+    const ok = await attempt(() => logSavedMeal(saved, sheet.meal));
+    if (!ok) return;
+    closeModal('food-modal');
+    await refresh();
+    toast(`Added ${saved.name} to ${mealLabel(sheet.meal)}`);
+}
+
+async function removeSavedMeal(saved) {
+    const ok = await confirmSheet({
+        title: 'Delete meal',
+        message: `Delete “${saved.name}”? Food already logged from it stays in your diary.`,
+        confirmLabel: 'Delete',
+        danger: true,
+    });
+    if (!ok) return;
+    if (!(await attempt(() => deleteSavedMeal(saved.id)))) return;
+    showSearch(); // the sheet is still open: redraw it without that meal
+    toast('Meal deleted');
+}
+
+/** Opens the sheet on "name this meal", for what's in `mealId` today. */
+function openSaveMeal(mealId) {
+    sheet.meal = mealId;
+    showSaveMeal(mealId);
+    openModal('food-modal');
+}
+
+function showSaveMeal(mealId) {
+    setSheetHeader('Save as a meal');
+    const entries = entriesForMeal(mealId);
+    const totals = dayTotals(entries);
+
+    const name = el('input', {
+        class: 'form-input',
+        type: 'text',
+        placeholder: 'e.g. Usual breakfast',
+        autocomplete: 'off',
+        maxlength: MAX_NAME,
+        'aria-label': 'Meal name',
+    });
+    const replaces = el('p', { class: 'hint', hidden: true });
+    name.addEventListener('input', () => {
+        const exists = state.savedMeals.some((meal) => sameName(meal.name, name.value));
+        replaces.hidden = !exists;
+        replaces.textContent = exists ? 'You already have a meal with this name. Saving replaces its foods.' : '';
+    });
+
+    const submit = async (event) => {
+        event.preventDefault();
+        if (!name.value.trim()) {
+            toast('Give it a name');
+            name.focus();
+            return;
+        }
+        let result;
+        if (!(await attempt(async () => { result = await saveMeal(name.value, entries); }))) return;
+        closeModal('food-modal');
+        toast(`${result.replaced ? 'Updated' : 'Saved'} “${result.meal.name}”`);
+    };
+
+    clear($('#food-body')).append(
+        el('form', { class: 'save-meal', onsubmit: submit }, [
+            el('p', {
+                class: 'hint',
+                text: `${entries.length} ${entries.length === 1 ? 'food' : 'foods'} from ${mealLabel(mealId)} · ${fmt(totals.kcal)}\u00a0kcal. Kept as they are now, so you can log them all in one tap from the add-food sheet.`,
+            }),
+            el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Name' }), name]),
+            replaces,
+            el('div', { class: 'life-list' }, entries.map((entry) =>
+                el('div', { class: 'saved-meal-item' }, [
+                    el('span', { class: 'saved-meal-name', text: entry.name }),
+                    el('span', { class: 'saved-meal-meta', text: `${fmt(entry.kcal || 0)}\u00a0kcal` }),
+                ]),
+            )),
+            el('button', { class: 'btn btn-primary btn-block spaced', type: 'submit', text: 'Save meal' }),
+        ]),
+    );
 }
 
 /**

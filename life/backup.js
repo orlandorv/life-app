@@ -146,6 +146,7 @@ function importMessage(info) {
         [counts.tasks, 'task'],
         [counts.journalDays, 'journal day'],
         [counts.notes, 'note'],
+        [counts.savedMeals, 'saved meal'],
     ]
         .filter(([n]) => n > 0)
         .map(([n, one, many]) => `${n} ${n === 1 ? one : many ?? `${one}s`}`);

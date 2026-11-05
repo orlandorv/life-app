@@ -1,5 +1,6 @@
 import { lifeDb, uid } from '../life/db.js';
 import { nutrientsFor, mealOf } from './portions.js';
+import { mealFromEntries, entriesFromMeal, sameName, sortMeals } from './saved-meals.js';
 
 /**
  * In-memory mirror of what the Nutrition screen shows, in the same style as
@@ -20,6 +21,7 @@ export const state = {
     day: null,
     entries: [],
     foods: [],
+    savedMeals: [],
     targets: { ...DEFAULT_TARGETS },
 };
 
@@ -44,6 +46,40 @@ export async function loadDays(days) {
 export async function loadFoods() {
     const foods = await lifeDb.getAll('foods');
     state.foods = foods.sort((a, b) => (b.lastUsedAt ?? '').localeCompare(a.lastUsedAt ?? ''));
+}
+
+/** Saved meals, most recently used first. */
+export async function loadSavedMeals() {
+    state.savedMeals = sortMeals(await lifeDb.getAll('savedMeals'));
+}
+
+/**
+ * Saves some of today's entries as a meal under `name`. A meal of the same name
+ * is replaced (its foods updated, its place kept), so "Usual breakfast" can be
+ * kept up to date by saving it again. Returns `{ meal, replaced }`.
+ */
+export async function saveMeal(name, entries) {
+    const existing = state.savedMeals.find((meal) => sameName(meal.name, name)) ?? null;
+    const meal = mealFromEntries({ name, entries, existing, id: uid() });
+    if (!meal) throw new Error('Give the meal a name and at least one food.');
+    await lifeDb.put('savedMeals', meal);
+    state.savedMeals = sortMeals([...state.savedMeals.filter((m) => m.id !== meal.id), meal]);
+    return { meal, replaced: Boolean(existing) };
+}
+
+export async function deleteSavedMeal(id) {
+    await lifeDb.delete('savedMeals', id);
+    state.savedMeals = state.savedMeals.filter((meal) => meal.id !== id);
+}
+
+/** Logs every food of a saved meal into `meal` on `day`, and notes that it was used. */
+export async function logSavedMeal(saved, meal, day = state.day) {
+    const rows = entriesFromMeal(saved, { day, meal, newId: uid });
+    await Promise.all(rows.map((row) => lifeDb.put('nutritionEntries', row)));
+    const used = { ...saved, lastUsedAt: new Date().toISOString() };
+    await lifeDb.put('savedMeals', used);
+    state.savedMeals = sortMeals(state.savedMeals.map((m) => (m.id === saved.id ? used : m)));
+    return rows.length;
 }
 
 export async function loadTargets() {
