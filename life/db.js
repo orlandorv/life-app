@@ -13,7 +13,7 @@ import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 import { standAsideForUpgrade } from './storage-errors.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 
 
 export function uid() {
@@ -126,6 +126,12 @@ class LifeDatabase {
                 // `boughtAt` is what makes an item bought.
                 if (!db.objectStoreNames.contains('wishlist')) {
                     db.createObjectStore('wishlist', { keyPath: 'id' });
+                }
+
+                // v11 — Books to read (a tab of the Videos section): `title`, `addedAt`,
+                // optional `author`/`topic`/`note`/`link`; `readAt` is what makes one read.
+                if (!db.objectStoreNames.contains('books')) {
+                    db.createObjectStore('books', { keyPath: 'id' });
                 }
             };
         }).catch((error) => {

@@ -16,6 +16,8 @@ import { openRoutine } from '../habits/routine-sheet.js';
 import { state as bodyState, loadEntries, entryFor } from '../body/store.js';
 import { trendSeries, weeklyLogReminder } from '../body/stats.js';
 import { state as videosState, loadVideos } from '../videos/store.js';
+import { state as booksState, loadBooks } from '../videos/books-store.js';
+import { toReadCount, nextToRead } from '../videos/books-organize.js';
 import { unwatchedCount, nextToWatch } from '../videos/organize.js';
 import { state as tasksState, loadTasks } from '../tasks/store.js';
 import { nextTask, overdueCount, dueCount, taskDateLabel } from '../tasks/organize.js';
@@ -86,6 +88,7 @@ export async function renderHome() {
             optional(loadJournal()),
             optional(loadNotes()),
             optional(loadWishlist()),
+            optional(loadBooks()),
             isReviewDay(today)
                 ? optional(loadDays(Array.from({ length: 7 }, (_, i) => addDays(weekStartId(today), i))).then((byDay) => { weekFood = byDay; }))
                 : null,
@@ -569,12 +572,24 @@ function bodyBlock(today) {
 
 // --- Videos ----------------------------------------------------------------------
 
+/** The Books tab's line on the Videos card: how many are waiting and which is next, opening that tab. */
+function booksLine() {
+    const waiting = toReadCount(booksState.books);
+    if (!waiting) return null;
+    const next = nextToRead(booksState.books);
+    return el('a', { class: 'link-btn life-books-line', href: '#/videos/books' }, [
+        `${waiting} ${waiting === 1 ? 'book' : 'books'} to read${next ? ` · next: ${next.title}` : ''}`,
+    ]);
+}
+
 function videosBlock() {
     const videos = videosState.videos;
+    const books = booksLine();
 
     if (!videos.length) {
         return block('videos', 'Videos', 'play', [
             el('p', { class: 'life-sub', text: 'Nothing saved yet. Add one you want to watch.' }),
+            books,
             action('Add a video', '#/videos/add'),
         ]);
     }
@@ -586,6 +601,7 @@ function videosBlock() {
         return block('videos', 'Videos', 'play', [
             figure('All caught up'),
             el('p', { class: 'life-sub', text: 'Nothing left on your list.' }),
+            books,
             action('Add a video', '#/videos/add', true),
         ]);
     }
@@ -593,6 +609,7 @@ function videosBlock() {
     return block('videos', 'Videos', 'play', [
         figure(String(remaining), remaining === 1 ? 'video to watch' : 'videos to watch'),
         next ? el('p', { class: 'life-sub', text: `Next up: ${next.title}` }) : null,
+        books,
         action('Watch something', '#/videos'),
     ]);
 }

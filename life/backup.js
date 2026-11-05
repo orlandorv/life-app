@@ -148,6 +148,7 @@ function importMessage(info) {
         [counts.notes, 'note'],
         [counts.savedMeals, 'saved meal'],
         [counts.wishlist, 'wishlist item'],
+        [counts.books, 'book'],
     ]
         .filter(([n]) => n > 0)
         .map(([n, one, many]) => `${n} ${n === 1 ? one : many ?? `${one}s`}`);

@@ -30,6 +30,7 @@ export const LIFE_STORES = {
     notes: 'id',
     savedMeals: 'id',
     wishlist: 'id',
+    books: 'id',
     settings: 'key',
 };
 
@@ -108,6 +109,15 @@ const ROW_CHECKS = {
     journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note) && ['dreams', 'morning', 'afternoon', 'night'].every((id) => isOptionalText(row[id])),
     notes: (row) => isText(row.id) && isText(row.text) && isText(row.createdAt) && isOptionalText(row.updatedAt) && (row.pinned === undefined || isBoolean(row.pinned)),
     savedMeals: isValidSavedMeal,
+    books: (row) =>
+        isText(row.id) &&
+        isText(row.title) &&
+        isText(row.addedAt) &&
+        isOptionalText(row.author) &&
+        isOptionalText(row.topic) &&
+        isOptionalText(row.note) &&
+        isOptionalText(row.link) &&
+        (row.readAt === undefined || isText(row.readAt)),
     wishlist: (row) =>
         isText(row.id) &&
         isText(row.name) &&
@@ -195,6 +205,7 @@ export function summarize(info) {
         notes: count(info.life?.notes),
         savedMeals: count(info.life?.savedMeals),
         wishlist: count(info.life?.wishlist),
+        books: count(info.life?.books),
     };
 }
 

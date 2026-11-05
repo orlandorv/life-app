@@ -12,12 +12,17 @@ import {
 } from './store.js';
 import { groupByTopic, existingTopics, thumbnailUrl, isYouTubeUrl, isLikelyUrl, UNCATEGORISED } from './organize.js';
 import { fetchYouTubeTitle } from './oembed.js';
+import { loadBooks, state as booksState } from './books-store.js';
+import { booksView, bindBooks, addBookSheet } from './books.js';
 
 /**
  * Recommended Videos: things worth watching, grouped into topics. Topics are
  * free text rather than a fixed list — add a video under any topic name and
  * the group appears; this is also where videos sent over chat land, sorted
  * into topics by hand rather than picked from a menu.
+ *
+ * The section has two tabs: **Videos** and **Books** (a reading list built the
+ * same way, see books.js). Opening the section always starts on Videos.
  *
  * Same conventions as the other sections: no reactivity, every write reloads
  * and re-renders. Pasting a YouTube link tries to fetch its title (no key,
@@ -27,6 +32,8 @@ import { fetchYouTubeTitle } from './oembed.js';
 const TITLE_LOOKUP_DELAY_MS = 500;
 
 let ready = null;
+// Which tab is showing: 'videos' or 'books'.
+let view = 'videos';
 
 /** Opens LifeDB. Safe to call repeatedly. */
 export function initVideos() {
@@ -40,15 +47,20 @@ export function initVideos() {
 /** Called each time the section is opened. `'add'` opens the add sheet straight away. */
 export async function enterVideos(action = null) {
     await initVideos();
-    await loadVideos();
+    await Promise.all([loadVideos(), loadBooks()]);
+    view = action === 'books' || action === 'book' ? 'books' : 'videos';
     renderVideos();
     if (action === 'add') openVideoModal();
+    if (action === 'book') addBookSheet();
 }
 
 async function refresh() {
-    await loadVideos();
+    await Promise.all([loadVideos(), loadBooks()]);
     renderVideos();
 }
+
+// The Books tab reloads and redraws through the same path after a write.
+bindBooks(refresh);
 
 /** Runs a write and reports a failure without losing the screen. Returns whether it worked. */
 async function attempt(action) {
@@ -66,6 +78,12 @@ async function attempt(action) {
 
 export function renderVideos() {
     const body = clear($('#videos-body'));
+    body.append(viewSwitch());
+
+    if (view === 'books') {
+        body.append(...booksView());
+        return;
+    }
 
     if (!state.videos.length) {
         body.append(emptyState());
@@ -82,6 +100,25 @@ export function renderVideos() {
             onclick: () => openVideoModal(),
         }),
     );
+}
+
+function viewSwitch() {
+    const tab = (id, label, count) =>
+        el('button', {
+            type: 'button',
+            class: view === id ? 'active' : '',
+            'aria-pressed': String(view === id),
+            text: count ? `${label} · ${count}` : label,
+            onclick: () => {
+                if (view === id) return;
+                view = id;
+                renderVideos();
+            },
+        });
+    return el('div', { class: 'segmented videos-switch' }, [
+        tab('videos', 'Videos', state.videos.filter((video) => !video.watched).length),
+        tab('books', 'Books', booksState.books.filter((book) => !book.readAt).length),
+    ]);
 }
 
 function emptyState() {

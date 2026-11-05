@@ -929,3 +929,14 @@ body.modal-open {
     height: 20px;
     accent-color: var(--primary);
 }
+
+/* The Videos card's line about books waiting: one line, cut with an ellipsis. */
+.life-books-line {
+    display: block;
+    max-width: 100%;
+    margin: 4px 0 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
