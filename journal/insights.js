@@ -18,8 +18,35 @@ export const isLevel = (value) => Number.isInteger(value) && value >= 1 && value
 export const moodLabel = (value) => (isLevel(value) ? MOODS[value - 1] : null);
 export const energyLabel = (value) => (isLevel(value) ? ENERGY[value - 1] : null);
 
-/** Anything worth keeping: a mood, an energy, or a note. An empty entry is deleted, not stored. */
-export const hasContent = (entry) => Boolean(entry) && (isLevel(entry.mood) || isLevel(entry.energy) || Boolean(entry.note?.trim()));
+/**
+ * The text boxes of a check-in, in the order they are shown: the night's dreams,
+ * the three parts of the day, then a general note. Each is an optional string on
+ * the entry under its `id`.
+ */
+export const NOTE_FIELDS = [
+    { id: 'dreams', label: 'Dreams', placeholder: () => 'Anything you remember from last night?' },
+    { id: 'morning', label: 'Morning', placeholder: () => 'How did the morning go?' },
+    { id: 'afternoon', label: 'Afternoon', placeholder: () => 'How did the afternoon go?' },
+    { id: 'night', label: 'Night', placeholder: () => 'How did the evening go?' },
+    {
+        id: 'note',
+        label: 'Note',
+        placeholder: (isToday) => (isToday ? 'Anything else worth remembering about today?' : 'Anything else worth remembering about that day?'),
+    },
+];
+
+const hasText = (entry, id) => Boolean(entry?.[id]?.trim());
+
+/** Anything worth keeping: a mood, an energy, or any text. An empty entry is deleted, not stored. */
+export const hasContent = (entry) =>
+    Boolean(entry) && (isLevel(entry.mood) || isLevel(entry.energy) || NOTE_FIELDS.some(({ id }) => hasText(entry, id)));
+
+/** One line to show for a day in a list: the general note, else the first part of the day written about. */
+export function entryPreview(entry) {
+    if (hasText(entry, 'note')) return entry.note;
+    const field = NOTE_FIELDS.find(({ id }) => hasText(entry, id));
+    return field ? `${field.label}: ${entry[field.id]}` : '';
+}
 
 /**
  * Days in a row with an entry, counting back from today. Today still being

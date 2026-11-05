@@ -4,7 +4,7 @@ import { localDayId, addDays, dayLabel } from '../life/dates.js';
 import { dayBar } from '../life/daybar.js';
 import { icon } from '../life/icons.js';
 import { state, loadEntries, entryFor, saveEntry } from './store.js';
-import { MOODS, ENERGY, SCALE, moodLabel, energyLabel, checkInStreak, insights, MIN_DAYS, WINDOW_DAYS } from './insights.js';
+import { MOODS, ENERGY, SCALE, NOTE_FIELDS, entryPreview, moodLabel, energyLabel, checkInStreak, insights, MIN_DAYS, WINDOW_DAYS } from './insights.js';
 import { state as gymState } from '../gym/js/store.js';
 import { state as bodyState, loadEntries as loadBodyEntries } from '../body/store.js';
 
@@ -110,41 +110,47 @@ function checkInCard(today) {
     const isToday = state.day === today;
     const streak = checkInStreak(new Set(state.entries.map((e) => e.day)), today);
 
-    const note = el('textarea', {
-        class: 'form-input journal-note',
-        rows: 4,
-        maxlength: 2000,
-        placeholder: isToday ? 'Anything worth remembering about today?' : 'Anything worth remembering about that day?',
-        value: entry?.note ?? '',
-        'aria-label': 'Note',
-    });
+    // One text box per part of the day, plus a general note. All of them save
+    // together, so a redraw from a mood tap or a save never drops half-typed text.
+    const boxes = NOTE_FIELDS.map((field) => ({
+        ...field,
+        input: el('textarea', {
+            class: 'form-input journal-note',
+            rows: field.id === 'note' ? 3 : 2,
+            maxlength: 2000,
+            placeholder: field.placeholder(isToday),
+            value: entry?.[field.id] ?? '',
+            'aria-label': field.label,
+        }),
+    }));
     const saved = el('span', { class: 'journal-saved', 'aria-live': 'polite' });
 
-    // The mood and energy taps carry the note's current text, so a note typed
-    // a moment before is never lost to the redraw they cause.
     const current = () => entryFor(state.day);
+    const texts = () => Object.fromEntries(boxes.map((box) => [box.id, box.input.value]));
     const pick = (field) => (level) =>
         save({
             day: state.day,
             mood: field === 'mood' ? level : current()?.mood,
             energy: field === 'energy' ? level : current()?.energy,
-            note: note.value,
+            ...texts(),
         });
 
     const saveNote = async () => {
         clearTimeout(noteTimer);
-        const was = current()?.note ?? '';
-        if (note.value.trim() === was) return;
-        if (await save({ day: state.day, mood: current()?.mood, energy: current()?.energy, note: note.value }, { redraw: false })) {
+        const was = current();
+        if (boxes.every((box) => box.input.value.trim() === (was?.[box.id] ?? ''))) return;
+        if (await save({ day: state.day, mood: was?.mood, energy: was?.energy, ...texts() }, { redraw: false })) {
             saved.textContent = 'Saved';
         }
     };
-    note.addEventListener('input', () => {
-        saved.textContent = '';
-        clearTimeout(noteTimer);
-        noteTimer = setTimeout(saveNote, NOTE_SAVE_DELAY_MS);
-    });
-    note.addEventListener('blur', saveNote);
+    for (const { input } of boxes) {
+        input.addEventListener('input', () => {
+            saved.textContent = '';
+            clearTimeout(noteTimer);
+            noteTimer = setTimeout(saveNote, NOTE_SAVE_DELAY_MS);
+        });
+        input.addEventListener('blur', saveNote);
+    }
 
     return el('section', { class: 'life-surface journal-card' }, [
         el('div', { class: 'journal-card-head' }, [
@@ -153,10 +159,15 @@ function checkInCard(today) {
         ]),
         scaleRow('Mood', MOODS, entry?.mood ?? null, pick('mood')),
         scaleRow('Energy', ENERGY, entry?.energy ?? null, pick('energy')),
-        el('div', { class: 'journal-field' }, [
-            el('span', { class: 'journal-note-head' }, [el('span', { class: 'stepper-label', text: 'Note' }), saved]),
-            note,
-        ]),
+        ...boxes.map((box, index) =>
+            el('div', { class: 'journal-field' }, [
+                el('span', { class: 'journal-note-head' }, [
+                    el('span', { class: 'stepper-label', text: box.label }),
+                    index === boxes.length - 1 ? saved : null,
+                ]),
+                box.input,
+            ]),
+        ),
     ]);
 }
 
@@ -223,7 +234,7 @@ function recentList(today) {
                                     .join(' · '),
                             }),
                         ]),
-                        entry.note ? el('span', { class: 'journal-row-note', text: entry.note }) : null,
+                        entryPreview(entry) ? el('span', { class: 'journal-row-note', text: entryPreview(entry) }) : null,
                     ],
                 ),
             ),

@@ -20,7 +20,7 @@ import { unwatchedCount, nextToWatch } from '../videos/organize.js';
 import { state as tasksState, loadTasks } from '../tasks/store.js';
 import { nextTask, overdueCount, dueCount, taskDateLabel } from '../tasks/organize.js';
 import { state as journalState, loadEntries as loadJournal, entryFor as journalEntryFor, saveEntry as saveJournalEntry } from '../journal/store.js';
-import { MOODS, SCALE, moodLabel, energyLabel } from '../journal/insights.js';
+import { MOODS, SCALE, moodLabel, energyLabel, entryPreview } from '../journal/insights.js';
 import { state as inboxState, loadNotes } from '../inbox/store.js';
 import { sortNotes } from '../inbox/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
@@ -348,13 +348,13 @@ function journalBlock(today) {
     const entry = journalEntryFor(today);
 
     if (entry?.mood) {
-        const detail = [energyLabel(entry.energy) ? `Energy ${energyLabel(entry.energy).toLowerCase()}` : null, entry.note]
+        const detail = [energyLabel(entry.energy) ? `Energy ${energyLabel(entry.energy).toLowerCase()}` : null, entryPreview(entry)]
             .filter(Boolean)
             .join(' · ');
         return block('journal', 'Journal', 'journal', [
             figure(moodLabel(entry.mood), 'today'),
             detail ? el('p', { class: 'life-sub life-journal-note', text: detail }) : null,
-            action(entry.note ? 'Open journal' : 'Add a note', '#/journal', true),
+            action(entryPreview(entry) ? 'Open journal' : 'Add a note', '#/journal', true),
         ]);
     }
 
@@ -370,7 +370,7 @@ function journalBlock(today) {
                     'aria-label': `Mood today: ${MOODS[level - 1]} (${level} of 5)`,
                     onclick: async () => {
                         try {
-                            await saveJournalEntry({ day: today, mood: level, energy: entry?.energy, note: entry?.note });
+                            await saveJournalEntry({ ...entry, day: today, mood: level });
                         } catch (error) {
                             console.error(error);
                             return;

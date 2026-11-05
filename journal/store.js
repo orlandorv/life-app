@@ -1,5 +1,5 @@
 import { lifeDb } from '../life/db.js';
-import { isLevel, hasContent } from './insights.js';
+import { isLevel, hasContent, NOTE_FIELDS } from './insights.js';
 
 /**
  * In-memory mirror of the Journal, same style as the other sections' stores.
@@ -22,17 +22,19 @@ export function entryFor(day) {
 
 /**
  * Saves a day's check-in. Not recorded is null (never a fake middle value),
- * an empty note is left off, and a day with nothing left in it is deleted
+ * an empty text box is left off, and a day with nothing left in it is deleted
  * rather than kept as an empty row.
  */
-export async function saveEntry({ day, mood, energy, note }) {
+export async function saveEntry({ day, mood, energy, ...texts }) {
     const entry = {
         day,
         mood: isLevel(mood) ? mood : null,
         energy: isLevel(energy) ? energy : null,
         updatedAt: new Date().toISOString(),
     };
-    if (note?.trim()) entry.note = note.trim();
+    for (const { id } of NOTE_FIELDS) {
+        if (texts[id]?.trim()) entry[id] = texts[id].trim();
+    }
 
     if (hasContent(entry)) await lifeDb.put('journalEntries', entry);
     else await lifeDb.delete('journalEntries', day);

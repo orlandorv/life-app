@@ -104,7 +104,7 @@ const ROW_CHECKS = {
         (row.calendarSequence === undefined || (Number.isInteger(row.calendarSequence) && row.calendarSequence >= 0)) &&
         (row.repeat === undefined || isValidRepeat(row.repeat)),
     settings: (row) => isText(row.key),
-    journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note),
+    journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note) && ['dreams', 'morning', 'afternoon', 'night'].every((id) => isOptionalText(row[id])),
     notes: (row) => isText(row.id) && isText(row.text) && isText(row.createdAt) && isOptionalText(row.updatedAt) && (row.pinned === undefined || isBoolean(row.pinned)),
     savedMeals: isValidSavedMeal,
 };
