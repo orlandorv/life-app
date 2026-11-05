@@ -32,6 +32,7 @@
     --tasks: #2E5FA3;
     --journal: #4F6478;
     --inbox: #66692A;
+    --wishlist: #8A3FA0;
 
     --primary: var(--ink);
     /* Text on a --primary / --success / --danger fill. White in light mode;
@@ -90,6 +91,7 @@
         --tasks: #7FB0E8;
         --journal: #9EB3C7;
         --inbox: #C4C77F;
+        --wishlist: #CC95DB;
 
         --on-accent: #151311;
         --success: #72B98A;
@@ -117,6 +119,7 @@ body[data-section="videos"] { --primary: var(--videos); }
 body[data-section="tasks"] { --primary: var(--tasks); }
 body[data-section="journal"] { --primary: var(--journal); }
 body[data-section="inbox"] { --primary: var(--inbox); }
+body[data-section="wishlist"] { --primary: var(--wishlist); }
 
 html {
     -webkit-text-size-adjust: 100%;
@@ -399,6 +402,7 @@ body.modal-open {
 .life-block[data-tone="tasks"] { --tone: var(--tasks); }
 .life-block[data-tone="journal"] { --tone: var(--journal); }
 .life-block[data-tone="inbox"] { --tone: var(--inbox); }
+.life-block[data-tone="wishlist"] { --tone: var(--wishlist); }
 
 .life-review-row[data-tone="gym"] { --tone: var(--gym); }
 .life-review-row[data-tone="nutrition"] { --tone: var(--nutrition); }

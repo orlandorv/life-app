@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="tasks/tasks.css">
     <link rel="stylesheet" href="journal/journal.css">
     <link rel="stylesheet" href="inbox/inbox.css">
+    <link rel="stylesheet" href="wishlist/wishlist.css">
 </head>
 <body>
     <!-- Today: the home screen, a live summary of the day rendered by life/home.js -->
@@ -230,6 +231,28 @@
                 <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
             </div>
             <div id="note-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Wishlist section -->
+    <div id="wishlist-section" hidden>
+        <a class="life-back" href="#/"><span data-icon="back" data-icon-size="24"></span>Today</a>
+        <main class="life-main">
+            <header class="tab-header">
+                <h1>Wishlist</h1>
+            </header>
+            <div id="wishlist-body"></div>
+        </main>
+    </div>
+
+    <!-- Modal: a Wishlist item (edit, mark bought, delete), filled in by wishlist.js -->
+    <div id="wish-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="wish-modal-title">Edit item</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="wish-body" class="modal-body"></div>
         </div>
     </div>
 

@@ -29,6 +29,7 @@ export const LIFE_STORES = {
     journalEntries: 'day',
     notes: 'id',
     savedMeals: 'id',
+    wishlist: 'id',
     settings: 'key',
 };
 
@@ -107,6 +108,15 @@ const ROW_CHECKS = {
     journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note) && ['dreams', 'morning', 'afternoon', 'night'].every((id) => isOptionalText(row[id])),
     notes: (row) => isText(row.id) && isText(row.text) && isText(row.createdAt) && isOptionalText(row.updatedAt) && (row.pinned === undefined || isBoolean(row.pinned)),
     savedMeals: isValidSavedMeal,
+    wishlist: (row) =>
+        isText(row.id) &&
+        isText(row.name) &&
+        isText(row.createdAt) &&
+        (row.price === undefined || (Number.isFinite(row.price) && row.price > 0)) &&
+        isOptionalText(row.link) &&
+        isOptionalText(row.note) &&
+        (row.starred === undefined || isBoolean(row.starred)) &&
+        (row.boughtAt === undefined || isText(row.boughtAt)),
 };
 
 function checkLife(life) {
@@ -183,6 +193,7 @@ export function summarize(info) {
         journalDays: count(info.life?.journalEntries),
         notes: count(info.life?.notes),
         savedMeals: count(info.life?.savedMeals),
+        wishlist: count(info.life?.wishlist),
     };
 }
 

@@ -23,6 +23,8 @@ import { state as journalState, loadEntries as loadJournal, entryFor as journalE
 import { MOODS, SCALE, moodLabel, energyLabel, entryPreview } from '../journal/insights.js';
 import { state as inboxState, loadNotes } from '../inbox/store.js';
 import { sortNotes } from '../inbox/organize.js';
+import { state as wishState, loadItems as loadWishlist } from '../wishlist/store.js';
+import { splitItems, totalOf, formatPrice } from '../wishlist/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
 
 /**
@@ -83,6 +85,7 @@ export async function renderHome() {
             loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks(),
             optional(loadJournal()),
             optional(loadNotes()),
+            optional(loadWishlist()),
             isReviewDay(today)
                 ? optional(loadDays(Array.from({ length: 7 }, (_, i) => addDays(weekStartId(today), i))).then((byDay) => { weekFood = byDay; }))
                 : null,
@@ -110,6 +113,7 @@ export async function renderHome() {
         videosBlock(),
         tasksBlock(today),
         inboxBlock(),
+        wishlistBlock(),
     );
 }
 
@@ -346,6 +350,26 @@ function inboxBlock() {
         figure(String(notes.length), notes.length === 1 ? 'note' : 'notes'),
         el('p', { class: 'life-sub life-inbox-latest', text: notes[0].text }),
         action('Jot something down', '#/inbox/new', true),
+    ]);
+}
+
+// --- Wishlist -----------------------------------------------------------------
+
+/** How much is on the list and what it comes to, the top pick, and a quick way to add. */
+function wishlistBlock() {
+    const { wanted } = splitItems(wishState.items);
+    if (!wanted.length) {
+        return block('wishlist', 'Wishlist', 'wishlist', [
+            el('p', { class: 'life-sub', text: 'Things you want to buy, in one place.' }),
+            action('Add something', '#/wishlist/new'),
+        ]);
+    }
+    const { total, priced } = totalOf(wanted);
+    return block('wishlist', 'Wishlist', 'wishlist', [
+        figure(String(wanted.length), wanted.length === 1 ? 'thing you want' : 'things you want'),
+        el('p', { class: 'life-sub', text: priced ? `${formatPrice(total)} in all${priced < wanted.length ? ` (${priced} priced)` : ''}` : 'No prices yet' }),
+        el('p', { class: 'life-sub life-wish-top', text: `${wanted[0].starred ? 'Top pick' : 'Latest'}: ${wanted[0].name}` }),
+        action('Add something', '#/wishlist/new', true),
     ]);
 }
 

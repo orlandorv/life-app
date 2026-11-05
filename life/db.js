@@ -13,7 +13,7 @@ import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 import { standAsideForUpgrade } from './storage-errors.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 9;
+const DB_VERSION = 10;
 
 
 export function uid() {
@@ -120,6 +120,12 @@ class LifeDatabase {
                 // v9 — Nutrition's saved meals: a name and a list of food snapshots.
                 if (!db.objectStoreNames.contains('savedMeals')) {
                     db.createObjectStore('savedMeals', { keyPath: 'id' });
+                }
+
+                // v10 — Wishlist: things to buy. `price`, `link`, `note`, `starred` optional;
+                // `boughtAt` is what makes an item bought.
+                if (!db.objectStoreNames.contains('wishlist')) {
+                    db.createObjectStore('wishlist', { keyPath: 'id' });
                 }
             };
         }).catch((error) => {

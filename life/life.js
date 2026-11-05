@@ -11,6 +11,7 @@ import { enterVideos } from '../videos/videos.js';
 import { enterTasks } from '../tasks/tasks.js';
 import { enterJournal } from '../journal/journal.js';
 import { enterInbox } from '../inbox/inbox.js';
+import { enterWishlist } from '../wishlist/wishlist.js';
 import { initBackup, renderBackupBanner } from './backup.js';
 
 /**
@@ -43,6 +44,7 @@ const SECTIONS = [
     // Reads finished workouts for its patterns, which Gym loads while booting.
     { id: 'journal', enter: () => gymBoot.then(() => enterJournal()) },
     { id: 'inbox', enter: enterInbox },
+    { id: 'wishlist', enter: enterWishlist },
 ];
 
 let gymReady = false;

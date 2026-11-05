@@ -16,7 +16,7 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 
 // Loaded on demand and deliberately not precached (size); see CLAUDE.md.
 const LAZY = ['vendor/zxing/zxing.min.js'];
-const SECTION_DIRS = ['life', 'gym', 'nutrition', 'habits', 'body', 'videos', 'tasks', 'journal', 'inbox'];
+const SECTION_DIRS = ['life', 'gym', 'nutrition', 'habits', 'body', 'videos', 'tasks', 'journal', 'inbox', 'wishlist'];
 
 const sw = read('sw.js');
 const shellBlock = sw.match(/const APP_SHELL = \[([\s\S]*?)\];/)[1];
