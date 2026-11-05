@@ -3,6 +3,11 @@ import { state, loadCheckins } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
 import { weekStart } from './volume.js';
+import { lifeDb } from '../../life/db.js';
+import { localDayId } from '../../life/dates.js';
+import { loadDays } from '../../nutrition/store.js';
+import { weekDays } from '../../nutrition/week.js';
+import { deriveCheckin, derivedHint, fillsFor } from './checkin-derive.js';
 import { computeRecords } from './records.js';
 import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNumber, formatWeight } from './units.js';
 
@@ -12,7 +17,9 @@ import { getUnit, toDisplay, fromDisplay, stepWeight, weightPrecision, formatNum
  * ("only reduce calories after two consecutive weeks without progress").
  *
  * Sessions and new PRs aren't asked for — the app already knows them, and
- * re-typing what it can count is how a check-in stops getting filled in.
+ * re-typing what it can count is how a check-in stops getting filled in. The
+ * same goes for the week's weight and steps (Body) and protein (Nutrition):
+ * they're pre-filled from there, and you can still change them.
  */
 
 // From the plan's fat-loss targets: roughly 0.3–0.6 kg down per week.
@@ -111,13 +118,37 @@ function optionalStepper(options, onValue) {
     return control;
 }
 
-export function openCheckinForm(weekId = currentWeekId()) {
+/**
+ * The week's figures as Body and Nutrition have them, or null if they can't be
+ * read (the check-in then just opens blank, as it always did).
+ */
+async function figuresFromOtherSections(weekId) {
+    try {
+        await lifeDb.init();
+        const today = localDayId();
+        const [bodyEntries, nutritionDays] = await Promise.all([lifeDb.getAll('bodyEntries'), loadDays(weekDays(weekId, today))]);
+        return deriveCheckin({ weekId, today, bodyEntries, nutritionDays });
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
+
+export async function openCheckinForm(weekId = currentWeekId()) {
     const unit = getUnit();
     const existing = checkinFor(weekId);
 
     draft = existing
         ? { ...existing }
         : { id: weekId, bodyWeightKg: null, waistCm: null, steps: null, proteinG: null, sleepEnergy: null, note: '' };
+
+    // Anything still blank is filled from what Body and Nutrition already know;
+    // anything you have recorded is left exactly as it is.
+    const derived = await figuresFromOtherSections(weekId);
+    const fills = derived ? fillsFor(draft, derived) : {};
+    if ('weight' in fills) draft.bodyWeightKg = fills.weight;
+    if ('steps' in fills) draft.steps = fills.steps;
+    if ('protein' in fills) draft.proteinG = fills.protein;
 
     const start = new Date(`${weekId}T00:00`);
     const end = new Date(start);
@@ -182,10 +213,10 @@ export function openCheckinForm(weekId = currentWeekId()) {
 
     body.append(
         el('div', { class: 'stepper-grid' }, [
-            metricField(`Body weight (${unit})`, bodyWeight, 'Average of 3+ morning weigh-ins'),
+            metricField(`Body weight (${unit})`, bodyWeight, 'weight' in fills ? derivedHint('weight', derived) : 'Average of 3+ morning weigh-ins'),
             metricField(`Waist (${waistUnit()})`, waist),
-            metricField('Avg daily steps', steps, 'Target 8,000–10,000'),
-            metricField('Avg protein (g)', protein, 'Target 150–170 g'),
+            metricField('Avg daily steps', steps, 'steps' in fills ? derivedHint('steps', derived) : 'Target 8,000–10,000'),
+            metricField('Avg protein (g)', protein, 'protein' in fills ? derivedHint('protein', derived) : 'Target 150–170 g'),
             metricField('Sleep / energy (1–10)', sleep),
         ]),
         noteField({
