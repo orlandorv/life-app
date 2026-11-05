@@ -9,6 +9,7 @@
  */
 
 import { isTimeOfDay } from '../habits/times.js';
+import { isValidRepeat } from '../tasks/recurrence.js';
 
 export const LIFE_FORMAT = 'life-backup';
 export const LIFE_VERSION = 1;
@@ -98,7 +99,8 @@ const ROW_CHECKS = {
         isBoolean(row.done) &&
         isOptionalText(row.doneAt) &&
         isText(row.createdAt) &&
-        (row.calendarSequence === undefined || (Number.isInteger(row.calendarSequence) && row.calendarSequence >= 0)),
+        (row.calendarSequence === undefined || (Number.isInteger(row.calendarSequence) && row.calendarSequence >= 0)) &&
+        (row.repeat === undefined || isValidRepeat(row.repeat)),
     settings: (row) => isText(row.key),
     journalEntries: (row) => DAY.test(row.day) && isLevelOrNull(row.mood) && isLevelOrNull(row.energy) && isOptionalText(row.note),
     notes: (row) => isText(row.id) && isText(row.text) && isText(row.createdAt) && isOptionalText(row.updatedAt) && (row.pinned === undefined || isBoolean(row.pinned)),

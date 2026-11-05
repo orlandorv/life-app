@@ -1,4 +1,5 @@
 import { addDays } from '../life/dates.js';
+import { rruleFor } from './recurrence.js';
 
 /**
  * Turning a task into a calendar file — pure text building, so it can be
@@ -79,6 +80,9 @@ export function taskToIcs(task, now = new Date()) {
         dtLine('DTEND', task),
         `SUMMARY:${escapeText(task.title)}`,
     ];
+
+    // A repeating task is a repeating event, starting on the date it is on now.
+    if (task.repeat) lines.push(rruleFor(task.repeat));
 
     if (task.note?.trim()) lines.push(`DESCRIPTION:${escapeText(task.note.trim())}`);
 

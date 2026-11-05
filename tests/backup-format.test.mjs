@@ -60,6 +60,12 @@ test('optional fields: absent or valid is fine, an invalid value is not', () => 
     // a weekly target is a whole number of times, 1 to 6
     for (const ok of [1, 3, 6]) assert.doesNotThrow(() => inspectBackup(file(life({ habits: [{ ...habit, days: [0, 1, 2, 3, 4, 5, 6], weeklyTarget: ok }] }))), String(ok));
     for (const bad of [0, 7, 2.5, '3', null]) assert.throws(() => inspectBackup(file(life({ habits: [{ ...habit, weeklyTarget: bad }] }))), /damaged/, String(bad));
+    // a task's repeat is a known unit, 1 to 99 of them, and an anchor day
+    const task = SAMPLE.tasks;
+    assert.doesNotThrow(() => inspectBackup(file(life({ tasks: [{ ...task, repeat: { unit: 'week', every: 2, anchor: '2026-11-10' } }] }))));
+    for (const bad of [{ unit: 'fortnight', every: 1, anchor: '2026-11-10' }, { unit: 'week', every: 0, anchor: '2026-11-10' }, { unit: 'week', every: 1 }, { unit: 'week', every: 1, anchor: 'tomorrow' }, 'weekly', null]) {
+        assert.throws(() => inspectBackup(file(life({ tasks: [{ ...task, repeat: bad }] }))), /damaged/, JSON.stringify(bad));
+    }
     assert.throws(() => inspectBackup(file(life({ journalEntries: [{ ...SAMPLE.journalEntries, mood: 9 }] }))), /damaged/);
     assert.throws(() => inspectBackup(file(life({ notes: [{ ...SAMPLE.notes, text: '' }] }))), /damaged/);
 });

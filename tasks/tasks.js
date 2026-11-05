@@ -3,9 +3,10 @@ import { icon } from '../life/icons.js';
 import { lifeDb } from '../life/db.js';
 import { shareOrDownload } from '../life/share.js';
 import { localDayId } from '../life/dates.js';
-import { state, loadTasks, addTask, updateTask, setDone, deleteTask, bumpCalendarSequence } from './store.js';
+import { state, loadTasks, addTask, updateTask, setDone, completeTask, deleteTask, bumpCalendarSequence } from './store.js';
 import { groupTasks, taskDateLabel, isOverdue } from './organize.js';
 import { taskToIcs, icsFilename } from './ics.js';
+import { PRESETS, presetOf, repeatLabel } from './recurrence.js';
 
 /**
  * Tasks: a due-date to-do list. A task is bucketed by how soon it's due
@@ -16,8 +17,9 @@ import { taskToIcs, icsFilename } from './ics.js';
  * matching app) takes it from there.
  *
  * Same conventions as the other sections: no reactivity, every write reloads
- * and re-renders. Recurring to-dos belong in Habits — this is only for
- * something with an actual date.
+ * and re-renders. A task can repeat (every day, week, month…): ticking it
+ * moves it to its next date instead of finishing it, see recurrence.js. Habits
+ * are for things you tick off for a streak; this is for chores with a date.
  */
 
 let ready = null;
@@ -117,6 +119,7 @@ function doneSection(done, today) {
 function taskMeta(task, today) {
     const parts = [taskDateLabel(task.date, today)];
     if (task.time) parts.push(fmtTime(task.time));
+    if (task.repeat) parts.push(repeatLabel(task.repeat));
     if (task.note?.trim()) parts.push(task.note.trim());
     return parts.join(' · ');
 }
@@ -148,6 +151,14 @@ function taskRow(task, today) {
 }
 
 async function toggleDone(task) {
+    // A repeating task isn't finished by a tick, it moves on to its next date.
+    if (task.repeat) {
+        let next;
+        if (!(await attempt(async () => { next = await completeTask(task); }))) return;
+        await refresh();
+        toast(`Done. Next: ${taskDateLabel(next.date, localDayId())}`);
+        return;
+    }
     if (!(await attempt(() => setDone(task, !task.done)))) return;
     await refresh();
 }
@@ -278,6 +289,20 @@ function taskForm(task) {
     const done = el('input', { type: 'checkbox' });
     done.checked = Boolean(task?.done);
 
+    // How often it comes round. A repeat the sheet has no preset for (an import)
+    // gets its own option, so editing the task never quietly changes it.
+    const custom = task?.repeat && !presetOf(task.repeat) ? task.repeat : null;
+    const repeatSelect = el('select', { class: 'form-input', 'aria-label': 'Repeats' }, [
+        ...PRESETS.map((preset) => el('option', { value: preset.id, text: preset.label })),
+        custom ? el('option', { value: 'custom', text: repeatLabel(custom) }) : null,
+    ]);
+    repeatSelect.value = task?.repeat ? (presetOf(task.repeat)?.id ?? 'custom') : 'none';
+    const chosenRepeat = () => (repeatSelect.value === 'custom' ? custom : PRESETS.find((p) => p.id === repeatSelect.value)?.repeat ?? null);
+
+    // A repeating task is never done, only moved on, so there's no Done box for it.
+    const doneRow = el('label', { class: 'life-check', hidden: Boolean(task?.repeat) }, [done, el('span', { text: 'Done' })]);
+    repeatSelect.addEventListener('change', () => { doneRow.hidden = Boolean(chosenRepeat()); });
+
     const submit = async (event) => {
         event.preventDefault();
         if (!title.value.trim()) {
@@ -291,12 +316,13 @@ function taskForm(task) {
             return;
         }
 
-        const values = { title: title.value, date: date.value, time: time.value(), note: note.value };
+        const values = { title: title.value, date: date.value, time: time.value(), note: note.value, repeat: chosenRepeat() };
 
         if (task) {
             const ok = await attempt(async () => {
                 const updated = await updateTask(task, values);
-                if (done.checked !== task.done) await setDone(updated, done.checked);
+                // Only a task that doesn't repeat has a Done box.
+                if (!values.repeat && done.checked !== updated.done) await setDone(updated, done.checked);
             });
             if (!ok) return;
             closeModal('task-modal');
@@ -334,11 +360,12 @@ function taskForm(task) {
         el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Title' }), title]),
         el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Date' }), date]),
         time.node,
+        el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Repeats' }), repeatSelect]),
         el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Note' }), note]),
     ];
 
     if (task) {
-        fields.push(el('label', { class: 'life-check' }, [done, el('span', { text: 'Done' })]));
+        fields.push(doneRow);
         fields.push(
             el('div', { class: 'task-calendar-actions' }, [
                 el('button', {
