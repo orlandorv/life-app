@@ -10,7 +10,9 @@ import { el } from './dom.js';
  * - looks for a new version whenever the app comes back to the foreground (at
  *   most every 15 minutes) and once an hour while it's open, and
  * - when a new version has installed and taken over, says so with a banner,
- *   because the page on screen is still running the old code until it reloads.
+ *   because the page on screen is still running the old code until it reloads
+ *   (and the same banner when a newer copy of the app has upgraded the database
+ *   out from under this one).
  *
  * It never reloads by itself: a reload in the middle of a set would be rude, and
  * nothing is lost by waiting (the open workout is saved with every edit).
@@ -27,11 +29,17 @@ export function registerServiceWorker() {
     // controller (the worker claims the page), and there's nothing to reload for.
     const hadController = Boolean(navigator.serviceWorker.controller);
     let announced = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!hadController || announced) return;
+    const announce = () => {
+        if (announced) return;
         announced = true;
         showUpdateBanner();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController) announce();
     });
+    // A newer copy of the app upgraded the database under this page: the page can
+    // no longer read or write it, so say so plainly instead of failing on the next tap.
+    window.addEventListener('life-db-outdated', announce);
 
     navigator.serviceWorker
         .register('./sw.js')

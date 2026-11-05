@@ -27,6 +27,12 @@ class Database {
             request.onblocked = () => reject(new Error('Database upgrade blocked — close other tabs running this app.'));
             request.onsuccess = () => {
                 this.db = request.result;
+                // Same as LifeDB: let a newer copy of the app upgrade rather than block it.
+                this.db.onversionchange = () => {
+                    this.db.close();
+                    this.db = null;
+                    globalThis.dispatchEvent?.(new Event('life-db-outdated'));
+                };
                 resolve(this.db);
             };
 
