@@ -1,7 +1,7 @@
 import { addDays, localDayId, weekdayIndex, weekStartId } from './dates.js';
 import { average, weeklyAverages } from '../body/stats.js';
 import { weekCells, weekProgress, isWeekly } from '../habits/streaks.js';
-import { dayTotals, hasTarget } from '../nutrition/totals.js';
+import { weekSummary } from '../nutrition/week.js';
 import { hasContent, isLevel, moodLabel, energyLabel } from '../journal/insights.js';
 import { entryMetBar } from '../gym/js/progression.js';
 import { toDisplay, formatNumber } from '../gym/js/units.js';
@@ -58,16 +58,16 @@ function bodySummary({ bodyEntries, today }) {
 }
 
 function nutritionSummary({ nutritionDays, targets, days }) {
-    const logged = days.filter((day) => (nutritionDays.get(day) ?? []).length > 0);
-    if (!logged.length) return null;
-    const totals = logged.map((day) => dayTotals(nutritionDays.get(day)));
+    // The same week maths the Nutrition screen's Week view uses.
+    const week = weekSummary({ days, byDay: nutritionDays, targets });
+    if (!week.avg) return null;
     return {
-        daysLogged: logged.length,
-        daysInWeek: days.length,
-        kcal: average(totals.map((t) => t.kcal)),
-        proteinG: average(totals.map((t) => t.proteinG)),
-        kcalTarget: hasTarget(targets?.kcal) ? targets.kcal : null,
-        proteinTarget: hasTarget(targets?.proteinG) ? targets.proteinG : null,
+        daysLogged: week.daysLogged,
+        daysInWeek: week.daysInWeek,
+        kcal: week.avg.kcal,
+        proteinG: week.avg.proteinG,
+        kcalTarget: week.targets.kcal,
+        proteinTarget: week.targets.proteinG,
     };
 }
 

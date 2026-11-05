@@ -1,7 +1,7 @@
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
 import { labelledStepper } from '../life/stepper.js';
 import { lifeDb } from '../life/db.js';
-import { localDayId, addDays, dayLabel } from '../life/dates.js';
+import { localDayId, addDays, dayLabel, weekStartId } from '../life/dates.js';
 import { dayBar } from '../life/daybar.js';
 import { icon } from '../life/icons.js';
 import {
@@ -21,8 +21,11 @@ import {
     updateQuick,
     deleteEntry,
     copyMeal,
+    loadDays,
 } from './store.js';
 import { dayTotals, hasTarget, progress, kcalFromMacros } from './totals.js';
+import { weekDays, weekSummary, weekBarsLayout } from './week.js';
+import { svg } from '../life/svg.js';
 import {
     MEALS,
     mealOf,
@@ -58,6 +61,12 @@ const RECENT_SHOWN = 30;
 let ready = null;
 // Meals on the previous day that had entries, to offer "Copy yesterday" into an empty meal.
 let previousDayMeals = new Set();
+// The screen is either one day's diary or a week at a glance. The week shown
+// (its Monday) and what was eaten in it are kept for the Week view only; reading
+// them never touches `state.day` or `state.entries`, the day the diary shows.
+let view = 'day';
+let weekStart = null;
+let weekFood = new Map();
 
 /** Opens LifeDB and loads what doesn't depend on the day. Safe to call repeatedly. */
 export function initNutrition() {
@@ -74,6 +83,7 @@ export function initNutrition() {
 /** Called each time the section is opened; always starts on today. `'log'` opens the add sheet. */
 export async function enterNutrition(action = null) {
     await initNutrition();
+    view = 'day';
     await refresh(localDayId());
     if (action === 'log') openAddSheet(mealForTime());
 }
@@ -109,14 +119,176 @@ async function attempt(action, message = 'Couldn’t save that') {
 export function renderNutrition() {
     const today = localDayId();
     clear($('#nutrition-body')).append(
+        viewSwitch(),
+        ...(view === 'week'
+            ? weekView(today)
+            : [
+                  dayBar({
+                      label: dayLabel(state.day, today),
+                      canNext: state.day < today,
+                      onPrev: () => refresh(addDays(state.day, -1)),
+                      onNext: () => refresh(addDays(state.day, 1)),
+                  }),
+                  summaryCard(),
+                  ...MEALS.map(mealSection),
+              ]),
+    );
+}
+
+// --- Week ---------------------------------------------------------------------------
+
+function viewSwitch() {
+    const tab = (id, label) =>
+        el('button', {
+            type: 'button',
+            class: view === id ? 'active' : '',
+            'aria-pressed': String(view === id),
+            text: label,
+            onclick: () => {
+                if (view === id) return;
+                if (id === 'week') showWeek(weekStartId(state.day));
+                else {
+                    view = 'day';
+                    renderNutrition();
+                }
+            },
+        });
+    return el('div', { class: 'segmented nutrition-switch' }, [tab('day', 'Day'), tab('week', 'Week')]);
+}
+
+/** Loads what was eaten in the week starting `start` and shows it. */
+async function showWeek(start) {
+    const today = localDayId();
+    try {
+        weekFood = await loadDays(weekDays(start, today));
+    } catch (error) {
+        console.error(error);
+        toast('Couldn’t load that week');
+        return;
+    }
+    weekStart = start;
+    view = 'week';
+    renderNutrition();
+}
+
+/** A day from the week list, opened in the diary. */
+async function openDay(day) {
+    view = 'day';
+    await refresh(day);
+}
+
+function weekView(today) {
+    const thisWeek = weekStartId(today);
+    const summary = weekSummary({ days: weekDays(weekStart, today), byDay: weekFood, targets: state.targets });
+
+    return [
         dayBar({
-            label: dayLabel(state.day, today),
-            canNext: state.day < today,
-            onPrev: () => refresh(addDays(state.day, -1)),
-            onNext: () => refresh(addDays(state.day, 1)),
+            label: weekStart === thisWeek ? 'This week' : `Week of ${dayLabel(weekStart, today)}`,
+            canNext: weekStart < thisWeek,
+            onPrev: () => showWeek(addDays(weekStart, -7)),
+            onNext: () => showWeek(addDays(weekStart, 7)),
         }),
-        summaryCard(),
-        ...MEALS.map(mealSection),
+        weekCard(summary, weekStart === thisWeek),
+        summary.avg ? weekChart(summary, today) : null,
+        weekList(summary, today),
+    ];
+}
+
+function weekCard(summary, isThisWeek) {
+    const { avg, targets, daysLogged, daysInWeek, proteinDaysHit } = summary;
+
+    return el('div', { class: 'nutrition-summary' }, [
+        el('div', { class: 'nutrition-summary-head' }, [
+            el('span', { class: 'life-eyebrow', text: 'Daily average' }),
+            el('button', { class: 'link-btn', type: 'button', text: 'Targets', onclick: openTargetsModal }),
+        ]),
+        avg
+            ? el('div', { class: 'nutrition-hero' }, [
+                  el('span', { class: 'nutrition-hero-value', text: fmt(avg.kcal) }),
+                  el('span', { class: 'nutrition-hero-unit', text: targets.kcal ? `kcal of ${fmt(targets.kcal)}` : 'kcal' }),
+              ])
+            : el('p', { class: 'hint', text: 'Nothing logged this week.' }),
+        el('p', {
+            class: 'hint nutrition-week-note',
+            text: daysLogged
+                ? `Averaged over the ${daysLogged} ${daysLogged === 1 ? 'day' : 'days'} you logged, out of ${daysInWeek}${isThisWeek ? ' so far (today as it stands)' : ''}.`
+                : '',
+        }),
+        avg
+            ? el('div', { class: 'nutrition-macros' }, [
+                  macro('Carbs', avg.carbsG, targets.carbsG, 'carbs'),
+                  macro('Protein', avg.proteinG, targets.proteinG, 'protein'),
+                  macro('Fat', avg.fatG, targets.fatG, 'fat'),
+              ])
+            : null,
+        proteinDaysHit !== null && daysLogged
+            ? el('p', { class: 'nutrition-week-hit', text: `Protein target reached on ${proteinDaysHit} of ${daysLogged} logged days.` })
+            : null,
+    ]);
+}
+
+const CHART = { width: 360, height: 168 };
+const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+/** Seven bars of calories, one a day, with the target as a dashed line; a day not logged has none. */
+function weekChart(summary, today) {
+    const byDay = new Map(summary.days.map((day) => [day.day, day]));
+    const slots = Array.from({ length: 7 }, (_, i) => {
+        const day = addDays(weekStart, i);
+        const entry = byDay.get(day);
+        return { day, kcal: entry?.logged ? entry.kcal : null };
+    });
+    const layout = weekBarsLayout(slots, summary.targets.kcal, CHART);
+
+    const root = svg('svg', {
+        viewBox: `0 0 ${CHART.width} ${CHART.height}`,
+        class: 'nutrition-week-chart',
+        role: 'img',
+        'aria-label':
+            `Calories each day: ${slots.map((s, i) => `${DAY_LETTERS[i]} ${s.kcal === null ? (s.day > today ? 'to come' : 'not logged') : fmt(s.kcal)}`).join(', ')}` +
+            `${summary.targets.kcal ? `. Target ${fmt(summary.targets.kcal)}` : ''}.`,
+    });
+
+    root.append(svg('line', { class: 'nutrition-week-base', x1: 0, x2: CHART.width, y1: layout.baseline, y2: layout.baseline }));
+    if (layout.targetY !== null) {
+        root.append(svg('line', { class: 'nutrition-week-target', x1: 0, x2: CHART.width, y1: layout.targetY, y2: layout.targetY }));
+    }
+
+    layout.bars.forEach((bar, i) => {
+        if (bar.value !== null) {
+            root.append(svg('rect', { class: 'nutrition-week-bar', x: bar.x.toFixed(1), y: bar.y.toFixed(1), width: bar.w.toFixed(1), height: bar.h.toFixed(1), rx: 3 }));
+            // The number above the bar; its halo keeps the target line from cutting through it.
+            root.append(svg('text', { class: 'nutrition-week-value', x: bar.centre.toFixed(1), y: (bar.y - 4).toFixed(1), 'text-anchor': 'middle' }, fmt(bar.value)));
+        }
+        root.append(svg('text', { class: `nutrition-week-day${bar.day === today ? ' today' : ''}`, x: bar.centre.toFixed(1), y: CHART.height - 4, 'text-anchor': 'middle' }, DAY_LETTERS[i]));
+    });
+
+    return el('div', { class: 'nutrition-week-chartcard' }, [
+        root,
+        el('p', {
+            class: 'hint nutrition-week-caption',
+            text: summary.targets.kcal
+                ? `Dashed line: your ${fmt(summary.targets.kcal)} kcal target. A day you didn’t log has no bar.`
+                : 'A day you didn’t log has no bar.',
+        }),
+    ]);
+}
+
+/** One row per day so far, each opening that day. A day with nothing logged says so quietly. */
+function weekList(summary, today) {
+    return el(
+        'div',
+        { class: 'life-list nutrition-week-list' },
+        summary.days.map((day) =>
+            el('button', { class: `nutrition-week-row${day.logged ? '' : ' empty'}`, type: 'button', onclick: () => openDay(day.day) }, [
+                el('span', { class: 'nutrition-week-rowday', text: dayLabel(day.day, today) }),
+                el('span', { class: 'nutrition-week-rowtext' }, [
+                    day.logged ? `${fmt(day.kcal)}\u00a0kcal` : 'Nothing logged',
+                    day.logged ? el('small', { text: macroLine(day) }) : null,
+                ]),
+                icon('chevron', { size: 16 }),
+            ]),
+        ),
     );
 }
 

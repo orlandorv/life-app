@@ -576,3 +576,145 @@
 
 /* --- Shared bits ------------------------------------------------------------------------ */
 
+
+/* --- Week ------------------------------------------------------------------ */
+
+.nutrition-switch {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.nutrition-switch button {
+    flex: 1;
+}
+
+.nutrition-week-note {
+    margin-top: 6px;
+}
+
+.nutrition-week-hit {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.nutrition-week-chartcard {
+    padding: 14px 14px 8px;
+    margin-bottom: 26px;
+    background: var(--bg-raised);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+}
+
+.nutrition-week-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.nutrition-week-base {
+    stroke: var(--border);
+    stroke-width: 1;
+}
+
+/* The target is a dashed line, so it reads without colour. */
+.nutrition-week-target {
+    stroke: var(--text-secondary);
+    stroke-width: 1.25;
+    stroke-dasharray: 4 4;
+}
+
+.nutrition-week-bar {
+    fill: var(--primary);
+}
+
+.nutrition-week-label,
+.nutrition-week-value,
+.nutrition-week-day {
+    font-family: inherit;
+    font-size: 10px;
+    fill: var(--text-secondary);
+}
+
+.nutrition-week-value {
+    font-weight: 650;
+    fill: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    /* A halo in the card's colour, so the dashed target line can't cut through a number. */
+    paint-order: stroke;
+    stroke: var(--bg-raised);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+}
+
+.nutrition-week-caption {
+    margin: 4px 2px 6px;
+    font-size: 12px;
+}
+
+.nutrition-week-day {
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.nutrition-week-day.today {
+    fill: var(--primary);
+}
+
+.nutrition-week-list {
+    margin-bottom: 26px;
+}
+
+.nutrition-week-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 16px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nutrition-week-row:active {
+    background: var(--bg-secondary);
+}
+
+.nutrition-week-row > .life-icon {
+    color: var(--text-secondary);
+}
+
+.nutrition-week-rowday {
+    flex: 0 0 92px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.nutrition-week-rowtext {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.nutrition-week-rowtext small {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.nutrition-week-row.empty .nutrition-week-rowtext {
+    font-weight: 400;
+    color: var(--text-secondary);
+}

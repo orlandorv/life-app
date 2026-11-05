@@ -1,11 +1,4 @@
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-function svg(tag, attrs = {}, text) {
-    const node = document.createElementNS(SVG_NS, tag);
-    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
-    if (text !== undefined) node.textContent = text;
-    return node;
-}
+import { svg } from '../life/svg.js';
 
 /**
  * Draws the weight chart from a `chartLayout()` result: faint gridlines with
