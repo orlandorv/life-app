@@ -42,3 +42,22 @@ test('the gate lets one call through per interval', () => {
 test('the warning text is set', () => {
     assert.match(SAVE_FAILED, /save/i);
 });
+
+test('standAsideForUpgrade closes the connection, lets the owner forget it and announces it', async () => {
+    const { standAsideForUpgrade, DB_OUTDATED_EVENT } = await import('../life/storage-errors.js');
+    const events = [];
+    const original = globalThis.dispatchEvent;
+    globalThis.dispatchEvent = (event) => events.push(event.type);
+    try {
+        let closed = false;
+        let forgotten = false;
+        const db = { close: () => { closed = true; } };
+        standAsideForUpgrade(db, () => { forgotten = true; });
+        db.onversionchange();
+        assert.equal(closed, true);
+        assert.equal(forgotten, true);
+        assert.deepEqual(events, [DB_OUTDATED_EVENT]);
+    } finally {
+        globalThis.dispatchEvent = original;
+    }
+});

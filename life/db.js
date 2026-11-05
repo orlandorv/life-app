@@ -10,12 +10,11 @@
  */
 
 import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
+import { standAsideForUpgrade } from './storage-errors.js';
 
 const DB_NAME = 'LifeDB';
 const DB_VERSION = 9;
 
-/** Fired on `window` when this page's database connection was closed so a newer version could upgrade it. */
-export const DB_OUTDATED_EVENT = 'life-db-outdated';
 
 export function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -38,15 +37,10 @@ class LifeDatabase {
             request.onblocked = () => reject(new Error('Database upgrade blocked — close other tabs running this app.'));
             request.onsuccess = () => {
                 this.db = request.result;
-                // A newer copy of the app wants to upgrade the database. Stand aside
-                // rather than hold the upgrade up ("blocked") with a connection this
-                // old code can no longer use anyway; the page needs a reload.
-                this.db.onversionchange = () => {
-                    this.db.close();
+                standAsideForUpgrade(this.db, () => {
                     this.db = null;
                     this.opening = null;
-                    globalThis.dispatchEvent?.(new Event(DB_OUTDATED_EVENT));
-                };
+                });
                 resolve(this.db);
             };
 
@@ -172,6 +166,14 @@ class LifeDatabase {
         return this._run(storeName, 'readwrite', (tx) => {
             tx.objectStore(storeName).put(value);
             return value;
+        });
+    }
+
+    /** Several writes, possibly across stores, in one transaction: all of them or none. */
+    putAll(writes) {
+        const names = [...new Set(writes.map(([name]) => name))];
+        return this._run(names, 'readwrite', (tx) => {
+            for (const [name, row] of writes) tx.objectStore(name).put(row);
         });
     }
 

@@ -11,7 +11,7 @@ import { demoLink } from './demo-link.js';
 import { entryMetBar, suggestNext, suggestionText, suggestionStillUseful, shiftToTop } from './progression.js';
 import { icon } from '../../life/icons.js';
 import { rampFor } from './warmup.js';
-import { mayWarnAboutSave, SAVE_FAILED } from '../../life/storage-errors.js';
+import { isStorageError, mayWarnAboutSave, SAVE_FAILED, SAVE_FAILED_OTHER } from '../../life/storage-errors.js';
 import { goalStatus, reachedGoalIds, sortGoals } from './goals.js';
 import { goalLabel, goalProgressText } from './goals-ui.js';
 import { computeProgress, syncProgressLedger } from './progress.js';
@@ -157,7 +157,9 @@ async function persist() {
         await database.saveWorkout(session);
     } catch (error) {
         console.error('Saving the workout failed', error);
-        if (mayWarnAboutSave()) toast(SAVE_FAILED);
+        // Only a storage error is blamed on storage; anything else (a closed
+        // connection, a bug) says what is true instead of sending you to free space.
+        if (mayWarnAboutSave()) toast(isStorageError(error) ? SAVE_FAILED : SAVE_FAILED_OTHER);
     }
 }
 
@@ -1587,6 +1589,9 @@ function activeView() {
 }
 
 export function render() {
+    // Every block is about to be rebuilt, so the old blocks' refreshers (which
+    // hold their detached DOM and entries) are dead weight.
+    suggestionRefreshers.clear();
     bannerSub = null;
     exercisesStack = null;
     stopElapsedTicker();

@@ -11,6 +11,8 @@
  */
 
 export const SAVE_FAILED = 'Couldn’t save that. Your phone may be low on storage.';
+/** For a failed save that isn't a storage error, so the phone isn't wrongly blamed for being full. */
+export const SAVE_FAILED_OTHER = 'Couldn’t save that. Try closing and reopening the app.';
 
 const ALWAYS_STORAGE = new Set(['QuotaExceededError']);
 const STORAGE_WHEN_ABOUT_A_DATABASE = new Set(['InvalidStateError', 'TransactionInactiveError', 'UnknownError', 'VersionError']);
@@ -39,3 +41,23 @@ export function createGate(intervalMs, clock = () => Date.now()) {
 
 /** Shared by every place that warns about a failed save, so together they stay under the limit. */
 export const mayWarnAboutSave = createGate(30000);
+
+// --- A newer copy of the app wants the database ------------------------------------
+
+/** Fired on `window` when a database connection was closed so a newer app version could upgrade it. */
+export const DB_OUTDATED_EVENT = 'life-db-outdated';
+
+/**
+ * Makes an open connection stand aside when a newer copy of the app asks to
+ * upgrade the database, rather than holding the upgrade up ("blocked") with a
+ * connection this old code could no longer use anyway. `onClosed` lets the owner
+ * forget the closed connection; the page then needs a reload, which the update
+ * banner says. Shared by LifeDB and Gym's database so they behave identically.
+ */
+export function standAsideForUpgrade(db, onClosed) {
+    db.onversionchange = () => {
+        db.close();
+        onClosed();
+        globalThis.dispatchEvent?.(new Event(DB_OUTDATED_EVENT));
+    };
+}

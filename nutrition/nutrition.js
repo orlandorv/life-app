@@ -162,15 +162,22 @@ function viewSwitch() {
 }
 
 /** Loads what was eaten in the week starting `start` and shows it. */
+// The latest request wins: an older load that finishes late is dropped.
+let weekToken = 0;
+
 async function showWeek(start) {
     const today = localDayId();
+    const token = ++weekToken;
+    let food;
     try {
-        weekFood = await loadDays(weekDays(start, today));
+        food = await loadDays(weekDays(start, today));
     } catch (error) {
         console.error(error);
-        toast('Couldn’t load that week');
+        if (token === weekToken) toast('Couldn’t load that week');
         return;
     }
+    if (token !== weekToken) return;
+    weekFood = food;
     weekStart = start;
     view = 'week';
     renderNutrition();
@@ -547,7 +554,20 @@ function savedMealRow(saved) {
     ]);
 }
 
+// A second tap while the first is still saving would log the meal twice.
+let addingMeal = false;
+
 async function addSavedMeal(saved) {
+    if (addingMeal) return;
+    addingMeal = true;
+    try {
+        await logMeal(saved);
+    } finally {
+        addingMeal = false;
+    }
+}
+
+async function logMeal(saved) {
     const ok = await attempt(() => logSavedMeal(saved, sheet.meal));
     if (!ok) return;
     closeModal('food-modal');

@@ -1,7 +1,7 @@
 // Bump this on every deploy that changes any cached file. Old caches are
 // dropped automatically on activate, so this one line is the whole release
 // process — nothing else in here needs to change per deploy.
-const CACHE_VERSION = 'v101';
+const CACHE_VERSION = 'v102';
 const CACHE_NAME = `life-${CACHE_VERSION}`;
 
 // Registered as a relative path from index.html, so these resolve under
@@ -158,7 +158,8 @@ async function precacheShell(cache) {
     const queue = [...APP_SHELL];
     const failures = [];
     const worker = async () => {
-        while (queue.length) {
+        // Once one file has failed the install is doomed, so stop pulling the rest.
+        while (queue.length && !failures.length) {
             const url = queue.shift();
             try {
                 await precacheOne(cache, url);

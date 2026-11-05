@@ -1,6 +1,5 @@
-import { addDays } from '../../life/dates.js';
 import { average } from '../../body/stats.js';
-import { weekSummary } from '../../nutrition/week.js';
+import { weekSummary, weekDays } from '../../nutrition/week.js';
 
 /**
  * What the weekly check-in can read from the rest of Life instead of asking
@@ -20,7 +19,7 @@ const present = (value) => Number.isFinite(value) && value > 0;
  * and `nutritionDays` a Map of day to that day's food entries.
  */
 export function deriveCheckin({ weekId, today, bodyEntries, nutritionDays }) {
-    const days = Array.from({ length: 7 }, (_, i) => addDays(weekId, i)).filter((day) => day <= today);
+    const days = weekDays(weekId, today);
     const inWeek = bodyEntries.filter((entry) => days.includes(entry.day));
 
     const weights = inWeek.map((entry) => entry.weightKg).filter(present);

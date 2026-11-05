@@ -21,6 +21,11 @@ const RECENT_SHOWN = 14;
 
 let ready = null;
 let noteTimer = null;
+// Saves whatever is typed in the card on screen now (nothing if it is unchanged).
+// Called before the screen moves to another day: on iPhone tapping a button does
+// not blur the text box, so its blur save would never run and the typing of the
+// last moment would be thrown away with the card.
+let flushNote = null;
 
 /** Opens LifeDB. Safe to call repeatedly. */
 export function initJournal() {
@@ -72,6 +77,7 @@ export function renderJournal() {
 }
 
 function shiftDay(direction) {
+    flushNote?.();
     state.day = addDays(state.day, direction);
     renderJournal();
 }
@@ -143,6 +149,7 @@ function checkInCard(today) {
             saved.textContent = 'Saved';
         }
     };
+    flushNote = saveNote;
     for (const { input } of boxes) {
         input.addEventListener('input', () => {
             saved.textContent = '';
@@ -216,6 +223,7 @@ function recentList(today) {
                         class: `journal-row${entry.day === state.day ? ' current' : ''}`,
                         type: 'button',
                         onclick: () => {
+                            flushNote?.();
                             state.day = entry.day;
                             renderJournal();
                             window.scrollTo({ top: 0, behavior: 'smooth' });

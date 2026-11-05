@@ -1,7 +1,7 @@
-import { addDays, localDayId, weekdayIndex, weekStartId } from './dates.js';
+import { localDayId, weekdayIndex, weekStartId } from './dates.js';
 import { average, weeklyAverages } from '../body/stats.js';
 import { weekCells, weekProgress, isWeekly } from '../habits/streaks.js';
-import { weekSummary } from '../nutrition/week.js';
+import { weekSummary, weekDays } from '../nutrition/week.js';
 import { hasContent, isLevel, moodLabel, energyLabel } from '../journal/insights.js';
 import { entryMetBar } from '../gym/js/progression.js';
 import { toDisplay, formatNumber } from '../gym/js/units.js';
@@ -24,10 +24,6 @@ export const isReviewDay = (today) => weekdayIndex(today) === REVIEW_WEEKDAY;
 const rounded = (value, places = 1) => Math.round(value * 10 ** places) / 10 ** places;
 
 function gymSummary({ gymWeek, workouts, weekStart, today }) {
-    // Never trained: there is no week to review, and "0 of 3 sessions" on a
-    // brand-new install would just be nagging.
-    if (!workouts.length) return null;
-
     const thisWeek = workouts.filter((workout) => {
         const day = localDayId(new Date(workout.startedAt));
         return day >= weekStart && day <= today;
@@ -35,8 +31,13 @@ function gymSummary({ gymWeek, workouts, weekStart, today }) {
     // The same test the live badge and the XP use, so "lifts at target" agrees with both.
     const liftsAtTarget = thisWeek.reduce((sum, workout) => sum + (workout.entries || []).filter((entry) => entryMetBar(entry)).length, 0);
 
+    // Nothing this week (including never trained): no row, rather than a "0 of 3"
+    // that would just be nagging.
+    const sessions = gymWeek?.sessions ?? thisWeek.length;
+    if (!sessions) return null;
+
     return {
-        sessions: gymWeek?.sessions ?? thisWeek.length,
+        sessions,
         target: gymWeek?.target ?? null,
         sets: gymWeek?.sets ?? 0,
         tonnageKg: gymWeek?.tonnageKg ?? 0,
@@ -127,7 +128,7 @@ export function buildWeeklyReview({
     journalEntries = [],
 }) {
     const weekStart = weekStartId(today);
-    const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)).filter((day) => day <= today);
+    const days = weekDays(weekStart, today);
 
     const review = {
         weekStart,

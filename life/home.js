@@ -76,13 +76,24 @@ export async function renderHome() {
 
     try {
         await Promise.all([gymReady(), lifeDb.init()]);
-        await Promise.all([loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks(), loadJournal(), loadNotes()]);
-        if (isReviewDay(today)) {
-            const weekStart = weekStartId(today);
-            weekFood = await loadDays(Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)));
-        }
+        // Journal, Inbox and the Sunday food week are each their own block, so one
+        // of them failing to load leaves only that block empty, not the whole screen.
+        const optional = (load) => load.catch((error) => console.error(error));
+        await Promise.all([
+            loadDay(today), loadTargets(), loadHabits(), loadLogs(), loadTicks(), loadEntries(), loadVideos(), loadTasks(),
+            optional(loadJournal()),
+            optional(loadNotes()),
+            isReviewDay(today)
+                ? optional(loadDays(Array.from({ length: 7 }, (_, i) => addDays(weekStartId(today), i))).then((byDay) => { weekFood = byDay; }))
+                : null,
+        ]);
     } catch (error) {
         console.error(error);
+        if (token === renderToken) {
+            document.getElementById('life-today').replaceChildren(
+                el('p', { class: 'life-sub', role: 'alert', text: 'Couldn’t load Today. Close and reopen the app; your data is untouched.' }),
+            );
+        }
         return;
     }
 

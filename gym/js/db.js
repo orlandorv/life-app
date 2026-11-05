@@ -1,3 +1,5 @@
+import { standAsideForUpgrade } from '../../life/storage-errors.js';
+
 const DB_NAME = 'GymTrackerDB';
 const DB_VERSION = 3;
 
@@ -28,11 +30,9 @@ class Database {
             request.onsuccess = () => {
                 this.db = request.result;
                 // Same as LifeDB: let a newer copy of the app upgrade rather than block it.
-                this.db.onversionchange = () => {
-                    this.db.close();
+                standAsideForUpgrade(this.db, () => {
                     this.db = null;
-                    globalThis.dispatchEvent?.(new Event('life-db-outdated'));
-                };
+                });
                 resolve(this.db);
             };
 

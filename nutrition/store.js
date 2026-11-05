@@ -75,9 +75,9 @@ export async function deleteSavedMeal(id) {
 /** Logs every food of a saved meal into `meal` on `day`, and notes that it was used. */
 export async function logSavedMeal(saved, meal, day = state.day) {
     const rows = entriesFromMeal(saved, { day, meal, newId: uid });
-    await Promise.all(rows.map((row) => lifeDb.put('nutritionEntries', row)));
     const used = { ...saved, lastUsedAt: new Date().toISOString() };
-    await lifeDb.put('savedMeals', used);
+    // One transaction: a meal is logged whole or not at all.
+    await lifeDb.putAll([...rows.map((row) => ['nutritionEntries', row]), ['savedMeals', used]]);
     state.savedMeals = sortMeals(state.savedMeals.map((m) => (m.id === saved.id ? used : m)));
     return rows.length;
 }

@@ -55,11 +55,13 @@ test('gym uses Gym\'s own week figures, and counts lifts that met the bar this w
     assert.deepEqual(r.gym, { sessions: 2, target: 3, sets: 6, tonnageKg: 3600, prs: 1, liftsAtTarget: 1 });
 });
 
-test('with no workouts ever there is no gym row; with some but none this week there is', () => {
+test('a week with no sessions has no gym row, whether or not you have ever trained', () => {
     assert.equal(review({ workouts: [], gymWeek: { sessions: 0, target: 3, sets: 0, tonnageKg: 0, prs: 0 }, journalEntries: [{ day: SUN, mood: 3 }] }).gym, null);
-    const quiet = review({ workouts: [workout('2026-10-20', [entry('row', [set(60, 6, 2)])])], gymWeek: { sessions: 0, target: 3, sets: 0, tonnageKg: 0, prs: 0 } });
-    assert.equal(quiet.gym.sessions, 0);
-    assert.equal(quiet.gym.target, 3);
+    const earlier = [workout('2026-10-20', [entry('row', [set(60, 6, 2)])])];
+    // Trained before, nothing this week and nothing else to say: no card at all.
+    assert.equal(review({ workouts: earlier, gymWeek: { sessions: 0, target: 3, sets: 0, tonnageKg: 0, prs: 0 } }), null);
+    // With another section to report, Gym is still left out rather than shown as 0 of 3.
+    assert.equal(review({ workouts: earlier, gymWeek: { sessions: 0, target: 3, sets: 0, tonnageKg: 0, prs: 0 }, journalEntries: [{ day: SUN, mood: 3 }] }).gym, null);
 });
 
 // --- Body ---------------------------------------------------------------------

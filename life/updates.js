@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { DB_OUTDATED_EVENT } from './storage-errors.js';
 
 /**
  * Registers the service worker and keeps the app fresh once it's open.
@@ -39,7 +40,7 @@ export function registerServiceWorker() {
     });
     // A newer copy of the app upgraded the database under this page: the page can
     // no longer read or write it, so say so plainly instead of failing on the next tap.
-    window.addEventListener('life-db-outdated', announce);
+    window.addEventListener(DB_OUTDATED_EVENT, announce);
 
     navigator.serviceWorker
         .register('./sw.js')
