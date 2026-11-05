@@ -25,7 +25,7 @@ const SAMPLE = {
     tasks: { id: 't1', title: 'Renew passport', date: '2026-11-10', time: null, done: false, createdAt: '2026-10-01T10:00:00.000Z', calendarSequence: 0 },
     journalEntries: { day: '2026-11-01', mood: 4, energy: null, note: 'Good session', dreams: 'Flying', morning: 'Slow start', afternoon: 'Gym', night: 'Early bed' },
     notes: { id: 'i1', text: 'Try a deload #gym', createdAt: '2026-10-01T10:00:00.000Z', pinned: true },
-    wishlist: { id: 'w1', name: 'Headphones', price: 129.99, link: 'https://shop.example/h', note: 'Black', starred: true, boughtAt: '2026-10-20T10:00:00.000Z', createdAt: '2026-10-01T10:00:00.000Z' },
+    wishlist: { id: 'w1', name: 'Headphones', price: 129.99, category: 'Tech', link: 'https://shop.example/h', note: 'Black', starred: true, boughtAt: '2026-10-20T10:00:00.000Z', createdAt: '2026-10-01T10:00:00.000Z' },
     savedMeals: { id: 'm1', name: 'Usual breakfast', items: [{ name: 'Oats', kcal: 150, proteinG: 5, carbsG: 27, fatG: 3 }], createdAt: '2026-10-01T10:00:00.000Z' },
     settings: { key: 'someSetting', value: 1 },
 };

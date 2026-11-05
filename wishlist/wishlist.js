@@ -2,7 +2,7 @@ import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../lif
 import { lifeDb } from '../life/db.js';
 import { icon } from '../life/icons.js';
 import { state, loadItems, addItem, updateItem, setBought, deleteItem } from './store.js';
-import { parsePrice, formatPrice, cleanLink, linkHost, splitItems, totalOf } from './organize.js';
+import { parsePrice, formatPrice, cleanLink, linkHost, splitItems, totalOf, groupByCategory, categoryChoices, MAX_CATEGORY } from './organize.js';
 
 /**
  * Wishlist: things you want to buy, in one place — what, roughly how much, and
@@ -13,6 +13,8 @@ import { parsePrice, formatPrice, cleanLink, linkHost, splitItems, totalOf } fro
  */
 
 let ready = null;
+// The category the quick box files new items under; kept while you add several in a row.
+let quickCategory = '';
 
 /** Opens LifeDB. Safe to call repeatedly. */
 export function initWishlist() {
@@ -27,6 +29,7 @@ export function initWishlist() {
 export async function enterWishlist(action = null) {
     await initWishlist();
     await loadItems();
+    quickCategory = '';
     renderWishlist();
     if (action === 'new') $('#wishlist-body .wish-name')?.focus();
 }
@@ -54,7 +57,21 @@ export function renderWishlist() {
 function refreshList() {
     const slot = document.querySelector('#wishlist-body .wish-list-slot');
     if (slot) slot.replaceChildren(...listContent());
+
+    // A category made in an item's sheet is a choice in the quick box from then on.
+    const select = document.querySelector('#wishlist-body .wish-category-select');
+    if (select) {
+        const choices = categoryChoices(state.items);
+        if (quickCategory && !choices.includes(quickCategory)) quickCategory = '';
+        select.replaceChildren(...categoryOptions(choices));
+        select.value = quickCategory;
+    }
 }
+
+const categoryOptions = (choices) => [
+    el('option', { value: '', text: 'No category' }),
+    ...choices.map((choice) => el('option', { value: choice, text: choice })),
+];
 
 function quickAdd() {
     const name = el('input', {
@@ -73,6 +90,14 @@ function quickAdd() {
         autocomplete: 'off',
         'aria-label': 'Price (optional)',
     });
+    // A new category is made in the item's sheet; this picks from the ones there are.
+    const choices = categoryChoices(state.items);
+    if (quickCategory && !choices.includes(quickCategory)) quickCategory = '';
+    const category = el('select', { class: 'form-input wish-category-select', 'aria-label': 'Category' }, categoryOptions(choices));
+    category.value = quickCategory;
+    category.addEventListener('change', () => {
+        quickCategory = category.value;
+    });
     const add = el('button', { class: 'btn btn-primary', type: 'submit', text: 'Add', disabled: true });
     name.addEventListener('input', () => {
         add.disabled = !name.value.trim();
@@ -87,7 +112,7 @@ function quickAdd() {
             price.focus();
             return;
         }
-        if (!(await attempt(() => addItem({ name: name.value, price: amount })))) return;
+        if (!(await attempt(() => addItem({ name: name.value, price: amount, category: category.value })))) return;
         name.value = '';
         price.value = '';
         add.disabled = true;
@@ -95,7 +120,10 @@ function quickAdd() {
         toast('Added');
     };
 
-    return el('form', { class: 'life-surface wish-quick', onsubmit: submit }, [name, el('div', { class: 'wish-quick-row' }, [price, add])]);
+    return el('form', { class: 'life-surface wish-quick', onsubmit: submit }, [
+        el('div', { class: 'wish-quick-row' }, [name, add]),
+        el('div', { class: 'wish-quick-row' }, [price, category]),
+    ]);
 }
 
 function listContent() {
@@ -114,7 +142,7 @@ function listContent() {
 
     if (wanted.length) {
         parts.push(summaryLine(wanted));
-        parts.push(el('div', { class: 'life-list wish-list' }, wanted.map(itemRow)));
+        parts.push(...groupByCategory(wanted).map(categorySection));
     } else {
         parts.push(el('p', { class: 'hint wish-all-bought', text: 'Everything on your list is bought.' }));
     }
@@ -132,6 +160,18 @@ function listContent() {
     return parts;
 }
 
+/** One category: its name, how many and what they come to, then the items. */
+function categorySection(group) {
+    const sub = group.priced ? `${group.count} · ${formatPrice(group.total)}` : String(group.count);
+    return el('section', { class: 'wish-category' }, [
+        el('div', { class: 'wish-category-head' }, [
+            el('h2', { class: 'wish-category-title', text: group.label }),
+            el('span', { class: 'wish-category-count', text: sub }),
+        ]),
+        el('div', { class: 'life-list wish-list' }, group.items.map(itemRow)),
+    ]);
+}
+
 /** "5 things · £340", saying how many of them had a price when not all did. */
 function summaryLine(wanted) {
     const { total, priced, count } = totalOf(wanted);
@@ -142,7 +182,10 @@ function summaryLine(wanted) {
 
 function itemRow(item) {
     const bought = Boolean(item.boughtAt);
-    const meta = [item.price ? formatPrice(item.price) : null, item.link ? linkHost(item.link) : null, item.note].filter(Boolean).join(' · ');
+    // A wanted item sits under its category's heading; a bought one is in a list of its own, so it says.
+    const meta = [item.price ? formatPrice(item.price) : null, bought ? item.category : null, item.link ? linkHost(item.link) : null, item.note]
+        .filter(Boolean)
+        .join(' · ');
 
     return el('div', { class: `wish-row${bought ? ' bought' : ''}` }, [
         el('button', {
@@ -177,6 +220,37 @@ function openItemSheet(item) {
         autocomplete: 'off',
         'aria-label': 'Price',
     });
+    const category = el('input', {
+        class: 'form-input',
+        type: 'text',
+        maxlength: MAX_CATEGORY,
+        value: item.category ?? '',
+        placeholder: 'Pick one below or type your own',
+        autocomplete: 'off',
+        'aria-label': 'Category',
+    });
+    const chips = categoryChoices(state.items).map((choice) =>
+        el('button', {
+            class: 'wish-chip',
+            type: 'button',
+            text: choice,
+            onclick: () => {
+                // Tapping the lit one clears it.
+                category.value = category.value.trim().toLowerCase() === choice.toLowerCase() ? '' : choice;
+                syncChips();
+            },
+        }),
+    );
+    const syncChips = () => {
+        const current = category.value.trim().toLowerCase();
+        chips.forEach((chip) => {
+            const on = chip.textContent.toLowerCase() === current;
+            chip.classList.toggle('active', on);
+            chip.setAttribute('aria-pressed', String(on));
+        });
+    };
+    category.addEventListener('input', syncChips);
+    syncChips();
     const link = el('input', {
         class: 'form-input',
         // Text with a URL keyboard, not type=url: the browser would refuse "shop.example/x"
@@ -218,7 +292,7 @@ function openItemSheet(item) {
             return;
         }
         const ok = await attempt(async () => {
-            const updated = await updateItem(item, { name: name.value, price: amount, link: address, note: note.value, starred: starred.checked });
+            const updated = await updateItem(item, { name: name.value, price: amount, category: category.value, link: address, note: note.value, starred: starred.checked });
             if (bought.checked !== Boolean(updated.boughtAt)) await setBought(updated, bought.checked);
         });
         if (!ok) return;
@@ -239,6 +313,10 @@ function openItemSheet(item) {
         el('form', { class: 'wish-form', onsubmit: submit }, [
             el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'What' }), name]),
             el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Price' }), price]),
+            el('div', { class: 'wish-category-field' }, [
+                el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Category' }), category]),
+                el('div', { class: 'wish-chips', role: 'group', 'aria-label': 'Categories' }, chips),
+            ]),
             el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Link' }), link]),
             open,
             el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Note' }), note]),

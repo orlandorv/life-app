@@ -1,4 +1,5 @@
 import { lifeDb, uid } from '../life/db.js';
+import { canonicalCategory, categoriesInUse } from './organize.js';
 
 /**
  * In-memory mirror of the Wishlist, same style as the other sections' stores.
@@ -12,29 +13,31 @@ export async function loadItems() {
     state.items = await lifeDb.getAll('wishlist');
 }
 
-/** `price` is a number or null, `link` an already-cleaned address or ''. */
-function withOptional(item, { price, link, note, starred }) {
+/** `price` is a number or null, `category` already canonical or '', `link` an already-cleaned address or ''. */
+function withOptional(item, { price, category, link, note, starred }) {
     const next = { ...item };
     delete next.price;
+    delete next.category;
     delete next.link;
     delete next.note;
     delete next.starred;
     if (Number.isFinite(price) && price > 0) next.price = price;
+    if (category) next.category = category;
     if (link) next.link = link;
     if (note?.trim()) next.note = note.trim();
     if (starred) next.starred = true;
     return next;
 }
 
-export async function addItem({ name, price = null, link = '', note = '', starred = false }) {
-    const item = withOptional({ id: uid(), name: name.trim(), createdAt: new Date().toISOString() }, { price, link, note, starred });
+export async function addItem({ name, price = null, category = '', link = '', note = '', starred = false }) {
+    const item = withOptional({ id: uid(), name: name.trim(), createdAt: new Date().toISOString() }, { price, category: canonicalCategory(category, categoriesInUse(state.items)), link, note, starred });
     await lifeDb.put('wishlist', item);
     state.items.push(item);
     return item;
 }
 
-export async function updateItem(item, { name, price, link, note, starred }) {
-    const updated = withOptional({ ...item, name: name.trim() }, { price, link, note, starred });
+export async function updateItem(item, { name, price, category, link, note, starred }) {
+    const updated = withOptional({ ...item, name: name.trim() }, { price, category: canonicalCategory(category, categoriesInUse(state.items)), link, note, starred });
     await lifeDb.put('wishlist', updated);
     state.items = state.items.map((existing) => (existing.id === item.id ? updated : existing));
     return updated;

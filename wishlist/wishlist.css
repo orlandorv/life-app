@@ -8,22 +8,24 @@
     padding: 12px;
 }
 
-.wish-name {
-    width: 100%;
-}
-
 .wish-quick-row {
     display: flex;
     gap: 8px;
 }
 
-.wish-price-input {
+.wish-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.wish-price-input,
+.wish-category-select {
     flex: 1;
     min-width: 0;
 }
 
 .wish-summary {
-    margin: 18px 4px 8px;
+    margin: 18px 4px 0;
     font-size: 13px;
     font-weight: 650;
     color: var(--text-secondary);
@@ -31,6 +33,35 @@
 
 .wish-all-bought {
     margin: 18px 4px 0;
+}
+
+/* --- A category: its name and what's in it, then the items ------------------------ */
+
+.wish-category {
+    margin-top: 18px;
+}
+
+.wish-category-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 4px 8px;
+}
+
+.wish-category-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+.wish-category-count {
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--text-secondary);
 }
 
 /* --- Row: bought toggle, then name + small print (opens the sheet) ------------ */
@@ -147,6 +178,39 @@
 
 .wish-total {
     margin: 0 4px 8px;
+}
+
+/* --- Sheet: category choices as chips -------------------------------------------- */
+
+.wish-category-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wish-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.wish-chip {
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-raised);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.wish-chip.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--on-accent);
 }
 
 /* --- Sheet ---------------------------------------------------------------------- */

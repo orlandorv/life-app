@@ -113,6 +113,7 @@ const ROW_CHECKS = {
         isText(row.name) &&
         isText(row.createdAt) &&
         (row.price === undefined || (Number.isFinite(row.price) && row.price > 0)) &&
+        isOptionalText(row.category) &&
         isOptionalText(row.link) &&
         isOptionalText(row.note) &&
         (row.starred === undefined || isBoolean(row.starred)) &&
