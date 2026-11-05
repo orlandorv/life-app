@@ -1,10 +1,12 @@
 import { database } from './db.js';
-import { state, loadWorkouts } from './store.js';
+import { state, loadWorkouts, findExercise } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../../life/dom.js';
 import { formatWeight, formatDuration } from './units.js';
 import { computeRecords } from './records.js';
 import { renderVolume } from './volume.js';
 import { renderCheckin } from './checkin.js';
+import { planFromWorkout } from './plan-from-workout.js';
+import { openTemplateForm } from './templates.js';
 
 let onChanged = null;
 
@@ -143,6 +145,22 @@ function openDetail(workoutId) {
     });
 
     const actions = clear($('#workout-detail-actions'));
+    // A workout you liked, kept as a plan to repeat. Not offered when there's
+    // nothing in it to make one from (a note-only session).
+    const plan = planFromWorkout(workout, (exerciseId) => Boolean(findExercise(exerciseId)));
+    if (plan) {
+        actions.append(
+            el('button', {
+                class: 'btn btn-outline btn-block',
+                type: 'button',
+                text: 'Save as a plan',
+                onclick: () => {
+                    closeModal('workout-detail-modal');
+                    openTemplateForm(null, plan);
+                },
+            }),
+        );
+    }
     actions.append(
         el('button', {
             class: 'btn btn-danger btn-block',

@@ -187,12 +187,17 @@ function applyPreset(id) {
     toast(draft.exercises.length ? `${findPreset(id).label} applied` : `${findPreset(id).label} — new exercises will start with it`);
 }
 
-export function openTemplateForm(templateId = null) {
+/**
+ * Opens the plan editor: on an existing plan, or on a new one. A new one can
+ * start from a `seed` (`{ name, exercises }`, e.g. a workout you did) instead of
+ * empty; it is still a new plan, and nothing is saved until you press Save.
+ */
+export function openTemplateForm(templateId = null, seed = null) {
     const existing = templateId ? state.templates.find((t) => t.id === templateId) : null;
 
     draft = existing
         ? { ...existing, exercises: existing.exercises.map((entry) => ({ ...entry })) }
-        : { name: '', exercises: [] };
+        : { name: seed?.name ?? '', exercises: (seed?.exercises ?? []).map((entry) => ({ ...entry })) };
 
     $('#template-form-title').textContent = existing ? 'Edit Plan' : 'New Plan';
     $('#template-name').value = draft.name;
