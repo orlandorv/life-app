@@ -1,5 +1,5 @@
 import { database } from './db.js';
-import { bootstrap, loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger, loadGoals } from './store.js';
+import { state, bootstrap, loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger, loadGoals } from './store.js';
 import { getUnit, setUnit } from './units.js';
 import { $$ } from '../../life/dom.js';
 import { initLibrary, renderLibrary, releaseMediaUrls } from './library.js';
@@ -53,6 +53,17 @@ export async function reloadGym() {
     setUnit(await database.getSetting('unit', getUnit()));
     await Promise.all([loadExercises(), loadTemplates(), loadWorkouts(), loadCheckins(), loadProgressLedger(), loadGoals()]);
     renderAll();
+}
+
+/**
+ * Starts a saved plan from a link (Today's "Start Push Day"), then shows the
+ * workout. A plan that has since been deleted just opens the Workout tab
+ * rather than starting an empty session; a workout already in progress is
+ * left alone (startWorkout says so) and shown.
+ */
+export async function startPlan(templateId) {
+    if (state.templates.some((template) => template.id === templateId)) await startWorkout(templateId);
+    switchTab('today');
 }
 
 /** Boots the Gym section once; Life keeps it mounted and only hides/shows it. */

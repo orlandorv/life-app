@@ -1,4 +1,4 @@
-import { bootGym, reloadGym } from '../gym/js/app.js';
+import { bootGym, reloadGym, startPlan } from '../gym/js/app.js';
 import { closeModal, toast } from './dom.js';
 import { isStorageError, mayWarnAboutSave, SAVE_FAILED } from './storage-errors.js';
 import { registerServiceWorker } from './updates.js';
@@ -26,7 +26,14 @@ import { initBackup, renderBackupBanner } from './backup.js';
 
 const SECTIONS = [
     // Gym is booted once up front, so entering it only needs to pick a tab.
-    { id: 'gym', enter: (action) => action === 'workout' && document.querySelector('#gym-section [data-tab="today"]').click() },
+    // `workout` opens the Workout tab; `workout:<plan id>` starts that plan.
+    {
+        id: 'gym',
+        enter: (action) => {
+            if (action === 'workout') document.querySelector('#gym-section [data-tab="today"]').click();
+            else if (action?.startsWith('workout:')) return gymBoot.then(() => startPlan(action.slice('workout:'.length)));
+        },
+    },
     { id: 'nutrition', enter: enterNutrition },
     { id: 'habits', enter: enterHabits },
     // Weight follows Gym's kg/lb setting, which Gym loads while booting.

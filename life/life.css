@@ -485,6 +485,15 @@ body.modal-open {
     color: var(--text-secondary);
 }
 
+.life-next-plan {
+    margin-top: 12px;
+}
+
+.life-other-plans {
+    margin-top: 8px;
+    text-decoration: none;
+}
+
 /* The whole header row opens the section. */
 .life-block-head {
     display: flex;

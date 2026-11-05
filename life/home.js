@@ -1,9 +1,10 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { lifeDb } from './db.js';
-import { localDayId, weekStartId, addDays } from './dates.js';
+import { localDayId, weekStartId, addDays, dayLabel } from './dates.js';
 import { state as gymState } from '../gym/js/store.js';
 import { computeProgress } from '../gym/js/progress.js';
+import { nextPlan } from '../gym/js/next-plan.js';
 import { getUnit, toDisplay, formatNumber } from '../gym/js/units.js';
 import { state as food, loadDay, loadDays, loadTargets } from '../nutrition/store.js';
 import { dayTotals, hasTarget } from '../nutrition/totals.js';
@@ -237,11 +238,26 @@ function gymBlock(today) {
         }),
     );
 
+    // The plan to do next, offered as a one-tap start — unless today is already
+    // trained or the week's target is met, when a push to train would be nagging.
+    const next = !trainedToday && !targetHit ? nextPlan(gymState.templates, gymState.workouts, today) : null;
+
     return block('gym', 'Gym', 'gym', [
         figure(String(week?.sessions ?? 0), `of ${week?.target ?? 0} sessions this week`),
         el('p', { class: 'life-sub', text: note }),
         dots,
-        action(trainedToday ? 'Start another workout' : 'Start a workout', '#/gym/workout', trainedToday || targetHit),
+        next
+            ? el('p', {
+                  class: 'life-sub life-next-plan',
+                  text: `Up next: ${next.template.name} · ${next.lastDay ? `last done ${dayLabel(next.lastDay, today)}` : 'not done yet'}`,
+              })
+            : null,
+        action(
+            next ? `Start ${next.template.name}` : trainedToday ? 'Start another workout' : 'Start a workout',
+            next ? `#/gym/workout:${next.template.id}` : '#/gym/workout',
+            trainedToday || targetHit,
+        ),
+        next ? el('a', { class: 'link-btn life-other-plans', href: '#/gym/workout', text: 'Other plans or a quick workout' }) : null,
     ]);
 }
 
