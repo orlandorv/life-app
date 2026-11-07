@@ -3044,3 +3044,15 @@ button.badge-tile:active {
     color: var(--text-secondary);
     font-size: 13px;
 }
+
+/* Weekly goal: two small pickers under its description. */
+.goal-row {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.goal-selects {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}

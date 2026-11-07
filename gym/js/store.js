@@ -70,7 +70,7 @@ export async function loadCheckins() {
  * as a single row in `settings` rather than its own store, so it needs no
  * schema version bump and rides along in the existing backup export for free.
  */
-const EMPTY_LEDGER = { version: 1, seenBadges: [], seenLevel: 0, weekTargets: {}, quests: {} };
+const EMPTY_LEDGER = { version: 1, seenBadges: [], seenLevel: 0, weekTargets: {}, weekMinimums: {}, quests: {} };
 
 export async function loadProgressLedger() {
     const stored = await database.getSetting('progress', null);

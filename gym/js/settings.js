@@ -2,6 +2,8 @@ import { database } from './db.js';
 import { loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressLedger, loadGoals } from './store.js';
 import { $, el, clear, openModal, confirmSheet, toast } from '../../life/dom.js';
 import { getUnit, setUnit } from './units.js';
+import { weeklyGoal, setWeeklyGoal } from './progress.js';
+import { MAX_SESSIONS } from './week-streak.js';
 
 let onDataChanged = null;
 let onUnitChanged = null;
@@ -34,6 +36,49 @@ function unitRow() {
             el('div', { class: 'setting-desc', text: 'Applies everywhere — logged weights convert, nothing is rewritten.' }),
         ]),
         el('div', { class: 'segmented' }, [kgBtn, lbBtn]),
+    ]);
+}
+
+/**
+ * The weekly goal: how many sessions to aim for, and the fewest that still keep
+ * your streak. Changing it applies to this week; weeks already behind you keep
+ * what they were judged by.
+ */
+function goalRow() {
+    const options = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => el('option', { value: String(from + i), text: String(from + i) }));
+    const target = el('select', { class: 'form-input', 'aria-label': 'Sessions a week' }, options(1, MAX_SESSIONS));
+    const minimum = el('select', { class: 'form-input', 'aria-label': 'Fewest that keep your streak' });
+
+    const fill = (goal) => {
+        target.value = String(goal.target);
+        minimum.replaceChildren(...options(1, goal.target));
+        minimum.value = String(goal.minimum);
+    };
+    fill(weeklyGoal());
+
+    const save = async (next) => {
+        try {
+            fill(await setWeeklyGoal(next));
+        } catch (error) {
+            console.error(error);
+            toast('Couldn’t save that');
+            fill(weeklyGoal());
+            return;
+        }
+        onDataChanged?.();
+    };
+    target.addEventListener('change', () => save({ target: target.value, minimum: Math.min(Number(minimum.value), Number(target.value)) }));
+    minimum.addEventListener('change', () => save({ target: target.value, minimum: minimum.value }));
+
+    return el('div', { class: 'setting-row goal-row' }, [
+        el('div', {}, [
+            el('div', { class: 'setting-title', text: 'Weekly goal' }),
+            el('div', { class: 'setting-desc', text: 'Aim for the first; the second is the fewest sessions that still keep your streak. Applies to this week on; past weeks keep what they were judged by.' }),
+        ]),
+        el('div', { class: 'goal-selects' }, [
+            el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Sessions' }), target]),
+            el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Minimum' }), minimum]),
+        ]),
     ]);
 }
 
@@ -108,7 +153,7 @@ function backupRow() {
 }
 
 function renderSettings() {
-    clear($('#settings-body')).append(unitRow(), backupRow());
+    clear($('#settings-body')).append(goalRow(), unitRow(), backupRow());
 }
 
 export function initSettings({ onDataChanged: dataCb, onUnitChanged: unitCb } = {}) {

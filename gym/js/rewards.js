@@ -7,6 +7,7 @@ import { playLevelUp, playBadgeEarned } from './sfx.js';
 import { evaluateBadges, groupBadges } from './badges.js';
 import { questsForWeek, QUEST_XP, SWEEP_XP } from './quests.js';
 import { computeProgress, localDayId, weekIdOf, markProgressSeen } from './progress.js';
+import { weekStanding } from './week-streak.js';
 
 /**
  * The Progress tab, plus the sheet that fires when a workout earns something.
@@ -65,9 +66,14 @@ function streakCard(progress) {
     const done = week?.sessions || 0;
     const target = week?.target || 0;
 
-    const note = week?.clean
-        ? 'This week is in the bag.'
-        : `${Math.max(0, target - done)} more session${target - done === 1 ? '' : 's'} to keep the chain.`;
+    const standing = weekStanding({ sessions: done, target, minimum: week?.minimum ?? target });
+    const plural = (n) => `${n} more session${n === 1 ? '' : 's'}`;
+    const note =
+        standing.state === 'hit'
+            ? 'This week is in the bag.'
+            : standing.state === 'kept'
+              ? `Your streak is safe. ${plural(standing.toTarget)} hits your target of ${target}.`
+              : `${plural(standing.toKeep)} to keep the chain (${week?.minimum ?? target} a week keeps it, ${target} is the goal).`;
 
     return el('div', { class: 'volume-section streak-card' }, [
         el('div', { class: 'volume-head' }, [
@@ -85,9 +91,9 @@ function streakCard(progress) {
         ]),
         el('div', { class: 'volume-row-top' }, [
             el('span', { class: 'volume-muscle', text: 'This week' }),
-            el('span', { class: `volume-count${week?.clean ? ' met' : ''}`, text: `${done} / ${target} sessions` }),
+            el('span', { class: `volume-count${standing.state === 'hit' ? ' met' : ''}`, text: `${done} / ${target} sessions` }),
         ]),
-        bar(target ? (done / target) * 100 : 0, week?.clean ? 'met' : ''),
+        bar(target ? (done / target) * 100 : 0, standing.state === 'hit' ? 'met' : ''),
         el('p', { class: 'hint', text: note }),
     ]);
 }
@@ -351,7 +357,9 @@ export async function showWorkoutSummary(before, after, workout, { goalsReached 
     // The session that completes the week is worth marking: it's the one that
     // moves the streak, and it carries the weekly bonus that would otherwise
     // show up as an unexplained jump in the XP toast.
-    const weekCompleted = Boolean(after.currentWeek?.clean) && !before.currentWeek?.clean;
+    const weekCompleted = Boolean(after.currentWeek?.hit) && !before.currentWeek?.hit;
+    // Two sessions of three keeps the streak: worth saying, but it isn't a "complete" week.
+    const streakKept = !weekCompleted && Boolean(after.currentWeek?.clean) && !before.currentWeek?.clean;
 
     const weekId = weekIdOf();
     const ledger = state.progressLedger || {};
@@ -359,7 +367,7 @@ export async function showWorkoutSummary(before, after, workout, { goalsReached 
     const questsWere = questsForWeek(weekId, before.weeks, ledger).filter((quest) => quest.done).length;
     const questsCleared = questsDone.length - questsWere;
 
-    const notable = levelledUp || fresh.length > 0 || records > 0 || questsCleared > 0 || weekCompleted || goalsReached.length > 0;
+    const notable = levelledUp || fresh.length > 0 || records > 0 || questsCleared > 0 || weekCompleted || streakKept || goalsReached.length > 0;
 
     if (!notable) {
         toast(`+${gained} XP · Level ${after.level}`);
@@ -392,6 +400,10 @@ export async function showWorkoutSummary(before, after, workout, { goalsReached 
             bar((after.into / after.span) * 100),
         ]),
     );
+
+    if (streakKept) {
+        body.append(highlight('flame', `Streak kept — ${after.streak} week${after.streak > 1 ? 's' : ''} running`));
+    }
 
     if (weekCompleted) {
         body.append(highlight('flame', `Week complete — ${after.streak} week${after.streak > 1 ? 's' : ''} running`));

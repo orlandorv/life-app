@@ -5,6 +5,7 @@ import { MUSCLE_GROUPS } from './seed.js';
 import { evaluateBadges } from './badges.js';
 import { questXpForWeeks, generateQuests } from './quests.js';
 import { entryMetBar } from './progression.js';
+import { walkStreak, STREAK_XP, DEFAULT_GOAL, cleanGoal } from './week-streak.js';
 
 /**
  * Everything the Progress tab shows — XP, levels, streaks, per-week and
@@ -35,17 +36,10 @@ export const XP = {
     perHundredKg: 1,
     pr: 75,
     progression: 25,
-    weeklyTarget: 150,
-    perStreakWeek: 25,
-    streakWeeksCounted: 10,
+    // What the weekly streak pays lives with the streak rules (week-streak.js).
+    ...STREAK_XP,
 };
 
-/** Weeks with no templates in the plan still need a target to aim at. */
-const DEFAULT_WEEKLY_TARGET = 3;
-
-/** Clean weeks needed to bank one freeze, and the most you can hold. */
-const WEEKS_PER_FREEZE = 4;
-const MAX_FREEZES = 2;
 
 /**
  * Level n costs `BASE + STEP × (n − 1)`, so the total to reach a level grows
@@ -236,13 +230,17 @@ export function levelFromXp(xp) {
 // --- Weekly targets ------------------------------------------------------
 
 /**
- * How many sessions a week is meant to hold, derived from the plan the same
- * way weekly volume targets are: one per template that counts toward it. No
- * second copy of the plan to keep in sync.
+ * The weekly goal you chose: how many sessions to aim for (`target`) and the fewest
+ * that still keep your streak (`minimum`). Kept in the progress ledger (`goal`) so it
+ * is in every backup with no schema change; until you choose, it is 3 and 2.
  */
+export function weeklyGoal() {
+    return cleanGoal(ledger().goal ?? DEFAULT_GOAL);
+}
+
+/** The sessions a week is aiming for. */
 export function weeklySessionTarget() {
-    const planned = state.templates.filter((template) => template.inWeeklyPlan !== false).length;
-    return planned || DEFAULT_WEEKLY_TARGET;
+    return weeklyGoal().target;
 }
 
 function ledger() {
@@ -250,13 +248,34 @@ function ledger() {
 }
 
 /**
- * A week's target is frozen once the week has been seen, so adding a sixth
- * template in March can't retroactively fail every week of February and wipe
- * out a streak. Weeks from before this feature existed fall back to today's
- * target — there's nothing better to judge them by.
+ * A week's target and minimum are frozen once the week has been seen, so changing
+ * the goal in March can't retroactively fail (or rescue) every week of February and
+ * rewrite a streak. A week from before the minimum existed falls back to its
+ * *target* as its minimum, which is exactly how it was always judged; a week from
+ * before targets were sealed falls back to today's.
  */
 export function targetForWeek(weekId) {
     return ledger().weekTargets?.[weekId] ?? weeklySessionTarget();
+}
+
+export function minimumForWeek(weekId) {
+    return ledger().weekMinimums?.[weekId] ?? targetForWeek(weekId);
+}
+
+/**
+ * Saves a new goal and re-seals *this* week to it (this week is still open, so the
+ * change applies to it; every week before stays as it was).
+ */
+export async function setWeeklyGoal(goal) {
+    const next = cleanGoal(goal);
+    const weekId = weekIdOf();
+    const stored = ledger();
+    await saveProgressLedger({
+        goal: next,
+        weekTargets: { ...(stored.weekTargets || {}), [weekId]: next.target },
+        weekMinimums: { ...(stored.weekMinimums || {}), [weekId]: next.minimum },
+    });
+    return next;
 }
 
 // --- Week series ---------------------------------------------------------
@@ -320,6 +339,7 @@ function buildWeeks(chronological, prEvents) {
             end: addDays(cursor, 6),
             current: weekId === currentId,
             target: targetForWeek(weekId),
+            minimum: minimumForWeek(weekId),
             sessions: found?.sessions || 0,
             sets: found?.sets || 0,
             tonnageKg: found?.tonnageKg || 0,
@@ -338,60 +358,6 @@ function buildWeeks(chronological, prEvents) {
     }
 
     return weeks;
-}
-
-/**
- * Walks the weeks in order, marking each clean (target met), frozen (missed
- * but covered by a banked skip) or broken, and paying the weekly bonus as it
- * goes — the bonus scales with the streak that was live at the time, so a
- * week logged during a long run is worth more than the same week logged cold.
- *
- * The current week never breaks anything: it isn't over yet.
- */
-function walkStreak(weeks) {
-    let streak = 0;
-    let longest = 0;
-    let freezes = 0;
-    let cleanRun = 0;
-
-    for (const week of weeks) {
-        week.clean = week.sessions >= week.target;
-
-        if (week.current) {
-            // Counted if already met, but a shortfall so far is just "not yet".
-            if (week.clean) {
-                streak += 1;
-                week.bonusXp = XP.weeklyTarget + XP.perStreakWeek * Math.min(streak, XP.streakWeeksCounted);
-            }
-            week.streakAfter = streak;
-            longest = Math.max(longest, streak);
-            break;
-        }
-
-        if (week.clean) {
-            streak += 1;
-            cleanRun += 1;
-            if (cleanRun >= WEEKS_PER_FREEZE && freezes < MAX_FREEZES) {
-                freezes += 1;
-                cleanRun = 0;
-            }
-            week.bonusXp = XP.weeklyTarget + XP.perStreakWeek * Math.min(streak, XP.streakWeeksCounted);
-        } else if (freezes > 0) {
-            // Spent, not earned: the chain survives but doesn't grow.
-            freezes -= 1;
-            cleanRun = 0;
-            week.frozen = true;
-        } else {
-            streak = 0;
-            cleanRun = 0;
-            freezes = 0;
-        }
-
-        week.streakAfter = streak;
-        longest = Math.max(longest, streak);
-    }
-
-    return { streak, longest, freezes };
 }
 
 // --- Timeline ------------------------------------------------------------
@@ -545,6 +511,17 @@ export async function syncProgressLedger() {
     if (stored.weekTargets?.[weekId] === undefined) {
         patch.weekTargets = { ...(stored.weekTargets || {}), [weekId]: weeklySessionTarget() };
     }
+    if (stored.weekMinimums?.[weekId] === undefined) {
+        patch.weekMinimums = { ...(stored.weekMinimums || {}), [weekId]: weeklyGoal().minimum };
+    }
+    // The first time this runs with a weekly goal (3 sessions, 2 to keep the streak),
+    // this week takes it, so it applies now rather than from next Monday. Weeks before
+    // are sealed and keep what they were judged by.
+    if (!stored.goal) {
+        patch.goal = DEFAULT_GOAL;
+        patch.weekTargets = { ...(patch.weekTargets || stored.weekTargets || {}), [weekId]: DEFAULT_GOAL.target };
+        patch.weekMinimums = { ...(patch.weekMinimums || stored.weekMinimums || {}), [weekId]: DEFAULT_GOAL.minimum };
+    }
 
     if (!stored.quests?.[weekId]?.length) {
         // Quests are kept for every past week, never pruned: their XP is part
@@ -554,7 +531,7 @@ export async function syncProgressLedger() {
     }
 
     if (!stored.initialised) {
-        if (patch.weekTargets || patch.quests) await saveProgressLedger(patch);
+        if (Object.keys(patch).length) await saveProgressLedger(patch);
         const progress = computeProgress();
         const earned = evaluateBadges(progress).filter((badge) => badge.earnedAt).map((badge) => badge.id);
         await saveProgressLedger({ initialised: true, seenBadges: earned, seenLevel: progress.level });

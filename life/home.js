@@ -5,6 +5,7 @@ import { localDayId, weekStartId, addDays, dayLabel } from './dates.js';
 import { state as gymState } from '../gym/js/store.js';
 import { computeProgress } from '../gym/js/progress.js';
 import { nextPlan } from '../gym/js/next-plan.js';
+import { weekStanding } from '../gym/js/week-streak.js';
 import { getUnit, toDisplay, formatNumber } from '../gym/js/units.js';
 import { state as food, loadDay, loadDays, loadTargets } from '../nutrition/store.js';
 import { dayTotals, hasTarget } from '../nutrition/totals.js';
@@ -267,11 +268,16 @@ function gymBlock(today) {
     // Gym keeps its own level and rank; the game card above is separate and says so.
     const level = gymState.workouts.length ? `Gym level ${progress.level} · ${progress.rank}` : null;
 
+    // Where the week stands against its target and its minimum (the fewest that keep the streak).
+    const standing = weekStanding({ sessions: week?.sessions ?? 0, target: week?.target ?? 0, minimum: week?.minimum ?? week?.target ?? 0 });
     let note = 'A good week starts with one session';
-    if (trainedToday) note = 'Trained today. Nice work';
-    else if (targetHit) note = streak ? `Weekly target hit · ${streak}` : 'Weekly target hit';
+    if (trainedToday) {
+        const where = standing.state === 'hit' ? 'target hit' : standing.state === 'kept' ? 'streak safe' : week?.sessions ? `${standing.toKeep} more keeps your streak` : '';
+        note = `Trained today${where ? ` · ${where}` : '. Nice work'}`;
+    } else if (standing.state === 'hit') note = streak ? `Weekly target hit · ${streak}` : 'Weekly target hit';
+    else if (standing.state === 'kept') note = `Streak safe · ${standing.toTarget} more for your target`;
+    else if (week?.sessions) note = `${standing.toKeep} more keeps your streak`;
     else if (streak) note = `${streak} going`;
-    else if (week?.sessions) note = `${week.target - week.sessions} more this week`;
 
     // The plan to do next, offered as a one-tap start — unless today is already
     // trained or the week's target is met, when a push to train would be nagging.
