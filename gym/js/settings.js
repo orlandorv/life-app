@@ -3,6 +3,7 @@ import { loadExercises, loadTemplates, loadWorkouts, loadCheckins, loadProgressL
 import { $, el, clear, openModal, confirmSheet, toast } from '../../life/dom.js';
 import { getUnit, setUnit } from './units.js';
 import { weeklyGoal, setWeeklyGoal } from './progress.js';
+import { soundBox } from '../../life/sound.js';
 import { MAX_SESSIONS } from './week-streak.js';
 
 let onDataChanged = null;
@@ -39,6 +40,17 @@ function unitRow() {
     ]);
 }
 
+/** The app-wide sound switch, here as well as in the game's sheet. */
+function soundRow() {
+    return el('label', { class: 'setting-row sound-row' }, [
+        el('div', {}, [
+            el('div', { class: 'setting-title', text: 'Sounds' }),
+            el('div', { class: 'setting-desc', text: 'Rest timer, sets, ticking things off and rewards. Off silences all of them.' }),
+        ]),
+        soundBox(),
+    ]);
+}
+
 /**
  * The weekly goal: how many sessions to aim for, and the fewest that still keep
  * your streak. Changing it applies to this week; weeks already behind you keep
@@ -70,7 +82,7 @@ function goalRow() {
     target.addEventListener('change', () => save({ target: target.value, minimum: Math.min(Number(minimum.value), Number(target.value)) }));
     minimum.addEventListener('change', () => save({ target: target.value, minimum: minimum.value }));
 
-    return el('div', { class: 'setting-row goal-row' }, [
+    return el('div', { class: 'setting-row weekly-goal-row' }, [
         el('div', {}, [
             el('div', { class: 'setting-title', text: 'Weekly goal' }),
             el('div', { class: 'setting-desc', text: 'Aim for the first; the second is the fewest sessions that still keep your streak. Applies to this week on; past weeks keep what they were judged by.' }),
@@ -153,7 +165,7 @@ function backupRow() {
 }
 
 function renderSettings() {
-    clear($('#settings-body')).append(goalRow(), unitRow(), backupRow());
+    clear($('#settings-body')).append(goalRow(), unitRow(), soundRow(), backupRow());
 }
 
 export function initSettings({ onDataChanged: dataCb, onUnitChanged: unitCb } = {}) {

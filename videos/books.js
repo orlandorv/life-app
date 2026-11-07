@@ -1,4 +1,5 @@
 import { el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { icon } from '../life/icons.js';
 import { state, addBook, updateBook, setRead, deleteBook } from './books-store.js';
 import { groupBooksByTopic, isRead } from './books-organize.js';
@@ -76,7 +77,10 @@ function bookRow(book) {
             'aria-pressed': String(read),
             'aria-label': `${book.title}, ${read ? 'read' : 'not read yet'}`,
             onclick: async () => {
-                if (await attempt(() => setRead(book, !read))) await onChange();
+                if (await attempt(() => setRead(book, !read))) {
+                    sound.tick(!read);
+                    await onChange();
+                }
             },
         }, [read ? icon('check', { size: 16 }) : null]),
         el('button', { class: 'book-main', type: 'button', onclick: () => openBookSheet(book) }, [

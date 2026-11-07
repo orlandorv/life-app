@@ -1,5 +1,6 @@
 import { $, el, clear, openModal, toast } from './dom.js';
-import { lifeDb, DATA_CHANGED_EVENT } from './db.js';
+import { DATA_CHANGED_EVENT } from './db.js';
+import { soundBox, sound } from './sound.js';
 import { on } from '../gym/js/store.js';
 import { playGoodDay, playLevelUp } from '../gym/js/sfx.js';
 import { icon } from './icons.js';
@@ -35,9 +36,6 @@ const unit = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 /** The state the card and sheet draw from; replaced on every refresh. */
 let current = null;
 
-/** Sound is a preference of this phone, so it is kept out of backups (`DEVICE_SETTINGS`). */
-const DEVICE_KEY = 'lifeGameDevice';
-let soundOn = true;
 /** True while a backup is being restored: a restore can change the level, and must never be announced. */
 let muted = false;
 const UPDATE_DELAY_MS = 250;
@@ -301,7 +299,7 @@ function drawSheet() {
         ]),
         el('label', { class: 'life-check life-game-sound' }, [
             soundBox(),
-            el('span', { class: 'life-game-goal-text' }, [el('span', { text: 'Game sounds' }), el('small', { text: 'A soft chime when you reach a good day or a new level.' })]),
+            el('span', { class: 'life-game-goal-text' }, [el('span', { text: 'Sounds' }), el('small', { text: 'Soft sounds for ticking things off, logging, a goal finished, a good day and a new level; also Gym’s timer and set sounds.' })]),
         ]),
         el('p', {
             class: 'hint life-game-explain',
@@ -384,20 +382,6 @@ function goalToggle(id, ledger, today) {
     ]);
 }
 
-function soundBox() {
-    const box = el('input', { type: 'checkbox' });
-    box.checked = soundOn;
-    box.addEventListener('change', async () => {
-        soundOn = box.checked;
-        try {
-            await lifeDb.saveSetting(DEVICE_KEY, { sound: soundOn });
-        } catch (error) {
-            console.error(error);
-        }
-    });
-    return box;
-}
-
 // --- Feedback: what happens when you do something -------------------------------------
 
 /**
@@ -408,13 +392,6 @@ function soundBox() {
 export function initGame() {
     window.addEventListener(DATA_CHANGED_EVENT, scheduleUpdate);
     on('workouts', scheduleUpdate);
-    lifeDb
-        .init()
-        .then(() => lifeDb.getSetting(DEVICE_KEY, null))
-        .then((stored) => {
-            if (stored && stored.sound === false) soundOn = false;
-        })
-        .catch((error) => console.warn(error));
 }
 
 function scheduleUpdate() {
@@ -481,7 +458,8 @@ async function update() {
             await saveLedger(seen);
             current.ledger = seen;
         }
-        redrawGame(justCompleted(before, state));
+        const finished = justCompleted(before, state);
+        redrawGame(finished);
         // The moment the day turns good, the gold halo draws itself in and the seal stamps.
         if (goodDay) document.querySelector('.life-game')?.classList.add('sealing');
 
@@ -490,10 +468,13 @@ async function update() {
         if (levelUp) {
             if (busy) toast(`Level ${level}`);
             else showLevelUp(game);
-            if (soundOn && !busy) playLevelUp();
+            if (!busy) playLevelUp();
         } else if (goodDay) {
             toast(`Good day · ${game.today.base} / ${MAX_BASE_XP}`);
-            if (soundOn && !busy) playGoodDay();
+            if (!busy) playGoodDay();
+        } else if (finished.size && !busy) {
+            // A goal of the day just closed, and nothing bigger is being announced.
+            sound.goal();
         }
     } catch (error) {
         console.error(error);

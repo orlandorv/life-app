@@ -1,4 +1,5 @@
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { labelledStepper } from '../life/stepper.js';
 import { lifeDb } from '../life/db.js';
 import { localDayId, addDays, dayLabel, weekStartId } from '../life/dates.js';
@@ -572,6 +573,7 @@ async function logMeal(saved) {
     if (!ok) return;
     closeModal('food-modal');
     await refresh();
+    sound.saved();
     toast(`Added ${saved.name} to ${mealLabel(sheet.meal)}`);
 }
 
@@ -807,6 +809,7 @@ async function logQuickly(food, portion) {
     if (!ok) return;
     closeModal('food-modal');
     await refresh();
+    sound.saved();
     toast(`Added ${food.name} to ${mealLabel(sheet.meal)}`);
 }
 
@@ -931,6 +934,7 @@ function showPortion(food, entry = null) {
         if (!ok) return;
         closeModal('food-modal');
         await refresh();
+        if (!entry) sound.saved();
         toast(entry ? 'Entry updated' : `Added ${food.name} to ${mealLabel(sheet.meal)}`);
     };
 
@@ -1040,6 +1044,7 @@ function showQuick(entry = null) {
         if (!ok) return;
         closeModal('food-modal');
         await refresh();
+        if (!entry) sound.saved();
         toast(entry ? 'Entry updated' : `Added to ${mealLabel(sheet.meal)}`);
     };
 

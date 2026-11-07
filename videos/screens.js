@@ -1,4 +1,5 @@
 import { el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { icon } from '../life/icons.js';
 import { state, addScreen, updateScreen, setWatched, deleteScreen } from './screens-store.js';
 import { groupScreensByGenre, isWatched, isWatching, kindLine, KINDS, KIND_LABEL } from './screens-organize.js';
@@ -97,7 +98,10 @@ function screenRow(item) {
             'aria-pressed': String(watched),
             'aria-label': `${item.title}, ${watched ? 'watched' : 'not watched yet'}`,
             onclick: async () => {
-                if (await attempt(() => setWatched(item, !watched))) await onChange();
+                if (await attempt(() => setWatched(item, !watched))) {
+                    sound.tick(!watched);
+                    await onChange();
+                }
             },
         }, [watched ? icon('check', { size: 16 }) : null]),
         el('button', { class: 'book-main', type: 'button', onclick: () => openScreenSheet(item) }, [

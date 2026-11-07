@@ -1,4 +1,5 @@
 import { $, el, clear, openModal, closeModal, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { icon } from '../life/icons.js';
 import { dayLabel } from '../life/dates.js';
 import { tickedSteps, setStepDone } from './store.js';
@@ -92,6 +93,10 @@ async function tick(step, done) {
 
     render();
     onChange?.();
+
+    // A step ticks like anything else; finishing the routine is a goal done.
+    if (progress.complete && !wasComplete) sound.goal();
+    else sound.tick(done);
 
     if (progress.complete && !wasComplete) {
         toast(`${habit.name} done`);

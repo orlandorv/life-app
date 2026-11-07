@@ -14,6 +14,7 @@ import { enterInbox } from '../inbox/inbox.js';
 import { enterWishlist } from '../wishlist/wishlist.js';
 import { initBackup, renderBackupBanner } from './backup.js';
 import { initGame } from './game.js';
+import { initSound } from './sound.js';
 
 /**
  * Life: the shell that hosts every section. It owns routing (a hash, so a
@@ -143,6 +144,7 @@ async function start() {
     initBackup({ gymReady: () => gymBoot, reloadGym });
     initHome({ gymReady: () => gymBoot });
     initGame();
+    initSound();
     window.addEventListener('hashchange', route);
     route();
 

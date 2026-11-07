@@ -1,4 +1,5 @@
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { icon } from '../life/icons.js';
 import { lifeDb } from '../life/db.js';
 import {
@@ -227,7 +228,7 @@ function videoRow(video) {
 }
 
 async function toggleWatched(video) {
-    await attempt(() => setWatched(video, !video.watched));
+    if (await attempt(() => setWatched(video, !video.watched))) sound.tick(!video.watched);
     await refresh();
 }
 

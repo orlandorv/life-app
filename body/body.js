@@ -1,4 +1,5 @@
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { labelledStepper } from '../life/stepper.js';
 import { lifeDb } from '../life/db.js';
 import { localDayId, addDays, dayLabel, weekStartId } from '../life/dates.js';
@@ -481,6 +482,7 @@ function entryForm(startDay, pickDate) {
             toast('Couldn’t save that');
             return;
         }
+        sound.saved();
         await finish('Saved');
     };
 

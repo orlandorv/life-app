@@ -1,4 +1,5 @@
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { lifeDb } from '../life/db.js';
 import { icon } from '../life/icons.js';
 import { state, loadItems, addItem, updateItem, setBought, deleteItem } from './store.js';
@@ -195,6 +196,7 @@ function itemRow(item) {
             'aria-label': `${item.name}, ${bought ? 'bought' : 'not bought yet'}`,
             onclick: async () => {
                 if (!(await attempt(() => setBought(item, !bought)))) return;
+                sound.tick(!bought);
                 toast(bought ? 'Back on your list' : 'Marked as bought');
             },
         }, [bought ? icon('check', { size: 16 }) : null]),

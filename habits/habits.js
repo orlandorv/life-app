@@ -1,4 +1,5 @@
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { lifeDb } from '../life/db.js';
 import { localDayId, addDays, dayLabel, weekStartId } from '../life/dates.js';
 import { dayBar } from '../life/daybar.js';
@@ -248,7 +249,7 @@ function habitRow(habit, today) {
                 onclick: () =>
                     routine
                         ? openRoutine(habit, state.day, { onChange: renderHabits })
-                        : save(() => toggleHabit(habit, state.day)),
+                        : (sound.tick(!done), save(() => toggleHabit(habit, state.day))),
             },
             [
                 el('span', { class: 'habit-circle' }, [circle]),
@@ -325,7 +326,10 @@ function weekCell(habit, cell, index) {
             type: 'button',
             disabled: !tappable,
             'aria-label': `${habit.name}, ${DAY_NAMES[index]}, ${spoken}`,
-            onclick: () => save(() => toggleHabit(habit, cell.day)),
+            onclick: () => {
+                sound.tick(cell.state !== 'done');
+                save(() => toggleHabit(habit, cell.day));
+            },
         }, [cell.state === 'done' ? icon('check', { size: 16 }) : null]),
     ]);
 }

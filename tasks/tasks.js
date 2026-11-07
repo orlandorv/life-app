@@ -1,4 +1,5 @@
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { icon } from '../life/icons.js';
 import { lifeDb } from '../life/db.js';
 import { shareOrDownload } from '../life/share.js';
@@ -155,11 +156,13 @@ async function toggleDone(task) {
     if (task.repeat) {
         let next;
         if (!(await attempt(async () => { next = await completeTask(task); }))) return;
+        sound.tick(true);
         await refresh();
         toast(`Done. Next: ${taskDateLabel(next.date, localDayId())}`);
         return;
     }
     if (!(await attempt(() => setDone(task, !task.done)))) return;
+    sound.tick(!task.done);
     await refresh();
 }
 

@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { sound } from './sound.js';
 import { icon } from './icons.js';
 import { lifeDb } from './db.js';
 import { localDayId, weekStartId, addDays, dayLabel } from './dates.js';
@@ -402,6 +403,7 @@ function journalBlock(today) {
                             console.error(error);
                             return;
                         }
+                        sound.mood(level);
                         refreshJournalBlock(today);
                     },
                 }),
@@ -491,6 +493,7 @@ function habitRow(habit, today) {
                     console.error(error);
                     return;
                 }
+                sound.tick(!done);
                 refreshHabitsBlock(today);
             },
         },

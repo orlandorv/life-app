@@ -3045,8 +3045,8 @@ button.badge-tile:active {
     font-size: 13px;
 }
 
-/* Weekly goal: two small pickers under its description. */
-.goal-row {
+/* Weekly goal: two small pickers under its description. (Not `.goal-row`: that is a lift goal.) */
+.weekly-goal-row {
     flex-direction: column;
     align-items: stretch;
 }
@@ -3055,4 +3055,23 @@ button.badge-tile:active {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+}
+
+/* The Sounds row: a row, not the stacked column every other label is; its words take the width and the checkbox sits at the right edge. */
+.sound-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.sound-row > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.sound-row input[type="checkbox"] {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    accent-color: var(--primary);
 }

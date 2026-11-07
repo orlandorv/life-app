@@ -6,6 +6,17 @@
 
 let audioCtx = null;
 
+// One switch for every sound in the app. Off, nothing plays and the rest timer's
+// beeps go quiet too. The preference itself is kept by life/sound.js (it is a
+// choice of this phone, so it never travels in a backup); this file only obeys it.
+let enabled = true;
+
+export function setSoundEnabled(on) {
+    enabled = Boolean(on);
+}
+
+export const isSoundEnabled = () => enabled;
+
 function unlockAudio() {
     if (audioCtx) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -26,18 +37,18 @@ export function canVibrate() {
 }
 
 function ensureRunning() {
-    if (!audioCtx) return false;
+    if (!enabled || !audioCtx) return false;
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return true;
 }
 
 /** A single short tone. `at` and `duration` are in seconds. */
-function tone(freq, at, duration = 0.16, peak = 0.3) {
+function tone(freq, at, duration = 0.16, peak = 0.3, type = 'sine') {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     const start = audioCtx.currentTime + at;
 
-    osc.type = 'sine';
+    osc.type = type;
     osc.frequency.setValueAtTime(freq, start);
     // Ramped rather than switched, so it doesn't click.
     gain.gain.setValueAtTime(0, start);
@@ -109,6 +120,48 @@ export function playGoodDay() {
     if (!ensureRunning()) return;
     tone(587.33, 0, 0.14, 0.2);
     tone(880, 0.1, 0.3, 0.2);
+}
+
+// --- Small sounds for everyday taps ---------------------------------------------------
+// Kept much quieter and shorter than the rest-timer and level sounds: these fire many
+// times a day and should read as the app answering your finger, not as an event.
+
+/** A habit, task, video, book or purchase ticked (`done`) or put back. */
+export function playTick(done = true) {
+    if (!ensureRunning()) return;
+    if (done) {
+        tone(740, 0, 0.07, 0.13);
+        tone(1109, 0.045, 0.11, 0.1);
+    } else {
+        tone(520, 0, 0.08, 0.07);
+    }
+}
+
+/** Something saved: a meal logged, a weigh-in kept. Two soft rising notes. */
+export function playSaved() {
+    if (!ensureRunning()) return;
+    tone(660, 0, 0.09, 0.1);
+    tone(880, 0.07, 0.14, 0.1);
+}
+
+/** The pitch of a mood tap, 1 (rough) to 5 (great): a step up for each level, so how you feel is audible. */
+export function moodFrequency(level) {
+    const steps = [392, 440, 494, 587, 659]; // G4 A4 B4 D5 E5
+    const n = level === null || level === undefined || level === '' ? NaN : Number(level);
+    const index = Number.isFinite(n) ? Math.min(4, Math.max(0, Math.round(n) - 1)) : 2; // no mood: the middle note
+    return steps[index];
+}
+
+export function playMood(level) {
+    if (!ensureRunning()) return;
+    tone(moodFrequency(level), 0, 0.16, 0.13);
+}
+
+/** A goal of the day finished (an arc closing, a routine complete): a small bell, longer than a tick. */
+export function playGoalDone() {
+    if (!ensureRunning()) return;
+    tone(784, 0, 0.3, 0.14);
+    tone(1175, 0.09, 0.38, 0.11);
 }
 
 export function initSfx() {

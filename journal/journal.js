@@ -1,4 +1,5 @@
 import { $, el, clear, toast } from '../life/dom.js';
+import { sound } from '../life/sound.js';
 import { lifeDb } from '../life/db.js';
 import { localDayId, addDays, dayLabel } from '../life/dates.js';
 import { dayBar } from '../life/daybar.js';
@@ -104,7 +105,12 @@ function scaleRow(label, words, value, onPick) {
                     'aria-pressed': String(level === value),
                     'aria-label': `${label}: ${words[level - 1]} (${level} of 5)`,
                     text: words[level - 1],
-                    onclick: () => onPick(level === value ? null : level),
+                    onclick: () => {
+                        // Mood has its own pitch per level; energy and un-picking are a plain tick.
+                        if (level !== value) (label === 'Mood' ? sound.mood(level) : sound.tick(true));
+                        else sound.tick(false);
+                        onPick(level === value ? null : level);
+                    },
                 }),
             ),
         ),
