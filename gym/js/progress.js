@@ -1,11 +1,14 @@
 import { state, saveProgressLedger } from './store.js';
 import { isLoggedWork } from './strength.js';
-import { weekStart } from './volume.js';
+import { weekStart, weeklyPlan } from './volume.js';
 import { MUSCLE_GROUPS } from './seed.js';
 import { evaluateBadges } from './badges.js';
 import { questXpForWeeks, generateQuests } from './quests.js';
 import { entryMetBar } from './progression.js';
 import { walkStreak, STREAK_XP, DEFAULT_GOAL, cleanGoal } from './week-streak.js';
+
+/** Bumped when the quest rules change enough that this week's drawn quests should be drawn again (once). */
+const QUESTS_REVISION = 2;
 
 /**
  * Everything the Progress tab shows — XP, levels, streaks, per-week and
@@ -45,7 +48,9 @@ export const XP = {
  * Level n costs `BASE + STEP × (n − 1)`, so the total to reach a level grows
  * roughly with its square. Tuned against a full simulated year: a solid four
  * sessions a week lands around level 19 after twelve months and reaches the
- * last rank somewhere near two years. Levels come every session or two at the
+ * last rank somewhere near two years. (At three sessions a week it is about a
+ * quarter slower; the curve has not been retuned, since levels are derived and
+ * retuning would move everyone's.) Levels come every session or two at the
  * start and then stretch out, which is the point — the early ones are there
  * to get you hooked, the later ones to be worth something.
  */
@@ -504,10 +509,11 @@ export function computeProgress() {
  * missing. Called at boot and after each finished workout.
  */
 export async function syncProgressLedger() {
-    const stored = ledger();
     const weekId = weekIdOf();
-    const patch = {};
+    let patch = {};
 
+    // --- This week's target and minimum, sealed, and the weekly goal on first run ---
+    let stored = ledger();
     if (stored.weekTargets?.[weekId] === undefined) {
         patch.weekTargets = { ...(stored.weekTargets || {}), [weekId]: weeklySessionTarget() };
     }
@@ -522,13 +528,25 @@ export async function syncProgressLedger() {
         patch.weekTargets = { ...(patch.weekTargets || stored.weekTargets || {}), [weekId]: DEFAULT_GOAL.target };
         patch.weekMinimums = { ...(patch.weekMinimums || stored.weekMinimums || {}), [weekId]: DEFAULT_GOAL.minimum };
     }
+    // Saved before the quests are drawn: they are drawn against *this week's* target.
+    if (Object.keys(patch).length) {
+        await saveProgressLedger(patch);
+        patch = {};
+        stored = ledger();
+    }
 
-    if (!stored.quests?.[weekId]?.length) {
-        // Quests are kept for every past week, never pruned: their XP is part
-        // of the running total, and dropping them would silently lose levels.
-        const drawn = generateQuests(weekId, computeProgress().weeks);
+    // --- This week's quests ---
+    // Quests are kept for every past week, never pruned: their XP is part of the
+    // running total, and dropping them would silently lose levels. This week's are
+    // drawn once, and drawn again once when the quest rules changed (QUESTS_REVISION):
+    // this week's were drawn for a five-session routine, which a three-session
+    // week can't meet. Past weeks keep the quests they were given.
+    const redraw = stored.questsRevision !== QUESTS_REVISION;
+    if (redraw || !stored.quests?.[weekId]?.length) {
+        const drawn = generateQuests(weekId, computeProgress().weeks, weeklyPlan());
         if (drawn.length) patch.quests = { ...(stored.quests || {}), [weekId]: drawn };
     }
+    if (redraw) patch.questsRevision = QUESTS_REVISION;
 
     if (!stored.initialised) {
         if (Object.keys(patch).length) await saveProgressLedger(patch);

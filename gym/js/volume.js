@@ -37,6 +37,21 @@ export function weeklyTargets() {
 }
 
 /**
+ * The plan as quests read it: planned sets per muscle (`targets`) and how many of
+ * the weekly plan's sessions train each muscle (`frequency`). A muscle trained in
+ * only one session a week (a push/pull/legs split) can't be asked for twice.
+ */
+export function weeklyPlan() {
+    const frequency = new Map();
+    for (const template of state.templates) {
+        if (template.inWeeklyPlan === false) continue;
+        const muscles = new Set((template.exercises || []).map((entry) => findExercise(entry.exerciseId)?.muscleGroup).filter(Boolean));
+        muscles.forEach((muscle) => frequency.set(muscle, (frequency.get(muscle) || 0) + 1));
+    }
+    return { targets: weeklyTargets(), frequency };
+}
+
+/**
  * Working sets actually logged since Monday. Muscle group comes off the
  * workout entry's own snapshot rather than the library, so a session still
  * counts correctly for an exercise that's since been deleted or moved to a

@@ -127,8 +127,8 @@ function buildCatalogue() {
             name: weeks === 1 ? 'On plan' : `${weeks}-week streak`,
             hint:
                 weeks === 1
-                    ? 'Hit your weekly session target'
-                    : `Hit your session target ${weeks} weeks running`,
+                    ? 'Keep your weekly streak: reach your weekly minimum'
+                    : `Keep your weekly streak ${weeks} weeks running`,
             earnedAt: (ctx) => ctx.weeks.find((week) => week.streakAfter >= weeks)?.end.toISOString() || null,
         }),
     );

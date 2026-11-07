@@ -1,5 +1,4 @@
 import { MUSCLE_GROUPS } from './seed.js';
-import { weeklyTargets } from './volume.js';
 
 /**
  * Three goals a week, drawn on Monday and settled on Sunday.
@@ -20,6 +19,9 @@ export const SWEEP_XP = 100;
 
 /** How many past weeks the quest targets are calibrated against. */
 const CALIBRATION_WEEKS = 4;
+
+/** No plan at all: nothing planned, so nothing is known about how often a muscle is trained. */
+export const NO_PLAN = { targets: new Map(), frequency: new Map() };
 
 /** Enough headroom to be worth doing, not so much it's out of reach. */
 const STRETCH = 1.1;
@@ -70,6 +72,19 @@ function roundUpTo(value, step) {
     return Math.max(step, Math.round(value / step) * step);
 }
 
+/**
+ * What a past week's numbers come to for a week of `week.target` sessions: the
+ * average **per session**, times the sessions this week is aiming for. Calibrating
+ * on whole weeks would carry the old routine over: a few weeks of five sessions
+ * would ask a three-session week for five sessions' worth of sets. Weeks with no
+ * history fall back to `fallback`.
+ */
+function atTarget(history, week, measure, fallback) {
+    const sessions = history.reduce((sum, w) => sum + w.sessions, 0);
+    if (!sessions) return fallback;
+    return (history.reduce((sum, w) => sum + measure(w), 0) / sessions) * week.target;
+}
+
 // --- The pool ------------------------------------------------------------
 
 /**
@@ -87,30 +102,44 @@ const POOL = [
         build: () => ({ target: 1 }),
     },
     {
+        // Twice in a week, so only for a muscle the plan trains in two or more sessions
+        // (a push/pull/legs split trains each once, and can't ask for twice). With no plan
+        // to go by, anything is possible.
         key: 'muscle-sessions',
-        build: (random, context) => ({ muscle: pick(random, context.muscles), target: 2 }),
+        build: (random, context) => {
+            const trainedTwice = context.plan.frequency.size
+                ? context.muscles.filter((muscle) => (context.plan.frequency.get(muscle) || 0) >= 2)
+                : context.muscles;
+            if (!trainedTwice.length) return { target: 0 };
+            return { muscle: pick(random, trainedTwice), target: 2 };
+        },
     },
     {
         key: 'muscle-sets',
         build: (random, context) => {
             const muscle = pick(random, context.muscles);
-            const planned = weeklyTargets().get(muscle) || 0;
-            return { muscle, target: planned || roundUpTo(average(context.history.map((w) => w.muscleSets.get(muscle) || 0), 8), 2) };
+            const planned = context.plan.targets.get(muscle) || 0;
+            const usual = atTarget(context.history, context.week, (w) => w.muscleSets.get(muscle) || 0, 8);
+            return { muscle, target: planned || roundUpTo(usual, 2) };
         },
     },
     {
         key: 'sets',
-        build: (_random, context) => ({
-            target: roundUpTo(average(context.history.map((week) => week.sets), 30) * STRETCH, 5),
-        }),
+        build: (_random, context) => {
+            // With no history, the plan's own sets for a week (else a middling 30).
+            const planned = [...context.plan.targets.values()].reduce((sum, n) => sum + n, 0);
+            const usual = atTarget(context.history, context.week, (w) => w.sets, planned || 30);
+            return { target: roundUpTo(usual * STRETCH, 5) };
+        },
     },
     {
         key: 'tonnage',
         build: (_random, context) => ({
-            target: roundUpTo(average(context.history.map((week) => week.tonnageKg), 8000) * STRETCH, 250),
+            target: roundUpTo(atTarget(context.history, context.week, (w) => w.tonnageKg, 8000) * STRETCH, 250),
         }),
     },
     {
+        // Three muscle groups in a week; a one-session week of a split can't, but a week of two sessions can.
         key: 'breadth',
         build: () => ({ target: 3 }),
     },
@@ -118,9 +147,10 @@ const POOL = [
 
 /**
  * The three quests for a week. Pure and deterministic — `sealQuests` is what
- * decides they count; this only decides what they are.
+ * decides they count; this only decides what they are. `plan` is `{ targets,
+ * frequency }` from volume.js (`weeklyPlan()`), passed in so this stays pure.
  */
-export function generateQuests(weekId, weeks) {
+export function generateQuests(weekId, weeks, plan = NO_PLAN) {
     const week = weeks.find((candidate) => candidate.weekId === weekId);
     if (!week) return [];
 
@@ -129,8 +159,8 @@ export function generateQuests(weekId, weeks) {
 
     // Prefer muscles the plan actually programmes; fall back to the full list
     // so a user with no templates still gets a sensible draw.
-    const planned = [...weeklyTargets().keys()].filter((muscle) => MUSCLE_GROUPS.includes(muscle));
-    const context = { week, history, muscles: planned.length ? planned : MUSCLE_GROUPS };
+    const planned = [...plan.targets.keys()].filter((muscle) => MUSCLE_GROUPS.includes(muscle));
+    const context = { week, history, plan, muscles: planned.length ? planned : MUSCLE_GROUPS };
 
     const remaining = [...POOL];
     const quests = [];
