@@ -86,10 +86,13 @@ export function totalOf(items) {
 
 // --- Categories -----------------------------------------------------------------------
 
+import { makeCategories } from '../life/categories.js';
+
 /**
  * The categories offered as one-tap choices, in the order they are listed in. A
  * category is free text, though: type any other name and it becomes a group the
- * first time something is filed under it. These are only the usual ones.
+ * first time something is filed under it. These are only the usual ones. (The rules
+ * themselves are shared with the Wardrobe: life/categories.js.)
  */
 export const PRESET_CATEGORIES = ['Perfumes', 'Clothing', 'Shoes', 'Accessories', 'Tech', 'Home'];
 
@@ -98,58 +101,16 @@ export const NO_CATEGORY = 'Other';
 
 export const MAX_CATEGORY = 30;
 
-const keyOf = (category) => category.toLowerCase();
+const categories = makeCategories({ presets: PRESET_CATEGORIES, noneLabel: NO_CATEGORY, max: MAX_CATEGORY });
+
+export const { canonicalCategory, categoriesInUse, categoryChoices } = categories;
 
 /**
- * A category as it should be stored. Spacing is tidied; a name that matches a
- * preset takes the preset's spelling, else one already in use (so "shoes", "Shoes"
- * and "SHOES" are one group), else what was typed with a capital first letter. Blank means none: ''.
- */
-export function canonicalCategory(text, existing = []) {
-    const typed = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_CATEGORY).trim();
-    if (!typed) return '';
-    const match = [...PRESET_CATEGORIES, ...existing].find((known) => keyOf(known) === keyOf(typed));
-    // A name of your own starts with a capital, so a group heading never reads "books".
-    return match ?? typed.charAt(0).toUpperCase() + typed.slice(1);
-}
-
-/** The categories in use, one spelling each, oldest item deciding (so a group's label is stable). */
-export function categoriesInUse(items) {
-    const seen = new Map();
-    for (const item of [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
-        const category = canonicalCategory(item.category);
-        if (category && !seen.has(keyOf(category))) seen.set(keyOf(category), category);
-    }
-    return [...seen.values()];
-}
-
-/** What to offer as one-tap choices: the presets, then any other category in use. */
-export function categoryChoices(items) {
-    const used = categoriesInUse(items);
-    const presetKeys = new Set(PRESET_CATEGORIES.map(keyOf));
-    const extra = used.filter((category) => !presetKeys.has(keyOf(category))).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    return [...PRESET_CATEGORIES, ...extra];
-}
-
-/**
- * Wanted items as groups, one per category: `{ key, label, items, ...totalOf }`.
- * The usual categories come first in their own order, any others after them
- * alphabetically, and items with no category last, as "Other". Items keep the
- * order they came in (`splitItems` has already put top picks first).
+ * Wanted items as groups, one per category: `{ key, label, items, ...totalOf }`. The
+ * usual categories come first in their own order, any others after them
+ * alphabetically, and items with no category last, as "Other". Items keep the order
+ * they came in (`splitItems` has already put top picks first).
  */
 export function groupByCategory(items) {
-    const labels = new Map(categoriesInUse(items).map((category) => [keyOf(category), category]));
-    const groups = new Map();
-    for (const item of items) {
-        const category = canonicalCategory(item.category);
-        const key = category ? keyOf(category) : '';
-        if (!groups.has(key)) groups.set(key, { key, label: key ? labels.get(key) : NO_CATEGORY, items: [] });
-        groups.get(key).items.push(item);
-    }
-
-    const presetIndex = (key) => PRESET_CATEGORIES.findIndex((preset) => keyOf(preset) === key);
-    const rank = (group) => (group.key === '' ? 2 : presetIndex(group.key) !== -1 ? 0 : 1);
-    return [...groups.values()]
-        .sort((a, b) => rank(a) - rank(b) || (rank(a) === 0 ? presetIndex(a.key) - presetIndex(b.key) : a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })))
-        .map((group) => ({ ...group, ...totalOf(group.items) }));
+    return categories.groupByCategory(items).map((group) => ({ ...group, ...totalOf(group.items) }));
 }

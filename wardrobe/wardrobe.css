@@ -1,0 +1,345 @@
+/* Wardrobe section. Tokens, .btn, .form-input, .life-empty, .segmented and
+   .life-eyebrow come from life/life.css and gym/gym.css. */
+
+.wardrobe-switch {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.wardrobe-switch button {
+    flex: 1;
+}
+
+.ward-filters {
+    margin-bottom: 4px;
+}
+
+.ward-search {
+    width: 100%;
+}
+
+.ward-summary {
+    margin: 12px 4px 0;
+    font-size: var(--text-s);
+    font-weight: 650;
+    color: var(--text-secondary);
+}
+
+.ward-none {
+    margin: 12px 4px;
+}
+
+/* --- A category and its grid of items ----------------------------------------- */
+
+.ward-category {
+    margin-top: 18px;
+}
+
+.ward-category-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 4px 10px;
+}
+
+.ward-category-title {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+.ward-category-count {
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--text-secondary);
+}
+
+.ward-category-head .icon-btn {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    color: var(--text-secondary);
+}
+
+.ward-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 10px;
+}
+
+.ward-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    text-align: left;
+    color: var(--text-primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ward-tile:active {
+    opacity: 0.75;
+}
+
+/* An item's square: its photo, or its first letter on a tint of the section's colour. */
+.ward-swatch {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 14px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--primary) 12%, var(--bg-secondary));
+}
+
+.ward-swatch img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ward-swatch.empty {
+    display: grid;
+    place-items: center;
+}
+
+.ward-initial {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.ward-tile-name {
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.25;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow-wrap: anywhere;
+}
+
+.ward-tile-sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- The item sheet -------------------------------------------------------------- */
+
+.ward-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ward-photo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.ward-photo {
+    position: relative;
+    width: 168px;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px dashed color-mix(in srgb, var(--primary) 40%, var(--border));
+    border-radius: 20px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--primary) 8%, var(--bg-secondary));
+    color: var(--primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ward-photo:has(img) {
+    border-style: solid;
+    border-color: transparent;
+}
+
+.ward-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ward-photo-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 100%;
+    font-size: 14px;
+    font-weight: 650;
+    /* 14px text on the tint needs the stronger text colour (the section colour is 3.9:1 there in light mode). */
+    color: var(--text-secondary);
+}
+
+.ward-photo-empty svg {
+    color: var(--primary);
+}
+
+.ward-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.ward-category-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ward-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ward-chip {
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--bg-raised);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.ward-chip.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--on-accent);
+}
+
+/* --- Outfits ---------------------------------------------------------------------- */
+
+.ward-outfits {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+}
+
+.ward-outfit {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    box-shadow: var(--card-shadow);
+    font: inherit;
+    text-align: left;
+    color: var(--text-primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ward-outfit:active {
+    opacity: 0.75;
+}
+
+.ward-mosaic {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+
+.ward-swatch.mosaic {
+    border-radius: 10px;
+}
+
+.ward-swatch.mosaic .ward-initial {
+    font-size: 22px;
+}
+
+.ward-swatch.blank {
+    aspect-ratio: 1;
+    background: var(--bg-secondary);
+}
+
+.ward-outfit-name {
+    padding: 0 2px;
+    font-family: var(--font-display);
+    font-size: var(--display-s);
+    font-weight: 600;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ward-outfit-sub {
+    padding: 0 2px 2px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* Picking items for an outfit: the same grid, with a check on what's chosen. */
+.ward-pick-bar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.ward-pick-count {
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--primary);
+}
+
+.ward-pick-head {
+    margin: 0 0 8px;
+}
+
+.ward-grid.pick {
+    gap: 10px 8px;
+}
+
+.ward-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: none;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--on-accent);
+}
+
+.ward-tile.picked .ward-check {
+    display: grid;
+}
+
+.ward-tile.picked .ward-swatch {
+    box-shadow: 0 0 0 3px var(--primary);
+}

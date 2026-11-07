@@ -3,6 +3,8 @@ import { sound } from '../life/sound.js';
 import { lifeDb } from '../life/db.js';
 import { icon } from '../life/icons.js';
 import { state, loadItems, addItem, updateItem, setBought, deleteItem } from './store.js';
+import { addFromWishlist, wardrobeItemFor } from '../wardrobe/store.js';
+import { isWearable } from '../wardrobe/organize.js';
 import { parsePrice, formatPrice, cleanLink, linkHost, splitItems, totalOf, groupByCategory, categoryChoices, MAX_CATEGORY } from './organize.js';
 
 /**
@@ -211,7 +213,10 @@ function itemRow(item) {
 
 // --- The item sheet ---------------------------------------------------------------
 
-function openItemSheet(item) {
+async function openItemSheet(item) {
+    // A bought thing you wear can go into the wardrobe; once it has, the sheet says so instead.
+    const wearable = Boolean(item.boughtAt) && isWearable(item.category);
+    let inWardrobe = wearable ? await wardrobeItemFor(item).catch(() => null) : null;
     const name = el('input', { class: 'form-input', type: 'text', maxlength: 80, value: item.name, autocomplete: 'off', 'aria-label': 'Name' });
     const price = el('input', {
         class: 'form-input',
@@ -274,6 +279,39 @@ function openItemSheet(item) {
     const open = el('a', { class: 'link-btn wish-open', target: '_blank', rel: 'noopener noreferrer', text: 'Open link', hidden: !item.link });
     if (item.link) open.href = item.link;
 
+    // "Add to your wardrobe" on a bought item, then "In your wardrobe" (which opens it) so it can't be added twice.
+    const wardrobeSlot = el('div', { class: 'wish-wardrobe' });
+    const drawWardrobe = () => {
+        if (!wearable) return;
+        wardrobeSlot.replaceChildren(
+            inWardrobe
+                ? el('a', { class: 'link-btn', href: '#/wardrobe', text: 'In your wardrobe', onclick: () => closeModal('wish-modal') })
+                : el('button', {
+                    class: 'btn btn-outline btn-block',
+                    type: 'button',
+                    text: 'Add to your wardrobe',
+                    onclick: async (event) => {
+                        const button = event.currentTarget;
+                        button.disabled = true;
+                        try {
+                            inWardrobe = await addFromWishlist(item);
+                            // Keep the link on the copy this sheet will save, or Save would write it away again.
+                            item = { ...item, wardrobeId: inWardrobe.id };
+                            await loadItems();
+                            refreshList();
+                            toast('Added to your wardrobe');
+                        } catch (error) {
+                            console.error(error);
+                            button.disabled = false;
+                            toast('Couldn’t add that');
+                        }
+                        drawWardrobe();
+                    },
+                }),
+        );
+    };
+    drawWardrobe();
+
     const submit = async (event) => {
         event.preventDefault();
         if (!name.value.trim()) {
@@ -324,6 +362,7 @@ function openItemSheet(item) {
             el('label', { class: 'stepper-field' }, [el('span', { class: 'stepper-label', text: 'Note' }), note]),
             el('label', { class: 'life-check' }, [starred, el('span', { text: 'Top pick' })]),
             el('label', { class: 'life-check' }, [bought, el('span', { text: 'Bought' })]),
+            wearable ? wardrobeSlot : null,
             el('div', { class: 'modal-actions' }, [
                 el('button', { class: 'btn btn-danger', type: 'button', text: 'Delete', onclick: remove }),
                 el('button', { class: 'btn btn-primary', type: 'submit', text: 'Save' }),

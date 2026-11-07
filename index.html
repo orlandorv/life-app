@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="journal/journal.css">
     <link rel="stylesheet" href="inbox/inbox.css">
     <link rel="stylesheet" href="wishlist/wishlist.css">
+    <link rel="stylesheet" href="wardrobe/wardrobe.css">
     <link rel="stylesheet" href="life/game.css">
 </head>
 <body>
@@ -280,6 +281,39 @@
                 <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
             </div>
             <div id="game-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Wardrobe section: Items and Outfits tabs -->
+    <div id="wardrobe-section" hidden>
+        <a class="life-back" href="#/"><span data-icon="back" data-icon-size="24"></span>Today</a>
+        <main class="life-main">
+            <header class="tab-header">
+                <h1>Wardrobe</h1>
+            </header>
+            <div id="wardrobe-body"></div>
+        </main>
+    </div>
+
+    <!-- Modal: a wardrobe item (photo, details), filled in by wardrobe.js -->
+    <div id="ward-item-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="ward-item-title">Add item</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="ward-item-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal: an outfit (name, pick its items), filled in by wardrobe.js -->
+    <div id="ward-outfit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="ward-outfit-title">New outfit</h2>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="ward-outfit-body" class="modal-body"></div>
         </div>
     </div>
 

@@ -151,6 +151,8 @@ function importMessage(info) {
         [counts.wishlist, 'wishlist item'],
         [counts.books, 'book'],
         [counts.screens, 'movie or series', 'movies and series'],
+        [counts.wardrobe, 'wardrobe item'],
+        [counts.outfits, 'outfit'],
     ]
         .filter(([n]) => n > 0)
         .map(([n, one, many]) => `${n} ${n === 1 ? one : many ?? `${one}s`}`);

@@ -30,6 +30,7 @@ import { MOODS, SCALE, moodLabel, energyLabel, entryPreview } from '../journal/i
 import { state as inboxState, loadNotes } from '../inbox/store.js';
 import { sortNotes } from '../inbox/organize.js';
 import { state as wishState, loadItems as loadWishlist } from '../wishlist/store.js';
+import { state as wardState, loadWardrobe } from '../wardrobe/store.js';
 import { splitItems, totalOf, formatPrice } from '../wishlist/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
 import { loadGame, gameCard, currentGame, openGameSheet, paintDayLine } from './game.js';
@@ -93,6 +94,7 @@ export async function renderHome() {
             optional(loadJournal()),
             optional(loadNotes()),
             optional(loadWishlist()),
+            optional(loadWardrobe()),
             optional(loadBooks()),
             optional(loadScreens()),
             optional(loadGame(today)),
@@ -127,6 +129,7 @@ export async function renderHome() {
             tasksBlock(today),
             inboxBlock(),
             wishlistBlock(),
+            wardrobeBlock(),
         ]),
     );
     paintDayLine();
@@ -362,6 +365,23 @@ function wishlistBlock() {
         arc: { fraction: 0, label: String(wanted.length) },
         line: [priced ? formatPrice(total) : null, `${wanted[0].starred ? 'top pick' : 'latest'}: ${wanted[0].name}`].filter(Boolean).join(' · '),
         act: { label: 'Add', href: '#/wishlist/new' },
+        quietAct: true,
+    });
+}
+
+// --- Wardrobe -----------------------------------------------------------------
+
+/** How many items and outfits there are, with a quick way to add one. */
+function wardrobeBlock() {
+    const items = wardState.items.length;
+    const outfits = wardState.outfits.length;
+    if (!items) {
+        return room('wardrobe', 'Wardrobe', { arc: { fraction: 0, label: '0' }, line: 'What you own, and outfits from it', act: { label: 'Add', href: '#/wardrobe/new' } });
+    }
+    return room('wardrobe', 'Wardrobe', {
+        arc: { fraction: 0, label: String(items) },
+        line: `${items} ${items === 1 ? 'item' : 'items'} · ${outfits} ${outfits === 1 ? 'outfit' : 'outfits'}`,
+        act: { label: 'Add', href: '#/wardrobe/new' },
         quietAct: true,
     });
 }

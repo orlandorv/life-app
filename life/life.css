@@ -35,6 +35,7 @@
     --journal: #4F6478;
     --inbox: #66692A;
     --wishlist: #8A3FA0;
+    --wardrobe: #437A1C;
 
     --primary: var(--ink);
     /* Text on a --primary / --success / --danger fill. White in light mode;
@@ -138,6 +139,7 @@
         --journal: #9EB3C7;
         --inbox: #C4C77F;
         --wishlist: #CC95DB;
+        --wardrobe: #A0D66B;
 
         --on-accent: #131117;
         --success: #72B98A;
@@ -172,6 +174,7 @@ body[data-section="tasks"] { --primary: var(--tasks); }
 body[data-section="journal"] { --primary: var(--journal); }
 body[data-section="inbox"] { --primary: var(--inbox); }
 body[data-section="wishlist"] { --primary: var(--wishlist); }
+body[data-section="wardrobe"] { --primary: var(--wardrobe); }
 
 html {
     -webkit-text-size-adjust: 100%;
@@ -537,6 +540,7 @@ body[data-daypart="night"] { --wash: var(--wash-night); }
 .life-room[data-tone="journal"] { --tone: var(--journal); }
 .life-room[data-tone="inbox"] { --tone: var(--inbox); }
 .life-room[data-tone="wishlist"] { --tone: var(--wishlist); }
+.life-room[data-tone="wardrobe"] { --tone: var(--wardrobe); }
 
 .life-room-head {
     display: flex;

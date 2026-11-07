@@ -12,6 +12,7 @@ import { enterTasks } from '../tasks/tasks.js';
 import { enterJournal } from '../journal/journal.js';
 import { enterInbox } from '../inbox/inbox.js';
 import { enterWishlist } from '../wishlist/wishlist.js';
+import { enterWardrobe } from '../wardrobe/wardrobe.js';
 import { initBackup, renderBackupBanner } from './backup.js';
 import { initGame } from './game.js';
 import { initSound } from './sound.js';
@@ -47,6 +48,7 @@ const SECTIONS = [
     { id: 'journal', enter: () => gymBoot.then(() => enterJournal()) },
     { id: 'inbox', enter: enterInbox },
     { id: 'wishlist', enter: enterWishlist },
+    { id: 'wardrobe', enter: enterWardrobe },
 ];
 
 let gymReady = false;

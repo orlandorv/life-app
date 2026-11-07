@@ -26,9 +26,12 @@ const SAMPLE = {
     journalEntries: { day: '2026-11-01', mood: 4, energy: null, note: 'Good session', dreams: 'Flying', morning: 'Slow start', afternoon: 'Gym', night: 'Early bed' },
     notes: { id: 'i1', text: 'Try a deload #gym', createdAt: '2026-10-01T10:00:00.000Z', pinned: true },
     books: { id: 'b1', title: 'Atomic Habits', author: 'James Clear', topic: 'Self-improvement', note: 'From Sam', link: 'https://shop.example/b', addedAt: '2026-10-01T10:00:00.000Z', readAt: '2026-10-20T10:00:00.000Z' },
+    wardrobe: { id: 'c1', name: 'Linen shirt', category: 'Tops', colour: 'Navy', brand: 'Uniqlo', size: 'M', price: 35, note: 'Summer', createdAt: '2026-10-01T10:00:00.000Z' },
+    wardrobePhotos: { id: 'c1', data: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==' },
+    outfits: { id: 'o1', name: 'Dinner', itemIds: ['c1'], note: 'Smart', createdAt: '2026-10-02T10:00:00.000Z' },
     taskLogs: { id: 't1|2026-10-20', taskId: 't1', day: '2026-10-20' },
     screens: { id: 's1', title: 'Severance', kind: 'series', genre: 'Thriller', where: 'Apple TV', progress: 'S2 E4', note: 'From Sam', link: 'https://shop.example/s', addedAt: '2026-10-01T10:00:00.000Z', watchedAt: '2026-10-20T10:00:00.000Z' },
-    wishlist: { id: 'w1', name: 'Headphones', price: 129.99, category: 'Tech', link: 'https://shop.example/h', note: 'Black', starred: true, boughtAt: '2026-10-20T10:00:00.000Z', createdAt: '2026-10-01T10:00:00.000Z' },
+    wishlist: { id: 'w1', name: 'Headphones', price: 129.99, category: 'Tech', link: 'https://shop.example/h', note: 'Black', starred: true, boughtAt: '2026-10-20T10:00:00.000Z', createdAt: '2026-10-01T10:00:00.000Z', wardrobeId: 'c1' },
     savedMeals: { id: 'm1', name: 'Usual breakfast', items: [{ name: 'Oats', kcal: 150, proteinG: 5, carbsG: 27, fatG: 3 }], createdAt: '2026-10-01T10:00:00.000Z' },
     settings: { key: 'someSetting', value: 1 },
 };
@@ -110,6 +113,8 @@ test('summarize counts what the import preview shows', () => {
     assert.equal(counts.wishlist, 1);
     assert.equal(counts.books, 1);
     assert.equal(counts.screens, 1);
+    assert.equal(counts.wardrobe, 1);
+    assert.equal(counts.outfits, 1);
 });
 
 test('the backup reminder: needs data, then waits NUDGE_AFTER_DAYS from the last backup', () => {
@@ -124,4 +129,22 @@ test('the backup reminder: needs data, then waits NUDGE_AFTER_DAYS from the last
 test('format constants are the strings the files on disk already use', () => {
     assert.equal(LIFE_FORMAT, 'life-backup');
     assert.equal(GYM_FORMAT, 'gym-tracker-backup');
+});
+
+test('wardrobe rows: photos must be image data of a sensible size, prices positive, outfits lists of ids', () => {
+    const bad = (store, row) => assert.throws(() => inspectBackup(file(life({ [store]: [row] }))), /damaged/, `${store} ${JSON.stringify(row).slice(0, 60)}`);
+    const { price, note, ...plainItem } = SAMPLE.wardrobe;
+    assert.doesNotThrow(() => inspectBackup(file(life({ wardrobe: [plainItem] }))), 'an item with only its required fields');
+    for (const p of [0, -5, NaN, '35']) bad('wardrobe', { ...SAMPLE.wardrobe, price: p });
+    bad('wardrobe', { ...SAMPLE.wardrobe, colour: 5 });
+    bad('wardrobe', { ...SAMPLE.wardrobe, name: '' });
+    for (const data of ['', 'https://example.com/a.jpg', 'data:text/html;base64,PGh0bWw+', 5, `data:image/jpeg;base64,${'A'.repeat(600_000)}`]) bad('wardrobePhotos', { id: 'c1', data });
+    bad('wardrobePhotos', { data: SAMPLE.wardrobePhotos.data });
+    bad('outfits', { ...SAMPLE.outfits, itemIds: 'c1' });
+    bad('outfits', { ...SAMPLE.outfits, itemIds: ['c1', 7] });
+    bad('outfits', { ...SAMPLE.outfits, note: 3 });
+    assert.doesNotThrow(() => inspectBackup(file(life({ outfits: [{ ...SAMPLE.outfits, itemIds: ['gone'] }] }))), 'a missing item is dropped on read, not refused');
+    bad('wishlist', { ...SAMPLE.wishlist, wardrobeId: 4 });
+    const { wardrobeId, ...before } = SAMPLE.wishlist;
+    assert.doesNotThrow(() => inspectBackup(file(life({ wishlist: [before] }))), 'a wishlist item from before the link existed');
 });

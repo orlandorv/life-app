@@ -11,6 +11,7 @@
 import { isTimeOfDay } from '../habits/times.js';
 import { isValidRepeat } from '../tasks/recurrence.js';
 import { isValidSavedMeal } from '../nutrition/saved-meals.js';
+import { isPhotoData } from '../wardrobe/organize.js';
 
 export const LIFE_FORMAT = 'life-backup';
 export const LIFE_VERSION = 1;
@@ -33,6 +34,9 @@ export const LIFE_STORES = {
     books: 'id',
     screens: 'id',
     taskLogs: 'id',
+    wardrobe: 'id',
+    wardrobePhotos: 'id',
+    outfits: 'id',
     settings: 'key',
 };
 
@@ -120,6 +124,14 @@ const ROW_CHECKS = {
         isOptionalText(row.note) &&
         isOptionalText(row.link) &&
         (row.readAt === undefined || isText(row.readAt)),
+    wardrobe: (row) =>
+        isText(row.id) &&
+        isText(row.name) &&
+        isText(row.createdAt) &&
+        ['category', 'colour', 'brand', 'size', 'note'].every((field) => isOptionalText(row[field])) &&
+        (row.price === undefined || (Number.isFinite(row.price) && row.price > 0)),
+    wardrobePhotos: (row) => isText(row.id) && isPhotoData(row.data),
+    outfits: (row) => isText(row.id) && isText(row.name) && isText(row.createdAt) && Array.isArray(row.itemIds) && row.itemIds.every(isText) && isOptionalText(row.note),
     taskLogs: (row) => isText(row.id) && isText(row.taskId) && DAY.test(row.day),
     screens: (row) =>
         isText(row.id) &&
@@ -141,7 +153,8 @@ const ROW_CHECKS = {
         isOptionalText(row.link) &&
         isOptionalText(row.note) &&
         (row.starred === undefined || isBoolean(row.starred)) &&
-        (row.boughtAt === undefined || isText(row.boughtAt)),
+        (row.boughtAt === undefined || isText(row.boughtAt)) &&
+        isOptionalText(row.wardrobeId),
 };
 
 function checkLife(life) {
@@ -221,6 +234,8 @@ export function summarize(info) {
         wishlist: count(info.life?.wishlist),
         books: count(info.life?.books),
         screens: count(info.life?.screens),
+        wardrobe: count(info.life?.wardrobe),
+        outfits: count(info.life?.outfits),
     };
 }
 

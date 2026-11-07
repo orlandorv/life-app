@@ -13,7 +13,7 @@ import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 import { standAsideForUpgrade } from './storage-errors.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 13;
+const DB_VERSION = 14;
 
 
 /** Fired on `window` after a write to something the game scores (never from an import, so a restore can't celebrate). */
@@ -156,6 +156,13 @@ class LifeDatabase {
                     const store = db.createObjectStore('taskLogs', { keyPath: 'id' });
                     store.createIndex('day', 'day', { unique: false });
                 }
+
+                // v14 — Wardrobe: the items, one small photo each (`{ id: itemId, data }`, a
+                // data URL kept apart so listing items never carries photos) and outfits
+                // (a name and a list of item ids).
+                for (const name of ['wardrobe', 'wardrobePhotos', 'outfits']) {
+                    if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, { keyPath: 'id' });
+                }
             };
         }).catch((error) => {
             this.opening = null;
@@ -212,6 +219,23 @@ class LifeDatabase {
         const names = [...new Set(writes.map(([name]) => name))];
         return this._run(names, 'readwrite', (tx) => {
             for (const [name, row] of writes) tx.objectStore(name).put(row);
+        }).then((result) => {
+            announce(names);
+            return result;
+        });
+    }
+
+    /**
+     * Puts (`[store, row]`) and deletes (`[store, key]`), possibly across stores, in one
+     * transaction: all of them or none. For changes that must not be left half done, such
+     * as deleting a wardrobe item together with its photo and its place in every outfit.
+     */
+    changeAll(puts, deletes = []) {
+        const names = [...new Set([...puts, ...deletes].map(([name]) => name))];
+        if (!names.length) return Promise.resolve();
+        return this._run(names, 'readwrite', (tx) => {
+            for (const [name, row] of puts) tx.objectStore(name).put(row);
+            for (const [name, key] of deletes) tx.objectStore(name).delete(key);
         }).then((result) => {
             announce(names);
             return result;
