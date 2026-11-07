@@ -413,6 +413,44 @@ body.modal-open {
     letter-spacing: -0.6px;
 }
 
+/* "Good *morning*": the part of the day in New York italic. */
+.life-greeting em {
+    font-style: italic;
+    font-weight: 500;
+}
+
+/* One quiet line under the greeting that reads the day (dayLine() in dial.js). */
+.life-dayline {
+    margin-top: 6px;
+    font-size: var(--text-m);
+    color: var(--text-secondary);
+}
+
+.life-dayline:empty {
+    display: none;
+}
+
+/* The light of the hour behind the top of Today: dawn, gold, dusk or night. */
+body[data-daypart="morning"] { --wash: var(--wash-morning); }
+body[data-daypart="afternoon"] { --wash: var(--wash-afternoon); }
+body[data-daypart="evening"] { --wash: var(--wash-evening); }
+body[data-daypart="night"] { --wash: var(--wash-night); }
+
+.life-home {
+    position: relative;
+    isolation: isolate;
+}
+
+.life-home::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 560px;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(130% 75% at 50% 0%, var(--wash), transparent 72%);
+}
+
 .life-home-header .icon-btn {
     color: var(--text-primary);
     background: var(--bg-raised);

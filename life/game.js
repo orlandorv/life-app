@@ -6,10 +6,14 @@ import { icon } from './icons.js';
 import { localDayId, addDays, weekStartId, daysBetween } from './dates.js';
 import { computeGame, saveLedger } from './game-inputs.js';
 import { withGoal, WEIGHTS, BONUS, MAX_BASE_XP, GOOD_AT, FREEZE_EVERY, MAX_FREEZES } from './game-rules.js';
+import { svg } from './svg.js';
+import { arcPath, segments, hourAngle, polar, daypart, dayLine } from './dial.js';
 
 /**
- * The game, as you see it: one card at the top of Today (a level bar, a streak,
- * and today's goals filling a daily bar) and a sheet behind it with the detail.
+ * The game, as you see it: the Day Dial at the top of Today (a 24-hour rim with
+ * the sun or moon on it, today's goals as arcs in their sections' colours, and
+ * the level as the gold inner ring around a big serif number), a streak, and a
+ * sheet behind it with the detail.
  * The numbers all come from game-rules.js, derived from what the sections have
  * recorded; this file only draws them and writes the one thing you choose
  * (which goals count).
@@ -84,34 +88,123 @@ function chip(id, state, pop = new Set()) {
     ]);
 }
 
-/** The card for the top of Today, or null when no goal is switched on. */
+// --- The Day Dial ----------------------------------------------------------------------
+
+const C = 150; // the dial is drawn in a 300 × 300 box
+const RIM = 141;
+const GOAL_R = 112;
+const LEVEL_R = 88;
+
+/**
+ * An arc that fills from its start: drawn as one path with `pathLength="1"`, so
+ * how much shows is just `stroke-dashoffset` (1 = none, 0 = all), which CSS can
+ * transition. A part with nothing in it is hidden rather than drawn as a dot.
+ */
+function fillArc(d, fraction, attrs) {
+    const f = Math.max(0, Math.min(1, fraction));
+    return svg('path', {
+        d,
+        pathLength: 1,
+        'stroke-dasharray': '1 1',
+        style: `stroke-dashoffset:${(1 - f).toFixed(4)}`,
+        ...attrs,
+        class: `life-dial-fill${f > 0 ? '' : ' empty'}`,
+    });
+}
+
+/** The rim: an hour tick every 15°, noon at the top; hours already gone are drawn stronger. */
+function rim(root, hour) {
+    for (let h = 0; h < 24; h += 1) {
+        const deg = hourAngle(h);
+        const major = h % 6 === 0;
+        const [x1, y1] = polar(C, C, RIM, deg);
+        const [x2, y2] = polar(C, C, RIM - (major ? 10 : 5), deg);
+        root.append(svg('line', { x1, y1, x2, y2, class: `life-dial-tick${major ? ' major' : ''}${h <= hour ? ' past' : ''}` }));
+    }
+    // Now: the sun by day, a crescent moon by night.
+    const [x, y] = polar(C, C, RIM - 4, hourAngle(hour));
+    const g = svg('g', { class: 'life-dial-now' });
+    if (hour >= 6 && hour < 19) {
+        g.append(svg('circle', { cx: x, cy: y, r: 11, class: 'life-dial-sun-halo' }), svg('circle', { cx: x, cy: y, r: 6.5, class: 'life-dial-sun' }));
+    } else {
+        g.append(svg('circle', { cx: x, cy: y, r: 7, class: 'life-dial-moon' }), svg('circle', { cx: x + 3.6, cy: y - 2.6, r: 6, class: 'life-dial-moon-cut' }));
+    }
+    root.append(g);
+}
+
+function dialSvg(state, hour) {
+    const { game } = state;
+    const day = game.today;
+    const { level, into, span } = game.level;
+    const root = svg('svg', { viewBox: '0 0 300 300', class: 'life-dial-svg', 'aria-hidden': 'true', focusable: 'false' });
+
+    rim(root, hour);
+
+    // Today's goals: one arc each, as long as it is worth, filled by how much is done.
+    if (day.goals.length) {
+        segments(day.goals.map((goal) => goal.weight), { gap: day.goals.length > 1 ? 9 : 0 }).forEach(({ from, to }, i) => {
+            const goal = day.goals[i];
+            const d = arcPath(C, C, GOAL_R, from, to);
+            root.append(svg('path', { d, class: 'life-dial-track', 'data-goal': goal.id }), fillArc(d, goal.fraction, { 'data-goal': goal.id }));
+        });
+    } else {
+        root.append(svg('circle', { cx: C, cy: C, r: GOAL_R, class: 'life-dial-track rest' }));
+    }
+
+    // The level: the gold inner ring, and a dotted halo once the day is good.
+    const levelD = arcPath(C, C, LEVEL_R, 0, 360);
+    root.append(svg('circle', { cx: C, cy: C, r: LEVEL_R, class: 'life-dial-level-track' }), fillArc(levelD, into / span, { 'data-ring': 'level' }));
+    if (day.good) root.append(svg('circle', { cx: C, cy: C, r: (GOAL_R + LEVEL_R) / 2 + 1, class: 'life-dial-seal' }));
+
+    root.append(
+        svg('text', { x: C, y: C - 32, class: 'life-dial-eyebrow' }, 'LEVEL'),
+        svg('text', { x: C, y: C + 22, class: 'life-dial-level' }, String(level)),
+        svg('text', { x: C, y: C + 47, class: 'life-dial-xp' }, `${into.toLocaleString()} / ${span.toLocaleString()} XP`),
+    );
+    return root;
+}
+
+/** What the dial says to a screen reader, in one sentence. */
+function dialLabel(game) {
+    const day = game.today;
+    const parts = [`Level ${game.level.level}, ${game.level.into} of ${game.level.span} XP.`];
+    if (day.applies) {
+        const goals = day.goals.map((goal) => `${GOALS[goal.id].label} ${goal.of ? `${goal.done} of ${goal.of}` : goal.fraction >= 1 ? 'done' : 'not yet'}`);
+        parts.push(`Today ${day.base} of ${MAX_BASE_XP}${day.good ? ', a good day' : ''}: ${goals.join(', ')}.`);
+    } else {
+        parts.push('Nothing is due today.');
+    }
+    parts.push(game.streak ? `${game.streak}-day streak.` : 'No streak yet.');
+    return `${parts.join(' ')} Opens your progress.`;
+}
+
+/** The dial for the top of Today, or null when no goal is switched on. */
 export function gameCard(state = current, pop = new Set()) {
     if (!state?.game.today) return null;
     const { game, ledger } = state;
     const day = game.today;
-    const { level, into, span } = game.level;
+    const now = new Date();
+    const hour = now.getHours() + now.getMinutes() / 60;
     const chips = [...DAILY.filter((id) => day.goals.some((g) => g.id === id)), ...(ledger.goals.workout && goalOnToday(ledger.goals.workout, state.today) ? ['workout'] : [])];
 
-    return el('section', { class: 'life-game life-surface', 'aria-label': 'Your progress' }, [
-        el('button', { class: 'life-game-main', type: 'button', onclick: () => openGameSheet() }, [
-            el('span', { class: 'life-game-head' }, [
-                el('span', { class: 'life-chip life-game-chip-icon' }, [icon('level', { size: 19 })]),
-                el('span', { class: 'life-game-level' }, [`Level ${level}`]),
-                el('span', { class: `life-game-streak${game.streak ? '' : ' none'}` }, [
-                    icon('flame', { size: 16 }),
-                    game.streak ? unit(game.streak, 'day') : 'No streak yet',
-                ]),
-            ]),
-            bar(into / span, `Level progress: ${into} of ${span} XP`),
-            el('span', { class: 'life-game-xp', text: `${into.toLocaleString()} / ${span.toLocaleString()} XP` }),
-            el('span', { class: 'life-game-today' }, [
-                el('span', { class: 'life-game-today-label', text: 'Today' }),
-                el('span', { class: 'life-game-today-score', text: day.applies ? `${day.base} / ${MAX_BASE_XP}${day.good ? ' · Good day' : ''}` : 'Nothing due' }),
-            ]),
-            day.applies ? todayBar(day) : null,
+    return el('section', { class: `life-game${day.good ? ' good' : ''}`, 'aria-label': 'Your day' }, [
+        el('button', { class: 'life-dial', type: 'button', 'aria-label': dialLabel(game), onclick: () => openGameSheet() }, [dialSvg(state, hour)]),
+        el('div', { class: 'life-dial-under' }, [
+            el('span', { class: `life-dial-streak${game.streak ? '' : ' none'}` }, [icon('flame', { size: 16 }), el('span', { text: game.streak ? unit(game.streak, 'day') : 'No streak yet' })]),
+            day.good
+                ? el('span', { class: 'life-dial-sealed', text: 'Good day' })
+                : el('span', { class: 'life-dial-score', text: day.applies ? `${day.base} / ${MAX_BASE_XP} today` : 'Nothing due today' }),
         ]),
         chips.length ? el('div', { class: 'life-game-chips' }, chips.map((id) => chip(id, state, pop))) : null,
     ]);
+}
+
+/** The line under the greeting reads the day; called whenever the game is redrawn. */
+export function paintDayLine(state = current) {
+    const node = document.getElementById('life-dayline');
+    if (!node) return;
+    const now = new Date();
+    node.textContent = dayLine(daypart(now.getHours() + now.getMinutes() / 60), state?.game.today ?? null);
 }
 
 const goalOnToday = (range, today) => Boolean(range) && today >= range.from && (range.to == null || today <= range.to);
@@ -135,6 +228,7 @@ export function redrawGame(pop = new Set()) {
         card.replaceWith(next);
         bars?.();
     }
+    paintDayLine();
     if (document.getElementById('game-modal')?.classList.contains('active')) drawSheet();
 }
 
@@ -144,13 +238,22 @@ export function redrawGame(pop = new Set()) {
  * one. Returns what to run once the new card is in the page.
  */
 function animateFrom(oldCard, newCard) {
-    const fills = '.life-game-bar-fill, .life-game-seg-fill';
+    const fills = '.life-dial-fill';
     const before = [...oldCard.querySelectorAll(fills)];
     const after = [...newCard.querySelectorAll(fills)];
     if (!before.length || before.length !== after.length) return null;
-    const targets = after.map((node) => node.style.width);
-    after.forEach((node, i) => { node.style.width = before[i].style.width; });
-    return () => setTimeout(() => after.forEach((node, i) => { node.style.width = targets[i]; }), 30);
+    const targets = after.map((node) => node.style.strokeDashoffset);
+    after.forEach((node, i) => {
+        node.style.strokeDashoffset = before[i].style.strokeDashoffset;
+        node.classList.toggle('empty', before[i].classList.contains('empty'));
+    });
+    return () =>
+        setTimeout(() => {
+            after.forEach((node, i) => {
+                node.style.strokeDashoffset = targets[i];
+                node.classList.toggle('empty', Number(targets[i]) >= 1);
+            });
+        }, 30);
 }
 
 /** Recomputes, then redraws. */

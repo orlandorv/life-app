@@ -28,7 +28,8 @@ import { sortNotes } from '../inbox/organize.js';
 import { state as wishState, loadItems as loadWishlist } from '../wishlist/store.js';
 import { splitItems, totalOf, formatPrice } from '../wishlist/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
-import { loadGame, gameCard, currentGame, openGameSheet } from './game.js';
+import { loadGame, gameCard, currentGame, openGameSheet, paintDayLine } from './game.js';
+import { daypart } from './dial.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -54,20 +55,19 @@ export function initHome({ gymReady: waitForGym }) {
     });
 }
 
-function greeting(hour) {
-    if (hour < 5) return 'Good night';
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-}
-
+/**
+ * The date, "Good *morning*" (the part of the day in italic) and the light of the
+ * hour: `body[data-daypart]` picks the wash behind the top of Today (life.css).
+ */
 function renderHeader(now) {
+    const part = daypart(now.getHours() + now.getMinutes() / 60);
+    document.body.dataset.daypart = part;
     document.getElementById('life-date').textContent = now.toLocaleDateString(undefined, {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
     });
-    document.getElementById('life-greeting').textContent = greeting(now.getHours());
+    document.getElementById('life-greeting').replaceChildren('Good ', el('em', { text: part }));
 }
 
 export async function renderHome() {
@@ -109,7 +109,7 @@ export async function renderHome() {
     if (token !== renderToken) return;
 
     document.getElementById('life-today').replaceChildren(
-        ...[weighInReminder(), gameCard(), reviewCard(today, weekFood)].filter(Boolean),
+        ...[gameCard(), weighInReminder(), reviewCard(today, weekFood)].filter(Boolean),
         gymBlock(today),
         nutritionBlock(),
         habitsBlock(today),
@@ -120,6 +120,7 @@ export async function renderHome() {
         inboxBlock(),
         wishlistBlock(),
     );
+    paintDayLine();
 }
 
 // --- Pieces -----------------------------------------------------------------
