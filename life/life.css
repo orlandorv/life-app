@@ -1,5 +1,7 @@
 /* Life's design system: the tokens, type and shared pieces every section is
-   built from. Warm paper and ink, one colour per section, quiet surfaces.
+   built from. Warm paper and ink by day, night ink by night, one colour per
+   section, and one signature: the Day Dial (see life/game.css) and the arc it
+   is drawn with, which every section reuses for its own progress.
    Section-specific styling lives beside its section (e.g. gym/gym.css), and
    reads everything through these tokens — change a colour here, not there. */
 
@@ -44,6 +46,20 @@
     --warning: #8F5E14;
     --accent: var(--body);
 
+    /* The seal: the one gold in the app, kept for what you've earned — the level
+       ring, a good day, a level up. Never a section colour, never decoration.
+       ≥4.5:1 as text on all three surfaces and under white text. */
+    --seal: #83601A;
+
+    /* The light of the hour, washed behind the top of Today (set by
+       body[data-daypart], see home.js). Kept faint enough that secondary text
+       still clears 4.5:1 where the wash is strongest (checked by script). */
+    --wash-morning: rgba(247, 190, 130, 0.24);
+    --wash-afternoon: rgba(240, 210, 130, 0.24);
+    --wash-evening: rgba(236, 160, 128, 0.16);
+    --wash-night: rgba(130, 138, 200, 0.1);
+    --wash: var(--wash-afternoon);
+
     --card-shadow: 0 1px 2px rgba(64, 44, 24, 0.05), 0 8px 24px -12px rgba(64, 44, 24, 0.14);
     --card-border: rgba(64, 44, 24, 0.07);
     --shadow: var(--card-shadow);
@@ -69,20 +85,50 @@
     --font-rounded: ui-rounded, "SF Pro Rounded", var(--font-sans);
 
     --nav-height: 64px;
-    --radius: 18px;
+    --radius: 20px;
     --radius-sm: 12px;
+    --radius-pill: 999px;
+
+    /* Type scale. Display sizes are New York (titles, the level number); UI sizes
+       are the system face; figures use the rounded face with tabular numbers. */
+    --display-xl: 64px; /* the level in the Day Dial */
+    --display-l: 34px;  /* page titles, the greeting */
+    --display-m: 22px;  /* sheet titles */
+    --display-s: 19px;  /* room and card titles */
+    --text-l: 17px;
+    --text-m: 15px;
+    --text-s: 13px;
+    --text-xs: 12px;
+    --tracking-eyebrow: 0.6px;
+
+    /* Spacing: a 4px grid. */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+
+    /* Motion: one easing for things settling, one for things filling. Every
+       duration is flattened by the reduced-motion rule in gym/gym.css. */
+    --ease-settle: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-fill: cubic-bezier(0.3, 0.7, 0.1, 1);
+    --dur-quick: 0.18s;
+    --dur-fill: 0.7s;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #151311;
-        --bg-raised: #211E1A;
-        --bg-secondary: #2A2622;
-        --border: #36312B;
+        /* Night ink, not inverted paper: a deep blue-violet black, so the
+           section colours glow like lamps rather than sit on brown. */
+        --bg: #131117;
+        --bg-raised: #1D1A22;
+        --bg-secondary: #28242E;
+        --border: #353041;
         --text-primary: #F4EFE8;
-        --text-secondary: #A69C91;
+        --text-secondary: #A79FB0;
 
-        --ink: #EDE6DC;
+        --ink: #EFE8F2;
         --gym: #E58A62;
         --nutrition: #7DBF8C;
         --habits: #A794E6;
@@ -93,13 +139,19 @@
         --inbox: #C4C77F;
         --wishlist: #CC95DB;
 
-        --on-accent: #151311;
+        --on-accent: #131117;
         --success: #72B98A;
         --danger: #E8776C;
         --warning: #E0A857;
+        --seal: #E2B867;
+
+        --wash-morning: rgba(214, 150, 110, 0.2);
+        --wash-afternoon: rgba(200, 170, 110, 0.16);
+        --wash-evening: rgba(200, 110, 120, 0.2);
+        --wash-night: rgba(88, 96, 190, 0.34);
 
         --card-shadow: none;
-        --card-border: rgba(255, 244, 230, 0.07);
+        --card-border: rgba(236, 228, 255, 0.07);
 
         --level-0: #794B36;
         --level-1: #9A5D41;
@@ -107,7 +159,7 @@
         --level-3: #DC855D;
         --level-4: #F79E75;
         --level-5: #FFBC9A;
-        --level-none: #3A352F;
+        --level-none: #34303B;
     }
 }
 
@@ -223,8 +275,10 @@ body.modal-open {
 /* Page titles in every section, including Gym's tabs. */
 .tab-header h1 {
     font-family: var(--font-display);
+    font-size: var(--display-l);
     font-weight: 600;
-    letter-spacing: -0.4px;
+    line-height: 1.12;
+    letter-spacing: -0.6px;
 }
 
 /* --- Section chrome ------------------------------------------------------- */
@@ -290,9 +344,9 @@ body.modal-open {
 
 /* Small caps label above a group of content. */
 .life-eyebrow {
-    font-size: 12px;
+    font-size: var(--text-xs);
     font-weight: 650;
-    letter-spacing: 0.6px;
+    letter-spacing: var(--tracking-eyebrow);
     text-transform: uppercase;
     color: var(--text-secondary);
 }
@@ -353,7 +407,7 @@ body.modal-open {
 
 .life-greeting {
     font-family: var(--font-display);
-    font-size: 34px;
+    font-size: var(--display-l);
     font-weight: 600;
     line-height: 1.1;
     letter-spacing: -0.6px;
@@ -558,7 +612,7 @@ body.modal-open {
 }
 
 .life-sub {
-    font-size: 14px;
+    font-size: var(--text-s);
     color: var(--text-secondary);
 }
 
