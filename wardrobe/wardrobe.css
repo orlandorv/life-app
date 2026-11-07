@@ -29,40 +29,132 @@
     margin: 12px 4px;
 }
 
-/* --- A category and its grid of items ----------------------------------------- */
+/* --- Sections: a header you press to open or fold, and a grid of items inside ---- */
 
-.ward-category {
-    margin-top: 18px;
+.ward-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px 4px -4px;
 }
 
-.ward-category-head {
+.ward-section {
+    margin-top: 12px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    box-shadow: var(--card-shadow);
+}
+
+.ward-section-head {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 4px 10px;
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: var(--radius);
+    background: none;
+    font: inherit;
+    text-align: left;
+    color: var(--text-primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.ward-category-title {
-    margin: 0;
-    flex: 1;
-    min-width: 0;
+.ward-section-head:active {
+    opacity: 0.75;
+}
+
+.ward-section-title {
     font-family: var(--font-display);
     font-size: 20px;
     font-weight: 600;
     letter-spacing: -0.2px;
 }
 
-.ward-category-count {
+.ward-section-count {
     font-size: 13px;
     font-weight: 650;
     color: var(--text-secondary);
 }
 
-.ward-category-head .icon-btn {
-    flex-shrink: 0;
-    width: 34px;
-    height: 34px;
+/* "2 picked" in the outfit picker; the section colour is 5.2:1 on the card in light mode. */
+.ward-section-note {
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--primary);
+}
+
+.ward-section-note:empty {
+    display: none;
+}
+
+/* A folded section shows a few of its photos, so the list reads at a glance. */
+.ward-peek {
+    display: flex;
+    flex: 1;
+    justify-content: flex-end;
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.ward-section.open .ward-peek {
+    visibility: hidden;
+}
+
+.ward-swatch.peek {
+    width: 30px;
+    flex: none;
+    border-radius: 8px;
+}
+
+.ward-swatch.peek .ward-initial {
+    font-size: 15px;
+}
+
+/* On a narrow phone, three photos in the peek so a long section name still fits. */
+@media (max-width: 380px) {
+    .ward-peek .ward-swatch:nth-child(n + 4) {
+        display: none;
+    }
+}
+
+.ward-chevron {
+    flex: none;
+    display: grid;
+    place-items: center;
     color: var(--text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.ward-section.open .ward-chevron {
+    transform: rotate(90deg);
+}
+
+.ward-section-body {
+    padding: 2px 12px 14px;
+}
+
+.ward-subhead {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 14px 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.ward-subhead:first-child {
+    margin-top: 6px;
+}
+
+.ward-subcount {
+    font-weight: 650;
 }
 
 .ward-grid {
@@ -313,14 +405,6 @@
     font-size: 13px;
     font-weight: 650;
     color: var(--primary);
-}
-
-.ward-pick-head {
-    margin: 0 0 8px;
-}
-
-.ward-grid.pick {
-    gap: 10px 8px;
 }
 
 .ward-check {

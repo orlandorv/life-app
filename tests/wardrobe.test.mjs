@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     PRESET_CATEGORIES, canonicalCategory, categoryChoices, groupByCategory, matches, fitWithin, isPhotoData, MAX_PHOTO_CHARS, PHOTO_MAX_EDGE,
-    outfitItems, outfitsWithItem, withoutItem, cleanItemIds, sortOutfits, fromWishlist, isWearable, worth,
+    SECTIONS, groupBySection, outfitItems, outfitsWithItem, withoutItem, cleanItemIds, sortOutfits, fromWishlist, isWearable, worth,
 } from '../wardrobe/organize.js';
 
 const item = (id, extra = {}) => ({ id, name: id, createdAt: `2026-10-${id.padStart(2, '0')}`, ...extra });
@@ -80,4 +80,37 @@ test('a bought wishlist item becomes a wardrobe item, with a category where one 
 
 test('what the wardrobe is worth counts only the items with a price, and says how many', () => {
     assert.deepEqual(worth([item('1', { price: 40 }), item('2', { price: 12.5 }), item('3')]), { total: 52.5, priced: 2, count: 3 });
+});
+
+test('items are browsed in sections: areas in their order, your own categories inside them', () => {
+    const items = [
+        item('1', { category: 'Polos' }), item('2', { category: 'Jackets' }), item('3', { category: 'Shirts' }), item('4', { category: 'Joggers' }),
+        item('5', { category: 'Caps' }), item('6', { category: 'Cologne' }), item('7', { category: 'Shoes' }), item('8', { category: 'T-Shirts' }),
+        item('9', { category: 'jeans' }), item('10', { category: 'Hoodies & Jumpers' }),
+    ];
+    const sections = groupBySection(items);
+    assert.deepEqual(sections.map((s) => s.label), ['Outerwear', 'Tops', 'Bottoms', 'Shoes', 'Accessories', 'Fragrances']);
+    assert.deepEqual(sections[1].groups.map((g) => g.label), ['Shirts', 'Polos', 'T-Shirts', 'Hoodies & Jumpers'], 'shirts, polos, tees, then hoodies');
+    assert.deepEqual(sections[2].groups.map((g) => g.label), ['Jeans', 'Joggers'], 'case is tidied by the shared rules');
+    assert.deepEqual(sections[1].items.map((i) => i.id), ['3', '1', '8', '10'], 'a section lists its items group by group');
+    assert.deepEqual(SECTIONS.map((s) => s.label), ['Outerwear', 'Tops', 'Bottoms', 'Shoes', 'Accessories', 'Fragrances']);
+});
+
+test('a category of the section\'s own name is the catch-all; one of your own kind gets its own section; none comes last', () => {
+    const sections = groupBySection([
+        item('1', { category: 'Tops' }), item('2', { category: 'Polos' }), item('3'), item('4', { category: 'Gadgets' }), item('5', { category: 'Outerwear' }), item('6', { category: 'Accessories' }), item('7', { category: 'Caps' }),
+    ]);
+    assert.deepEqual(sections.map((s) => s.label), ['Outerwear', 'Tops', 'Accessories', 'Gadgets', 'Other']);
+    assert.deepEqual(sections[1].groups.map((g) => g.label), ['Polos', 'Other'], '"Tops" beside Polos reads Other');
+    assert.deepEqual(sections[2].groups.map((g) => g.label), ['Caps', 'Other']);
+    assert.deepEqual(sections[0].groups.map((g) => g.label), ['Outerwear'], 'alone, it keeps its name');
+    assert.deepEqual(sections.at(-1).items.map((i) => i.id), ['3']);
+    assert.deepEqual(groupBySection([]), []);
+});
+
+test('sections lose nothing: every item appears once, in the order it came within its group', () => {
+    const items = ['Shirts', 'Polos', 'Shirts', 'Jeans', undefined, 'Shirts'].map((category, i) => item(String(i + 1), category ? { category } : {}));
+    const sections = groupBySection(items);
+    assert.equal(sections.flatMap((s) => s.items).length, items.length);
+    assert.deepEqual(sections.find((s) => s.label === 'Tops').groups[0].items.map((i) => i.id), ['1', '3', '6']);
 });

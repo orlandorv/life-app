@@ -3,7 +3,7 @@ import { icon } from '../life/icons.js';
 import { lifeDb } from '../life/db.js';
 import { state, loadWardrobe, addItem, updateItem, deleteItem, saveOutfit, deleteOutfit } from './store.js';
 import {
-    groupByCategory, categoryChoices, matches, outfitItems, outfitsWithItem, sortOutfits, worth, MAX_CATEGORY,
+    groupBySection, categoryChoices, matches, outfitItems, outfitsWithItem, sortOutfits, worth, MAX_CATEGORY,
 } from './organize.js';
 import { parsePrice, formatPrice } from '../wishlist/organize.js';
 import { photoFromFile } from './photo.js';
@@ -18,6 +18,27 @@ import { photoFromFile } from './photo.js';
 let ready = null;
 let view = 'items';
 let query = '';
+
+// Which sections are open on the Items tab. A convenience of this phone, kept between visits;
+// the page works the same if storage is unavailable (everything simply starts folded).
+const OPEN_KEY = 'life-wardrobe-open';
+const loadOpen = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem(OPEN_KEY));
+        return new Set(Array.isArray(saved) ? saved.filter((key) => typeof key === 'string') : []);
+    } catch {
+        return new Set();
+    }
+};
+const saveOpen = () => {
+    try {
+        localStorage.setItem(OPEN_KEY, JSON.stringify([...expanded]));
+    } catch {
+        /* not saved; fine */
+    }
+};
+const expanded = loadOpen();
+let sectionIds = 0;
 
 /** Opens LifeDB. Safe to call repeatedly. */
 export function initWardrobe() {
@@ -101,22 +122,20 @@ function itemsView() {
             ]),
         );
     } else {
-        const shown = state.items.filter((item) => matches(item, query));
-        nodes.push(searchBox(), summaryLine());
-        if (!shown.length) nodes.push(el('p', { class: 'hint ward-none', text: 'Nothing matches that.' }));
-        else nodes.push(...groupByCategory(shown).map(categorySection));
+        nodes.push(searchBox(), summaryLine(), el('div', { class: 'ward-grid-slot' }, gridContent()));
     }
     nodes.push(el('button', { class: 'btn btn-outline btn-block spaced', type: 'button', text: '+ Add item', onclick: () => openItemSheet() }));
     return nodes;
 }
+
+const redrawGrid = () => document.querySelector('#wardrobe-body .ward-grid-slot')?.replaceChildren(...gridContent());
 
 function searchBox() {
     const input = el('input', { class: 'form-input ward-search', type: 'search', placeholder: 'Search your wardrobe', autocomplete: 'off', 'aria-label': 'Search your wardrobe', value: query });
     input.addEventListener('input', () => {
         query = input.value;
         // Only the grid redraws, so typing never loses the keyboard.
-        const slot = document.querySelector('#wardrobe-body .ward-grid-slot');
-        if (slot) slot.replaceChildren(...gridContent());
+        redrawGrid();
     });
     return el('div', { class: 'ward-filters' }, [input]);
 }
@@ -128,20 +147,96 @@ function summaryLine() {
     return el('p', { class: 'ward-summary', text: priced ? `${items} · ${formatPrice(total)} paid${priced < count ? ` (${priced} priced)` : ''}` : items });
 }
 
-const gridContent = () => {
+/** The sections of whatever matches the search, folded or open; searching opens them all so the matches are in view. */
+function gridContent() {
+    const searching = query.trim() !== '';
     const shown = state.items.filter((item) => matches(item, query));
-    return shown.length ? groupByCategory(shown).map(categorySection) : [el('p', { class: 'hint ward-none', text: 'Nothing matches that.' })];
-};
+    if (!shown.length) return [el('p', { class: 'hint ward-none', text: 'Nothing matches that.' })];
 
-function categorySection(group) {
-    return el('section', { class: 'ward-category' }, [
-        el('div', { class: 'ward-category-head' }, [
-            el('h2', { class: 'ward-category-title', text: group.label }),
-            el('span', { class: 'ward-category-count', text: String(group.items.length) }),
-            el('button', { class: 'icon-btn', type: 'button', 'aria-label': `Add to “${group.label}”`, onclick: () => openItemSheet(null, group.label === 'Other' ? '' : group.label) }, [icon('plus', { size: 16 })]),
-        ]),
-        el('div', { class: 'ward-grid' }, group.items.map(tile)),
+    const sections = groupBySection(shown);
+    let syncToolbar = () => {}; // replaced below when there is a toolbar to keep in step
+    const nodes = sections.map((section) =>
+        sectionNode(section, {
+            open: searching || expanded.has(section.key),
+            tile,
+            onToggle: (open) => {
+                // While searching, folding a section is just for now: it isn't remembered.
+                if (!searching) {
+                    if (open) expanded.add(section.key);
+                    else expanded.delete(section.key);
+                    saveOpen();
+                }
+                syncToolbar();
+            },
+        }),
+    );
+
+    if (searching || sections.length < 2) return nodes;
+    const toolbar = el('button', { class: 'link-btn ward-toggle-all', type: 'button', text: sections.every((section) => expanded.has(section.key)) ? 'Collapse all' : 'Expand all' });
+    syncToolbar = () => {
+        const folded = document.querySelectorAll('#wardrobe-body .ward-section:not(.open)').length;
+        toolbar.textContent = folded ? 'Expand all' : 'Collapse all';
+    };
+    toolbar.addEventListener('click', () => {
+        const folded = document.querySelectorAll('#wardrobe-body .ward-section:not(.open)').length;
+        for (const section of sections) {
+            if (folded) expanded.add(section.key);
+            else expanded.delete(section.key);
+        }
+        saveOpen();
+        redrawGrid();
+    });
+    return [el('div', { class: 'ward-toolbar' }, [toolbar]), ...nodes];
+}
+
+/**
+ * One section as a header you can press to open or fold, and its items inside: a grid per
+ * category, with the category named when the section holds more than one. The items are only
+ * built when it is first opened, so a big wardrobe stays quick. A folded section shows a few of
+ * its photos in its header as a peek. `note` is extra text beside the count (the outfit picker
+ * uses it for "2 picked"); the returned `setNote` changes it.
+ */
+function sectionNode(section, { open, tile: makeTile, onToggle, note = '' }) {
+    const id = `ward-section-${(sectionIds += 1)}`;
+    const body = el('div', { class: 'ward-section-body', id, hidden: !open });
+    const noteEl = el('span', { class: 'ward-section-note', text: note });
+    const head = el('button', { class: 'ward-section-head', type: 'button', 'aria-expanded': String(open), 'aria-controls': id }, [
+        el('span', { class: 'ward-section-title', text: section.label }),
+        el('span', { class: 'ward-section-count', text: String(section.items.length) }),
+        noteEl,
+        el('span', { class: 'ward-peek', 'aria-hidden': 'true' }, section.items.slice(0, 4).map((item) => swatch(item, 'peek'))),
+        el('span', { class: 'ward-chevron', 'aria-hidden': 'true' }, [icon('chevron', { size: 18 })]),
     ]);
+    const node = el('section', { class: `ward-section${open ? ' open' : ''}` }, [head, body]);
+
+    let built = false;
+    const build = () => {
+        if (built) return;
+        built = true;
+        body.replaceChildren(
+            ...section.groups
+                .flatMap((group) => [
+                    section.groups.length > 1 ? el('h3', { class: 'ward-subhead' }, [group.label, el('span', { class: 'ward-subcount', text: String(group.items.length) })]) : null,
+                    el('div', { class: 'ward-grid' }, group.items.map(makeTile)),
+                ])
+                .filter(Boolean),
+        );
+    };
+    if (open) build();
+
+    head.addEventListener('click', () => {
+        const opening = body.hidden;
+        if (opening) build();
+        body.hidden = !opening;
+        node.classList.toggle('open', opening);
+        head.setAttribute('aria-expanded', String(opening));
+        onToggle?.(opening);
+    });
+
+    node.setNote = (text) => {
+        noteEl.textContent = text;
+    };
+    return node;
 }
 
 function tile(item) {
@@ -325,7 +420,8 @@ function outfitForm(outfit) {
     const name = el('input', { class: 'form-input', type: 'text', maxlength: 60, placeholder: 'e.g. Dinner out', value: outfit?.name ?? '', autocomplete: 'off', 'aria-label': 'Outfit name' });
     const note = el('textarea', { class: 'form-input', rows: 2, maxlength: 300, placeholder: 'Optional — when to wear it', value: outfit?.note ?? '', 'aria-label': 'Note' });
     const count = el('span', { class: 'ward-pick-count' });
-    const picks = new Map();
+    const picks = new Map(); // item id → its tile, for the tiles built so far
+    const nodes = [];
 
     const sync = () => {
         for (const [id, button] of picks) {
@@ -333,33 +429,43 @@ function outfitForm(outfit) {
             button.classList.toggle('picked', on);
             button.setAttribute('aria-pressed', String(on));
         }
+        for (const { section, node } of nodes) {
+            const n = section.items.filter((item) => chosen.has(item.id)).length;
+            node.setNote(n ? `${n} picked` : '');
+        }
         count.textContent = chosen.size ? `${chosen.size} picked` : 'Tap items to add them';
     };
 
-    const grid = (items) =>
-        el('div', { class: 'ward-grid pick' }, items.map((item) => {
-            const button = el('button', { class: 'ward-tile', type: 'button', 'aria-label': item.name }, [
-                swatch(item),
-                el('span', { class: 'ward-check' }, [icon('check', { size: 16 })]),
-                el('span', { class: 'ward-tile-name', text: item.name }),
-            ]);
-            button.addEventListener('click', () => {
-                if (chosen.has(item.id)) {
-                    chosen.delete(item.id);
-                    order.splice(order.indexOf(item.id), 1);
-                } else {
-                    chosen.add(item.id);
-                    order.push(item.id);
-                }
-                sync();
-            });
-            picks.set(item.id, button);
-            return button;
-        }));
+    const pickTile = (item) => {
+        const button = el('button', { class: 'ward-tile', type: 'button', 'aria-label': item.name }, [
+            swatch(item),
+            el('span', { class: 'ward-check' }, [icon('check', { size: 16 })]),
+            el('span', { class: 'ward-tile-name', text: item.name }),
+        ]);
+        button.addEventListener('click', () => {
+            if (chosen.has(item.id)) {
+                chosen.delete(item.id);
+                order.splice(order.indexOf(item.id), 1);
+            } else {
+                chosen.add(item.id);
+                order.push(item.id);
+            }
+            sync();
+        });
+        picks.set(item.id, button);
+        // Built when its section is opened, so it starts out showing what is already picked.
+        button.classList.toggle('picked', chosen.has(item.id));
+        button.setAttribute('aria-pressed', String(chosen.has(item.id)));
+        return button;
+    };
 
-    const sections = groupByCategory(state.items).map((group) =>
-        el('section', { class: 'ward-category' }, [el('h3', { class: 'life-eyebrow ward-pick-head', text: group.label }), grid(group.items)]),
-    );
+    // The same folding sections as the Items tab; a section that already holds a pick starts open.
+    const sections = groupBySection(state.items).map((section) => {
+        const node = sectionNode(section, { open: section.items.some((item) => chosen.has(item.id)), tile: pickTile });
+        node.classList.add('pick');
+        nodes.push({ section, node });
+        return node;
+    });
     sync();
 
     const submit = async (event) => {

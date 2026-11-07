@@ -20,6 +20,58 @@ export const MAX_CATEGORY = 30;
 const categories = makeCategories({ presets: PRESET_CATEGORIES, noneLabel: NO_CATEGORY, max: MAX_CATEGORY });
 export const { canonicalCategory, categoriesInUse, categoryChoices, groupByCategory } = categories;
 
+// --- Sections ----------------------------------------------------------------------
+
+/**
+ * The areas the wardrobe is browsed in. Each lists the category names that belong to it,
+ * in the order they are shown inside it (lower case; a few usual synonyms are included).
+ * A category is still your own free text: "Polos" stays "Polos", it is simply *shown* under
+ * Tops. A category that is in none of these gets a section of its own, and items with no
+ * category end up under "Other".
+ */
+export const SECTIONS = [
+    { label: 'Outerwear', members: ['outerwear', 'jackets', 'jacket', 'coats', 'coat'] },
+    { label: 'Tops', members: ['shirts', 'shirt', 'polos', 'polo', 't-shirts', 't-shirt', 'tees', 'hoodies & jumpers', 'hoodies', 'jumpers', 'sweaters', 'knitwear', 'jerseys', 'tops'] },
+    { label: 'Bottoms', members: ['jeans', 'trousers', 'chinos', 'cargos', 'joggers', 'shorts', 'bottoms'] },
+    { label: 'Shoes', members: ['shoes', 'trainers', 'sneakers', 'boots', 'sandals', 'slides', 'footwear'] },
+    { label: 'Accessories', members: ['caps', 'hats', 'watches', 'jewellery', 'jewelry', 'bags', 'belts', 'accessories'] },
+    { label: 'Fragrances', members: ['fragrances', 'fragrance', 'cologne', 'colognes', 'perfumes', 'perfume'] },
+];
+
+const sectionIndex = (key) => SECTIONS.findIndex((section) => section.label.toLowerCase() === key || section.members.includes(key));
+
+/**
+ * Items as sections to browse: `{ key, label, items, groups: [{ key, label, items }] }`. The
+ * sections are the areas above in their order, then any category of your own, then items with
+ * no category last under "Other". Inside a section the categories keep the order listed above
+ * (others after, alphabetically); a section with only one category has just that one group, and
+ * where a category is the section's own name beside others it reads "Other". Items keep the
+ * order they came in.
+ */
+export function groupBySection(items) {
+    const sections = new Map();
+    for (const group of groupByCategory(items)) {
+        const at = group.key ? sectionIndex(group.key) : -1;
+        const section = at === -1 ? { key: group.key || '', label: group.label } : { key: SECTIONS[at].label.toLowerCase(), label: SECTIONS[at].label };
+        if (!sections.has(section.key)) sections.set(section.key, { ...section, rank: at === -1 ? (group.key ? SECTIONS.length : SECTIONS.length + 1) : at, items: [], groups: [] });
+        const into = sections.get(section.key);
+        // A category that is the section's own name ("Tops" in Tops) is the catch-all: it goes last.
+        const order = at === -1 ? 0 : group.key === section.key ? 1000 : SECTIONS[at].members.indexOf(group.key);
+        into.groups.push({ key: group.key, label: group.label, items: group.items, order });
+    }
+    return [...sections.values()]
+        .sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }))
+        .map(({ rank, groups, ...section }) => {
+            const ordered = [...groups].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+            const sectionItems = ordered.flatMap((group) => group.items);
+            return {
+                ...section,
+                items: sectionItems,
+                groups: ordered.map(({ order, ...group }) => ({ ...group, label: ordered.length > 1 && group.key === section.key ? 'Other' : group.label })),
+            };
+        });
+}
+
 // --- Search ---------------------------------------------------------------------------
 
 /** Does the item match every word of `query` in its name, brand, colour, category or note (case-insensitive)? A blank query matches everything. */
