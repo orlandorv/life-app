@@ -18,14 +18,17 @@ const fixed = (n) => Math.round(n * 100) / 100;
 
 /**
  * An SVG path for the arc from `from` to `to` degrees (clockwise). A full turn
- * can't be one arc command (its ends coincide), so it stops a hair short; at
- * the stroke widths used that is invisible.
+ * can't be one arc command (its ends coincide, and on a small ring rounding
+ * would collapse "a hair short" to nothing), so it is drawn as two half turns.
  */
 export function arcPath(cx, cy, r, from, to) {
-    const end = to - from >= 360 ? from + 359.99 : to;
     const [x1, y1] = polar(cx, cy, r, from);
-    const [x2, y2] = polar(cx, cy, r, end);
-    const large = end - from > 180 ? 1 : 0;
+    if (to - from >= 360) {
+        const [xm, ym] = polar(cx, cy, r, from + 180);
+        return `M${fixed(x1)} ${fixed(y1)} A${r} ${r} 0 1 1 ${fixed(xm)} ${fixed(ym)} A${r} ${r} 0 1 1 ${fixed(x1)} ${fixed(y1)}`;
+    }
+    const [x2, y2] = polar(cx, cy, r, to);
+    const large = to - from > 180 ? 1 : 0;
     return `M${fixed(x1)} ${fixed(y1)} A${r} ${r} 0 ${large} 1 ${fixed(x2)} ${fixed(y2)}`;
 }
 

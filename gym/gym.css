@@ -87,6 +87,7 @@
 
 .nav-btn.active .nav-icon {
     background: color-mix(in srgb, var(--primary) 14%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--primary) 45%, transparent);
 }
 
 /* --- Layout helpers --------------------------------------------------- */
@@ -441,6 +442,18 @@ textarea.form-input {
     outline: none;
 }
 
+/* A sheet's handle: a short pill at the top edge, so a sheet reads as one. */
+.modal-content:not(.narrow)::before {
+    content: "";
+    flex-shrink: 0;
+    align-self: center;
+    width: 38px;
+    height: 5px;
+    margin-top: 8px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+}
+
 .modal-content.narrow {
     max-width: 420px;
     margin: auto;
@@ -457,7 +470,7 @@ textarea.form-input {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 20px 20px 10px;
+    padding: 12px 20px 10px;
     flex-shrink: 0;
 }
 

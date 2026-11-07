@@ -29,7 +29,8 @@ import { state as wishState, loadItems as loadWishlist } from '../wishlist/store
 import { splitItems, totalOf, formatPrice } from '../wishlist/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
 import { loadGame, gameCard, currentGame, openGameSheet, paintDayLine } from './game.js';
-import { daypart } from './dial.js';
+import { daypart, arcPath } from './dial.js';
+import { svg } from './svg.js';
 
 /**
  * Today — the home screen. Instead of a menu of sections it's a summary of the
@@ -42,7 +43,6 @@ import { daypart } from './dial.js';
 let gymReady = () => Promise.resolve();
 let renderToken = 0;
 
-const WEEK_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const HABITS_SHOWN = 6;
 
 export function initHome({ gymReady: waitForGym }) {
@@ -110,42 +110,60 @@ export async function renderHome() {
 
     document.getElementById('life-today').replaceChildren(
         ...[gameCard(), weighInReminder(), reviewCard(today, weekFood)].filter(Boolean),
-        gymBlock(today),
-        nutritionBlock(),
-        habitsBlock(today),
-        bodyBlock(today),
-        journalBlock(today),
-        videosBlock(),
-        tasksBlock(today),
-        inboxBlock(),
-        wishlistBlock(),
+        // Every section as a room in one list: the same arc, the same anatomy.
+        el('h2', { class: 'life-eyebrow life-rooms-title', text: 'Your rooms' }),
+        el('div', { class: 'life-rooms life-surface' }, [
+            gymBlock(today),
+            nutritionBlock(),
+            habitsBlock(today),
+            bodyBlock(today),
+            journalBlock(today),
+            videosBlock(),
+            tasksBlock(today),
+            inboxBlock(),
+            wishlistBlock(),
+        ]),
     );
     paintDayLine();
 }
 
 // --- Pieces -----------------------------------------------------------------
 
-function block(tone, title, iconName, children) {
-    return el('section', { class: 'life-block life-surface', dataset: { tone } }, [
-        el('a', { class: 'life-block-head', href: `#/${tone}` }, [
-            el('span', { class: 'life-chip' }, [icon(iconName, { size: 19 })]),
-            el('span', { class: 'life-block-title', text: title }),
-            icon('chevron', { size: 18 }),
+/**
+ * A section's arc at 44px: the Day Dial's shape in miniature, in the section's
+ * colour, with a short label in the middle. Every room on Today has one, so the
+ * page reads as one system rather than nine different cards.
+ */
+function roomArc(fraction, label) {
+    const f = Math.max(0, Math.min(1, fraction || 0));
+    const root = svg('svg', { viewBox: '0 0 44 44', class: 'life-room-arc', 'aria-hidden': 'true', focusable: 'false' });
+    const d = arcPath(22, 22, 18, 0, 360);
+    root.append(svg('circle', { cx: 22, cy: 22, r: 18, class: 'life-room-track' }));
+    if (f > 0) root.append(svg('path', { d, pathLength: 1, 'stroke-dasharray': '1 1', style: `stroke-dashoffset:${(1 - f).toFixed(4)}`, class: 'life-room-fill' }));
+    if (label !== undefined && label !== null) root.append(svg('text', { x: 22, y: 26.5, class: `life-room-label${String(label).length > 3 ? ' small' : ''}` }, String(label)));
+    return root;
+}
+
+/**
+ * One room on Today: its arc, its name and one line of what matters now (both
+ * opening the section), an optional action, and optional content below (the
+ * day's habits to tick, the mood buttons). `warn` colours the line for something
+ * overdue — information, never a scolding.
+ */
+function room(tone, title, { arc = null, line = null, warn = false, act = null, quietAct = false, body = [] } = {}) {
+    return el('section', { class: 'life-room', dataset: { tone } }, [
+        el('div', { class: 'life-room-head' }, [
+            el('a', { class: 'life-room-link', href: `#/${tone}` }, [
+                roomArc(arc?.fraction ?? 0, arc?.label ?? null),
+                el('span', { class: 'life-room-text' }, [
+                    el('span', { class: 'life-room-name', text: title }),
+                    line ? el('span', { class: `life-room-line${warn ? ' warn' : ''}`, text: line }) : null,
+                ]),
+            ]),
+            act ? el('a', { class: `life-room-go${quietAct ? ' quiet' : ''}`, href: act.href, text: act.label }) : null,
         ]),
-        ...children,
+        ...(body.filter(Boolean).length ? [el('div', { class: 'life-room-body' }, body.filter(Boolean))] : []),
     ]);
-}
-
-function figure(value, unit) {
-    return el('div', { class: 'life-figure' }, [value, unit ? el('small', { text: unit }) : null]);
-}
-
-function action(label, href, quiet = false) {
-    return el('a', {
-        class: `btn btn-block life-block-action${quiet ? ' quiet' : ''}`,
-        href,
-        text: label,
-    });
 }
 
 const fmt = (n) => Math.round(n).toLocaleString();
@@ -223,11 +241,11 @@ function gymBlock(today) {
 
     if (active) {
         const started = new Date(active.startedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-        return block('gym', 'Gym', 'gym', [
-            figure('In progress'),
-            el('p', { class: 'life-sub', text: `${active.name} · started ${started}` }),
-            action('Resume workout', '#/gym/workout'),
-        ]);
+        return room('gym', 'Gym', {
+            arc: { fraction: 1, label: 'Now' },
+            line: `${active.name} in progress · started ${started}`,
+            act: { label: 'Resume', href: '#/gym/workout' },
+        });
     }
 
     const progress = computeProgress();
@@ -246,105 +264,63 @@ function gymBlock(today) {
     // Gym keeps its own level and rank; the game card above is separate and says so.
     const level = gymState.workouts.length ? `Gym level ${progress.level} · ${progress.rank}` : null;
 
-    let note = 'A good week starts with one session.';
-    if (trainedToday) note = 'Trained today. Nice work.';
-    else if (targetHit) note = streak ? `Weekly target hit · ${streak}` : 'Weekly target hit. Anything more is a bonus.';
-    else if (streak) note = `${streak} going.`;
-    else if (week?.sessions) note = `${week.target - week.sessions} more to hit this week’s target.`;
-
-    const dots = el(
-        'div',
-        { class: 'life-week', 'aria-label': `Trained on ${trainedDays.size} days this week` },
-        WEEK_LETTERS.map((letter, index) => {
-            const day = addDays(weekStart, index);
-            const classes = ['life-week-day', trainedDays.has(day) ? 'trained' : '', day === today ? 'today' : '']
-                .filter(Boolean)
-                .join(' ');
-            return el('div', { class: classes }, [el('span', { class: 'life-week-dot' }), el('span', { text: letter })]);
-        }),
-    );
+    let note = 'A good week starts with one session';
+    if (trainedToday) note = 'Trained today. Nice work';
+    else if (targetHit) note = streak ? `Weekly target hit · ${streak}` : 'Weekly target hit';
+    else if (streak) note = `${streak} going`;
+    else if (week?.sessions) note = `${week.target - week.sessions} more this week`;
 
     // The plan to do next, offered as a one-tap start — unless today is already
     // trained or the week's target is met, when a push to train would be nagging.
     const next = !trainedToday && !targetHit ? nextPlan(gymState.templates, gymState.workouts, today) : null;
+    const sessions = week?.sessions ?? 0;
+    const target = week?.target ?? 0;
 
-    return block('gym', 'Gym', 'gym', [
-        figure(String(week?.sessions ?? 0), `of ${week?.target ?? 0} sessions this week`),
-        el('p', { class: 'life-sub', text: note }),
-        level ? el('p', { class: 'life-sub life-gym-level', text: level }) : null,
-        dots,
-        next
-            ? el('p', {
-                  class: 'life-sub life-next-plan',
-                  text: `Up next: ${next.template.name} · ${next.lastDay ? `last done ${dayLabel(next.lastDay, today)}` : 'not done yet'}`,
-              })
-            : null,
-        action(
-            next ? `Start ${next.template.name}` : trainedToday ? 'Start another workout' : 'Start a workout',
-            next ? `#/gym/workout:${next.template.id}` : '#/gym/workout',
-            trainedToday || targetHit,
-        ),
-        next ? el('a', { class: 'link-btn life-other-plans', href: '#/gym/workout', text: 'Other plans or a quick workout' }) : null,
-    ]);
+    return room('gym', 'Gym', {
+        arc: { fraction: target ? sessions / target : 0, label: `${sessions}/${target}` },
+        line: [note, level].filter(Boolean).join(' · '),
+        act: next
+            ? { label: `Start ${next.template.name}`, href: `#/gym/workout:${next.template.id}` }
+            : { label: trainedToday ? 'Another' : 'Start', href: '#/gym/workout' },
+        quietAct: trainedToday || targetHit,
+        body: [
+            next
+                ? el('p', { class: 'life-room-note' }, [
+                      `Up next: ${next.template.name} · ${next.lastDay ? `last done ${dayLabel(next.lastDay, today)}` : 'not done yet'} · `,
+                      el('a', { class: 'link-btn', href: '#/gym/workout', text: 'other plans' }),
+                  ])
+                : null,
+        ],
+    });
 }
 
 // --- Nutrition ----------------------------------------------------------------
 
-function ring(value, target, label, unit) {
-    const size = 38;
-    const stroke = 5;
-    const radius = (size - stroke) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const fraction = hasTarget(target) ? Math.min(1, value / target) : 0;
-
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', String(size));
-    svg.setAttribute('height', String(size));
-    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-    svg.setAttribute('aria-hidden', 'true');
-    for (const cls of ['life-ring-track', 'life-ring-fill']) {
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('class', cls);
-        circle.setAttribute('cx', String(size / 2));
-        circle.setAttribute('cy', String(size / 2));
-        circle.setAttribute('r', String(radius));
-        circle.setAttribute('stroke-width', String(stroke));
-        if (cls === 'life-ring-fill') {
-            circle.setAttribute('stroke-dasharray', String(circumference));
-            circle.setAttribute('stroke-dashoffset', String(circumference * (1 - fraction)));
-        }
-        svg.append(circle);
-    }
-
-    return el('div', { class: 'life-ring' }, [
-        svg,
-        el('span', { class: 'life-ring-label', text: label }),
-        el('span', { class: 'life-ring-value' }, [
-            fmt(value),
-            el('small', { text: hasTarget(target) ? ` / ${fmt(target)} ${unit}` : ` ${unit}` }),
-        ]),
-    ]);
-}
-
 function nutritionBlock() {
     const totals = dayTotals(food.entries);
     const { kcal, proteinG } = food.targets;
+    const logged = food.entries.length > 0;
 
-    let note = food.entries.length ? `${food.entries.length} logged today` : 'Nothing logged yet today.';
-    if (hasTarget(proteinG) && totals.proteinG < proteinG && food.entries.length) {
-        note = `${fmt(proteinG - totals.proteinG)} g of protein to go`;
-    } else if (hasTarget(proteinG) && totals.proteinG >= proteinG) {
-        note = 'Protein target reached.';
-    }
+    // The arc is protein against its target when there is one, else calories against theirs.
+    const arc = hasTarget(proteinG)
+        ? { fraction: totals.proteinG / proteinG, label: `${Math.min(999, Math.round((totals.proteinG / proteinG) * 100))}%` }
+        : hasTarget(kcal)
+          ? { fraction: totals.kcal / kcal, label: `${Math.min(999, Math.round((totals.kcal / kcal) * 100))}%` }
+          : { fraction: logged ? 1 : 0, label: String(food.entries.length) };
 
-    return block('nutrition', 'Nutrition', 'nutrition', [
-        el('div', { class: 'life-rings' }, [
-            ring(totals.kcal, kcal, 'Calories', 'kcal'),
-            ring(totals.proteinG, proteinG, 'Protein', 'g'),
-        ]),
-        el('p', { class: 'life-sub', text: note, style: 'margin-top: 12px' }),
-        action('Log food', '#/nutrition/log', food.entries.length > 0),
-    ]);
+    const parts = logged
+        ? [
+              `${fmt(totals.kcal)}${hasTarget(kcal) ? ` of ${fmt(kcal)}` : ''} kcal`,
+              hasTarget(proteinG) ? (totals.proteinG >= proteinG ? 'protein target reached' : `${fmt(totals.proteinG)} of ${fmt(proteinG)} g protein`) : `${fmt(totals.proteinG)} g protein`,
+          ]
+        : ['Nothing logged yet today'];
+
+    return room('nutrition', 'Nutrition', {
+        arc,
+        line: parts.join(' · '),
+        act: { label: 'Log', href: '#/nutrition/log' },
+        quietAct: logged,
+    });
 }
 
 // --- Inbox --------------------------------------------------------------------
@@ -353,16 +329,14 @@ function nutritionBlock() {
 function inboxBlock() {
     const notes = sortNotes(inboxState.notes);
     if (!notes.length) {
-        return block('inbox', 'Inbox', 'inbox', [
-            el('p', { class: 'life-sub', text: 'Ideas and things to remember, out of your head.' }),
-            action('Jot something down', '#/inbox/new'),
-        ]);
+        return room('inbox', 'Inbox', { arc: { fraction: 0, label: '0' }, line: 'Ideas and things to remember', act: { label: 'Jot', href: '#/inbox/new' } });
     }
-    return block('inbox', 'Inbox', 'inbox', [
-        figure(String(notes.length), notes.length === 1 ? 'note' : 'notes'),
-        el('p', { class: 'life-sub life-inbox-latest', text: notes[0].text }),
-        action('Jot something down', '#/inbox/new', true),
-    ]);
+    return room('inbox', 'Inbox', {
+        arc: { fraction: 0, label: String(notes.length) },
+        line: notes[0].text,
+        act: { label: 'Jot', href: '#/inbox/new' },
+        quietAct: true,
+    });
 }
 
 // --- Wishlist -----------------------------------------------------------------
@@ -371,18 +345,15 @@ function inboxBlock() {
 function wishlistBlock() {
     const { wanted } = splitItems(wishState.items);
     if (!wanted.length) {
-        return block('wishlist', 'Wishlist', 'wishlist', [
-            el('p', { class: 'life-sub', text: 'Things you want to buy, in one place.' }),
-            action('Add something', '#/wishlist/new'),
-        ]);
+        return room('wishlist', 'Wishlist', { arc: { fraction: 0, label: '0' }, line: 'Things you want to buy', act: { label: 'Add', href: '#/wishlist/new' } });
     }
     const { total, priced } = totalOf(wanted);
-    return block('wishlist', 'Wishlist', 'wishlist', [
-        figure(String(wanted.length), wanted.length === 1 ? 'thing you want' : 'things you want'),
-        el('p', { class: 'life-sub', text: priced ? `${formatPrice(total)} in all${priced < wanted.length ? ` (${priced} priced)` : ''}` : 'No prices yet' }),
-        el('p', { class: 'life-sub life-wish-top', text: `${wanted[0].starred ? 'Top pick' : 'Latest'}: ${wanted[0].name}` }),
-        action('Add something', '#/wishlist/new', true),
-    ]);
+    return room('wishlist', 'Wishlist', {
+        arc: { fraction: 0, label: String(wanted.length) },
+        line: [priced ? formatPrice(total) : null, `${wanted[0].starred ? 'top pick' : 'latest'}: ${wanted[0].name}`].filter(Boolean).join(' · '),
+        act: { label: 'Add', href: '#/wishlist/new' },
+        quietAct: true,
+    });
 }
 
 // --- Journal ------------------------------------------------------------------
@@ -398,15 +369,15 @@ function journalBlock(today) {
         const detail = [energyLabel(entry.energy) ? `Energy ${energyLabel(entry.energy).toLowerCase()}` : null, entryPreview(entry)]
             .filter(Boolean)
             .join(' · ');
-        return block('journal', 'Journal', 'journal', [
-            figure(moodLabel(entry.mood), 'today'),
-            detail ? el('p', { class: 'life-sub life-journal-note', text: detail }) : null,
-            action(entryPreview(entry) ? 'Open journal' : 'Add a note', '#/journal', true),
-        ]);
+        return room('journal', 'Journal', {
+            arc: { fraction: 1, label: `${entry.mood}/5` },
+            line: [moodLabel(entry.mood), detail].filter(Boolean).join(' · '),
+            act: entryPreview(entry) ? null : { label: 'Add a note', href: '#/journal' },
+            quietAct: true,
+        });
     }
 
-    return block('journal', 'Journal', 'journal', [
-        el('p', { class: 'life-sub', text: 'How are you today?' }),
+    return room('journal', 'Journal', { arc: { fraction: 0, label: '–' }, line: 'How are you today?', body: [
         el(
             'div',
             { class: 'life-journal-scale', role: 'group', 'aria-label': 'Mood today' },
@@ -427,12 +398,12 @@ function journalBlock(today) {
                 }),
             ),
         ),
-    ]);
+    ] });
 }
 
 /** Redraws just the Journal block, so the others don't replay their entrance. */
 function refreshJournalBlock(today) {
-    const section = document.querySelector('.life-block[data-tone="journal"]');
+    const section = document.querySelector('.life-room[data-tone="journal"]');
     if (!section) return;
     const next = journalBlock(today);
     next.style.animation = 'none';
@@ -443,47 +414,40 @@ function refreshJournalBlock(today) {
 
 function habitsBlock(today) {
     if (!habitsState.habits.length) {
-        return block('habits', 'Habits', 'habits', [
-            el('p', { class: 'life-sub', text: 'Small things, done often. Add one to start a streak.' }),
-            action('Add a habit', '#/habits/new'),
-        ]);
+        return room('habits', 'Habits', { arc: { fraction: 0, label: '0' }, line: 'Small things, done often', act: { label: 'Add a habit', href: '#/habits/new' } });
     }
 
     // In the day's order (morning first, all day last); the sort is stable, so
     // habits keep their own order within a time of day.
     const listed = habitsState.habits.filter((habit) => isScheduled(habit, today));
     if (!listed.length) {
-        return block('habits', 'Habits', 'habits', [
-            figure('Rest day'),
-            el('p', { class: 'life-sub', text: 'Nothing scheduled for today.' }),
-        ]);
+        return room('habits', 'Habits', { arc: { fraction: 0, label: '–' }, line: 'A rest day: nothing scheduled' });
     }
 
     // What's still asked of you today. A weekly habit whose week is done drops
     // off (until the week turns over) unless you ticked it today.
     const due = listed.filter((habit) => isDue(habit, doneDays(habit.id), today)).sort((a, b) => timeRank(a) - timeRank(b));
     if (!due.length) {
-        return block('habits', 'Habits', 'habits', [
-            figure('Week done'),
-            el('p', { class: 'life-sub', text: 'Your weekly habits are done for this week.' }),
-        ]);
+        return room('habits', 'Habits', { arc: { fraction: 1, label: 'Week' }, line: 'Your weekly habits are done for this week' });
     }
 
     const doneCount = due.filter((habit) => doneDays(habit.id).has(today)).length;
     const shown = due.slice(0, HABITS_SHOWN);
     const extra = due.length - shown.length;
 
-    const node = block('habits', 'Habits', 'habits', [
-        figure(`${doneCount} of ${due.length}`, doneCount === due.length ? 'all done' : 'done today'),
-        el('div', { class: 'life-habit-list', style: 'margin-top: 10px' }, shown.map((habit) => habitRow(habit, today))),
-        extra > 0 ? el('a', { class: 'link-btn', href: '#/habits', text: `+${extra} more`, style: 'margin-top: 6px' }) : null,
-    ]);
-    return node;
+    return room('habits', 'Habits', {
+        arc: { fraction: doneCount / due.length, label: `${doneCount}/${due.length}` },
+        line: doneCount === due.length ? 'All done today' : `${doneCount} of ${due.length} done today`,
+        body: [
+            el('div', { class: 'life-habit-list' }, shown.map((habit) => habitRow(habit, today))),
+            extra > 0 ? el('a', { class: 'link-btn life-room-more', href: '#/habits', text: `+${extra} more` }) : null,
+        ],
+    });
 }
 
 /** Redraws just the Habits block, so the others don't replay their entrance. */
 function refreshHabitsBlock(today) {
-    const section = document.querySelector('.life-block[data-tone="habits"]');
+    const section = document.querySelector('.life-room[data-tone="habits"]');
     if (!section) return;
     const next = habitsBlock(today);
     next.style.animation = 'none';
@@ -545,14 +509,6 @@ function habitRow(habit, today) {
 
 const fmtWeight = (kg) => `${formatNumber(Math.round(toDisplay(kg) * 10) / 10)}`;
 
-function stat(iconName, label, value, note) {
-    return el('div', { class: 'life-stat' }, [
-        el('span', { class: 'life-stat-label' }, [icon(iconName, { size: 14 }), label]),
-        el('span', { class: `life-stat-value${value ? '' : ' empty'}`, text: value || '—' }),
-        note ? el('span', { class: 'life-stat-note', text: note }) : null,
-    ]);
-}
-
 function bodyBlock(today) {
     const entry = entryFor(today);
     const series = trendSeries(bodyState.entries);
@@ -569,14 +525,20 @@ function bodyBlock(today) {
         }
     }
 
-    return block('body', 'Body', 'body', [
-        el('div', { class: 'life-stats' }, [
-            stat('scale', 'Weight', latest ? `${fmtWeight(latest.weightKg)} ${getUnit()}` : null, weightNote),
-            stat('moon', 'Sleep', entry?.sleepHours != null ? `${formatNumber(entry.sleepHours)} h` : null),
-            stat('steps', 'Steps', entry?.steps != null ? fmt(entry.steps) : null),
-        ]),
-        action(entry ? 'Edit today' : 'Log today', '#/body/log', Boolean(entry)),
-    ]);
+    // The arc is how much of today is in: a weight, a night's sleep, the steps.
+    const logged = [entry?.weightKg, entry?.sleepHours, entry?.steps].filter((v) => v != null && v > 0).length;
+    const parts = [
+        latest ? `${fmtWeight(latest.weightKg)}\u00a0${getUnit()}${weightNote ? ` (${weightNote})` : ''}` : null,
+        entry?.sleepHours != null ? `${formatNumber(entry.sleepHours)}\u00a0h sleep` : null,
+        entry?.steps != null ? `${fmt(entry.steps)} steps` : null,
+    ].filter(Boolean);
+
+    return room('body', 'Body', {
+        arc: { fraction: logged / 3, label: `${logged}/3` },
+        line: parts.length ? parts.join(' · ') : 'Nothing logged yet',
+        act: { label: entry ? 'Edit' : 'Log', href: '#/body/log' },
+        quietAct: Boolean(entry),
+    });
 }
 
 // --- Videos ----------------------------------------------------------------------
@@ -596,31 +558,22 @@ function videosBlock() {
     const books = booksLine();
 
     if (!videos.length) {
-        return block('videos', 'Videos', 'play', [
-            el('p', { class: 'life-sub', text: 'Nothing saved yet. Add one you want to watch.' }),
-            books,
-            action('Add a video', '#/videos/add'),
-        ]);
+        return room('videos', 'Videos', { arc: { fraction: 0, label: '0' }, line: 'Something you want to watch', act: { label: 'Add', href: '#/videos/add' }, body: [books] });
     }
 
     const remaining = unwatchedCount(videos);
     const next = nextToWatch(videos);
+    const arc = { fraction: (videos.length - remaining) / videos.length, label: String(remaining) };
 
     if (!remaining) {
-        return block('videos', 'Videos', 'play', [
-            figure('All caught up'),
-            el('p', { class: 'life-sub', text: 'Nothing left on your list.' }),
-            books,
-            action('Add a video', '#/videos/add', true),
-        ]);
+        return room('videos', 'Videos', { arc, line: 'All caught up', act: { label: 'Add', href: '#/videos/add' }, quietAct: true, body: [books] });
     }
 
-    return block('videos', 'Videos', 'play', [
-        figure(String(remaining), remaining === 1 ? 'video to watch' : 'videos to watch'),
-        next ? el('p', { class: 'life-sub', text: `Next up: ${next.title}` }) : null,
-        books,
-        action('Watch something', '#/videos'),
-    ]);
+    return room('videos', 'Videos', {
+        arc,
+        line: next ? `${remaining} to watch · next: ${next.title}` : `${remaining} to watch`,
+        body: [books],
+    });
 }
 
 // --- Tasks -----------------------------------------------------------------------
@@ -629,10 +582,7 @@ function tasksBlock(today) {
     const tasks = tasksState.tasks;
 
     if (!tasks.length) {
-        return block('tasks', 'Tasks', 'calendar', [
-            el('p', { class: 'life-sub', text: 'Nothing on your list yet.' }),
-            action('Add a task', '#/tasks/add'),
-        ]);
+        return room('tasks', 'Tasks', { arc: { fraction: 0, label: '0' }, line: 'Nothing on your list yet', act: { label: 'Add', href: '#/tasks/add' } });
     }
 
     const due = dueCount(tasks);
@@ -640,22 +590,18 @@ function tasksBlock(today) {
     const next = nextTask(tasks, today);
 
     if (!due) {
-        return block('tasks', 'Tasks', 'calendar', [
-            figure('All done'),
-            el('p', { class: 'life-sub', text: 'Nothing left on your list.' }),
-            action('Add a task', '#/tasks/add', true),
-        ]);
+        return room('tasks', 'Tasks', { arc: { fraction: 1, label: '0' }, line: 'All done', act: { label: 'Add', href: '#/tasks/add' }, quietAct: true });
     }
 
     const note = overdue
         ? `${overdue} overdue`
         : next
-          ? `Next: ${next.title} · ${taskDateLabel(next.date, today)}`
+          ? `next: ${next.title}, ${taskDateLabel(next.date, today).toLowerCase()}`
           : null;
 
-    return block('tasks', 'Tasks', 'calendar', [
-        figure(String(due), due === 1 ? 'task due' : 'tasks due'),
-        note ? el('p', { class: `life-sub${overdue ? ' life-sub-warn' : ''}`, text: note }) : null,
-        action('View tasks', '#/tasks', !overdue),
-    ]);
+    return room('tasks', 'Tasks', {
+        arc: { fraction: 0, label: String(due) },
+        line: note ? `${due} due · ${note}` : `${due} due`,
+        warn: Boolean(overdue),
+    });
 }

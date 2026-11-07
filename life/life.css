@@ -316,6 +316,30 @@ body.modal-open {
     opacity: 0.6;
 }
 
+/* Every section page carries the Day Dial's arc in its own colour: a quarter
+   ring centred on the top-right corner, drawn inside a 160px box (so it can't
+   cause sideways scrolling) and in the header's empty corner, so no secondary
+   text sits on it. A wash behind the whole header was tried and pushed
+   light-mode text below 4.5:1. */
+body[data-section]::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 160px;
+    height: 160px;
+    pointer-events: none;
+    z-index: -1;
+    --ring: color-mix(in srgb, var(--primary) 10%, transparent);
+    background: radial-gradient(circle at 100% 0, transparent 128px, var(--ring) 129px, var(--ring) 154px, transparent 155px);
+}
+
+@media (prefers-color-scheme: dark) {
+    body[data-section]::before {
+        --ring: color-mix(in srgb, var(--primary) 14%, transparent);
+    }
+}
+
 /* A card: white on paper in light mode, a lifted panel in dark. */
 .life-surface {
     background: var(--bg-raised);
@@ -362,14 +386,25 @@ body.modal-open {
 }
 
 .life-empty-icon {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 56px;
-    height: 56px;
-    margin-bottom: 6px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 8px;
     border-radius: 50%;
     color: var(--primary);
-    background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* An empty state is an arc not yet started: the ring, with a first quarter drawn. */
+.life-empty-icon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 4px solid color-mix(in srgb, var(--primary) 16%, transparent);
+    border-top-color: var(--primary);
+    transform: rotate(-45deg);
 }
 
 .life-empty-title {
@@ -467,34 +502,172 @@ body[data-daypart="night"] { --wash: var(--wash-night); }
     gap: 14px;
 }
 
-.life-block {
-    --tone: var(--ink);
-    padding: 16px 18px 18px;
-    animation: lifeRise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+/* --- Rooms: every section on Today, in one list --------------------------------
+   Each room is the Day Dial in miniature (its arc, in the section's colour), a
+   name in New York, one line of what matters now and at most one action. */
+
+.life-rooms-title {
+    margin: var(--space-3) 4px calc(-1 * var(--space-1));
 }
 
-.life-block:nth-child(2) { animation-delay: 0.04s; }
-.life-block:nth-child(3) { animation-delay: 0.08s; }
-.life-block:nth-child(4) { animation-delay: 0.12s; }
+.life-rooms {
+    overflow: hidden;
+    animation: lifeRise 0.45s var(--ease-settle) both;
+}
 
 @keyframes lifeRise {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .life-block { animation: none; }
+.life-room {
+    --tone: var(--ink);
 }
 
-.life-block[data-tone="gym"] { --tone: var(--gym); }
-.life-block[data-tone="nutrition"] { --tone: var(--nutrition); }
-.life-block[data-tone="habits"] { --tone: var(--habits); }
-.life-block[data-tone="body"] { --tone: var(--body); }
-.life-block[data-tone="videos"] { --tone: var(--videos); }
-.life-block[data-tone="tasks"] { --tone: var(--tasks); }
-.life-block[data-tone="journal"] { --tone: var(--journal); }
-.life-block[data-tone="inbox"] { --tone: var(--inbox); }
-.life-block[data-tone="wishlist"] { --tone: var(--wishlist); }
+.life-room + .life-room {
+    border-top: 1px solid var(--card-border);
+}
+
+.life-room[data-tone="gym"] { --tone: var(--gym); }
+.life-room[data-tone="nutrition"] { --tone: var(--nutrition); }
+.life-room[data-tone="habits"] { --tone: var(--habits); }
+.life-room[data-tone="body"] { --tone: var(--body); }
+.life-room[data-tone="videos"] { --tone: var(--videos); }
+.life-room[data-tone="tasks"] { --tone: var(--tasks); }
+.life-room[data-tone="journal"] { --tone: var(--journal); }
+.life-room[data-tone="inbox"] { --tone: var(--inbox); }
+.life-room[data-tone="wishlist"] { --tone: var(--wishlist); }
+
+.life-room-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-right: var(--space-4);
+}
+
+/* The arc and the words together open the section. */
+.life-room-link {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 4px 13px var(--space-4);
+    color: var(--text-primary);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.life-room-link:active {
+    opacity: 0.7;
+}
+
+.life-room-arc {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    overflow: visible;
+}
+
+.life-room-track {
+    fill: none;
+    stroke: var(--tone);
+    stroke-opacity: 0.17;
+    stroke-width: 4.5;
+}
+
+.life-room-fill {
+    fill: none;
+    stroke: var(--tone);
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset var(--dur-fill) var(--ease-fill);
+}
+
+.life-room-label {
+    font-family: var(--font-rounded);
+    font-size: 12px;
+    font-weight: 700;
+    text-anchor: middle;
+    fill: var(--tone);
+    font-variant-numeric: tabular-nums;
+}
+
+.life-room-label.small {
+    font-size: 10px;
+}
+
+.life-room-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.life-room-name {
+    font-family: var(--font-display);
+    font-size: var(--display-s);
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1.2;
+}
+
+.life-room-line {
+    font-size: var(--text-s);
+    color: var(--text-secondary);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.life-room-line.warn {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* The one action a room offers: a pill in its colour (quiet once done). */
+.life-room-go {
+    flex-shrink: 0;
+    max-width: 46%;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    background: var(--tone);
+    color: var(--on-accent);
+    font-size: var(--text-s);
+    font-weight: 650;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.life-room-go.quiet {
+    background: color-mix(in srgb, var(--tone) 13%, transparent);
+    color: var(--tone);
+}
+
+.life-room-go:active {
+    transform: scale(0.96);
+}
+
+/* What a room shows below its line: today's habits, the mood buttons. */
+.life-room-body {
+    padding: 0 var(--space-4) var(--space-3) calc(var(--space-4) + 44px + 14px);
+    margin-top: calc(-1 * var(--space-1));
+}
+
+.life-room-note {
+    font-size: var(--text-s);
+    color: var(--text-secondary);
+}
+
+.life-room-more {
+    display: inline-block;
+    margin-top: var(--space-1);
+}
 
 .life-review-row[data-tone="life"] { --tone: var(--ink); }
 .life-review-row[data-tone="gym"] { --tone: var(--gym); }
@@ -582,32 +755,6 @@ body[data-daypart="night"] { --wash: var(--wash-night); }
     color: var(--text-secondary);
 }
 
-.life-next-plan {
-    margin-top: 12px;
-}
-
-.life-other-plans {
-    margin-top: 8px;
-    text-decoration: none;
-}
-
-/* The whole header row opens the section. */
-.life-block-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: -8px -6px 8px;
-    padding: 8px 6px;
-    border-radius: 12px;
-    color: var(--text-primary);
-    text-decoration: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.life-block-head:active {
-    background: var(--bg-secondary);
-}
-
 .life-chip {
     display: grid;
     place-items: center;
@@ -616,37 +763,6 @@ body[data-daypart="night"] { --wash: var(--wash-night); }
     border-radius: 10px;
     color: var(--tone);
     background: color-mix(in srgb, var(--tone) 13%, transparent);
-}
-
-.life-block-title {
-    flex: 1;
-    font-size: 16px;
-    font-weight: 650;
-    letter-spacing: -0.2px;
-}
-
-/* The chevron — not the icon inside the chip, which takes the section colour. */
-.life-block-head > .life-icon:last-child {
-    color: var(--text-secondary);
-}
-
-/* A big number with a small unit beside it. */
-.life-figure {
-    font-family: var(--font-rounded);
-    font-size: 30px;
-    font-weight: 650;
-    line-height: 1.1;
-    letter-spacing: -0.5px;
-    font-variant-numeric: tabular-nums;
-}
-
-.life-figure small {
-    margin-left: 3px;
-    font-family: var(--font-sans);
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 0;
-    color: var(--text-secondary);
 }
 
 .life-sub {
@@ -659,106 +775,13 @@ body[data-daypart="night"] { --wash: var(--wash-night); }
     font-weight: 600;
 }
 
-.life-block-action {
-    margin-top: 14px;
-    background: var(--tone);
-    color: var(--on-accent);
-}
-
-.life-block-action.quiet {
-    background: color-mix(in srgb, var(--tone) 12%, transparent);
-    color: var(--tone);
-}
-
-/* Gym: the week as seven dots, trained days filled. */
-.life-week {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    margin-top: 14px;
-}
-
-.life-week-day {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.life-week-dot {
-    width: 100%;
-    max-width: 30px;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--bg-secondary);
-}
-
-.life-week-day.trained .life-week-dot { background: var(--tone); }
-.life-week-day.today { color: var(--text-primary); }
-.life-week-day.today .life-week-dot { box-shadow: inset 0 0 0 2px var(--tone); }
-.life-week-day.today.trained .life-week-dot { box-shadow: none; }
-
-/* Nutrition: one row per target — a small ring, the name, the figure. */
-.life-rings {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.life-ring {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-}
-
-.life-ring svg {
-    flex-shrink: 0;
-    transform: rotate(-90deg);
-}
-
-.life-ring-track {
-    fill: none;
-    stroke: var(--bg-secondary);
-}
-
-.life-ring-fill {
-    fill: none;
-    stroke: var(--tone);
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.life-ring-label {
-    flex: 1;
-    font-size: 16px;
-    font-weight: 500;
-}
-
-.life-ring-value {
-    font-family: var(--font-rounded);
-    font-size: 20px;
-    font-weight: 650;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.life-ring-value small {
-    font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
 /* Habits: tick straight from Today. */
 .life-habit-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
     margin: 0 -8px;
+    margin-left: -8px;
 }
 
 .life-habit {
@@ -823,48 +846,6 @@ body[data-daypart="night"] { --wash: var(--wash-night); }
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: var(--tone);
-}
-
-/* Body: three stats in a row. */
-.life-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-.life-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-
-.life-stat-label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.life-stat-value {
-    font-family: var(--font-rounded);
-    font-size: 20px;
-    font-weight: 650;
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
-    overflow-wrap: anywhere;
-}
-
-.life-stat-value.empty {
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.life-stat-note {
-    font-size: 12px;
-    color: var(--text-secondary);
 }
 
 /* --- Backup nudge and sheet ------------------------------------------------ */
@@ -1027,7 +1008,7 @@ body[data-daypart="night"] { --wash: var(--wash-night); }
 .life-books-line {
     display: block;
     max-width: 100%;
-    margin: 4px 0 10px;
+    margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -186,10 +186,3 @@
     cursor: pointer;
 }
 
-/* The home card's line under the mood: energy and the start of the note. */
-.life-journal-note {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}

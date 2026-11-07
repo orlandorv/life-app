@@ -25,10 +25,14 @@ test('the rim is a 24-hour clock with noon at the top and midnight at the bottom
 test('an arc uses the large-arc flag only past half a turn, and a full turn never collapses', () => {
     assert.match(arcPath(50, 50, 40, 0, 90), / 0 0 1 /);
     assert.match(arcPath(50, 50, 40, 0, 270), / 0 1 1 /);
-    const full = arcPath(50, 50, 40, 0, 360);
-    const [, mx, my] = full.match(/^M([\d.]+) ([\d.]+)/);
-    const [, ex, ey] = full.match(/ ([\d.]+) ([\d.]+)$/);
-    assert.ok(mx !== ex || my !== ey, 'start and end points differ, so the arc draws');
+    // A full turn is two half turns through the opposite point, so it has length
+    // on any ring — a single "almost full" arc rounded to nothing on a 44px one.
+    for (const r of [18, 40, 88]) {
+        const full = arcPath(50, 50, r, 0, 360);
+        const arcs = full.match(/A/g).length;
+        assert.equal(arcs, 2, `two arcs at r=${r}`);
+        assert.match(full, new RegExp(`A${r} ${r} 0 1 1 50 ${50 + r} A`), `through the bottom at r=${r}`);
+    }
 });
 
 test('a ring is shared in proportion, with a gap between each part', () => {

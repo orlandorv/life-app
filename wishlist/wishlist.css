@@ -225,10 +225,3 @@
     align-self: flex-start;
 }
 
-/* --- Home card -------------------------------------------------------------------- */
-
-.life-wish-top {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
