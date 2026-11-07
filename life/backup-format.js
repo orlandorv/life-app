@@ -31,6 +31,7 @@ export const LIFE_STORES = {
     savedMeals: 'id',
     wishlist: 'id',
     books: 'id',
+    screens: 'id',
     settings: 'key',
 };
 
@@ -118,6 +119,17 @@ const ROW_CHECKS = {
         isOptionalText(row.note) &&
         isOptionalText(row.link) &&
         (row.readAt === undefined || isText(row.readAt)),
+    screens: (row) =>
+        isText(row.id) &&
+        isText(row.title) &&
+        (row.kind === 'movie' || row.kind === 'series') &&
+        isText(row.addedAt) &&
+        isOptionalText(row.genre) &&
+        isOptionalText(row.where) &&
+        isOptionalText(row.progress) &&
+        isOptionalText(row.note) &&
+        isOptionalText(row.link) &&
+        (row.watchedAt === undefined || isText(row.watchedAt)),
     wishlist: (row) =>
         isText(row.id) &&
         isText(row.name) &&
@@ -206,6 +218,7 @@ export function summarize(info) {
         savedMeals: count(info.life?.savedMeals),
         wishlist: count(info.life?.wishlist),
         books: count(info.life?.books),
+        screens: count(info.life?.screens),
     };
 }
 

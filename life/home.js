@@ -18,6 +18,8 @@ import { trendSeries, weeklyLogReminder } from '../body/stats.js';
 import { state as videosState, loadVideos } from '../videos/store.js';
 import { state as booksState, loadBooks } from '../videos/books-store.js';
 import { toReadCount, nextToRead } from '../videos/books-organize.js';
+import { state as screensState, loadScreens } from '../videos/screens-store.js';
+import { toWatchCount, nextToWatch as nextScreen } from '../videos/screens-organize.js';
 import { unwatchedCount, nextToWatch } from '../videos/organize.js';
 import { state as tasksState, loadTasks } from '../tasks/store.js';
 import { nextTask, overdueCount, dueCount, taskDateLabel } from '../tasks/organize.js';
@@ -90,6 +92,7 @@ export async function renderHome() {
             optional(loadNotes()),
             optional(loadWishlist()),
             optional(loadBooks()),
+            optional(loadScreens()),
             optional(loadGame(today)),
             isReviewDay(today)
                 ? optional(loadDays(Array.from({ length: 7 }, (_, i) => addDays(weekStartId(today), i))).then((byDay) => { weekFood = byDay; }))
@@ -543,22 +546,30 @@ function bodyBlock(today) {
 
 // --- Videos ----------------------------------------------------------------------
 
-/** The Books tab's line on the Videos card: how many are waiting and which is next, opening that tab. */
-function booksLine() {
-    const waiting = toReadCount(booksState.books);
-    if (!waiting) return null;
-    const next = nextToRead(booksState.books);
-    return el('a', { class: 'link-btn life-books-line', href: '#/videos/books' }, [
-        `${waiting} ${waiting === 1 ? 'book' : 'books'} to read${next ? ` · next: ${next.title}` : ''}`,
-    ]);
+/** A tab's line in the Watch & Read room: how many are waiting and which is next, opening that tab. */
+function tabLine(href, count, noun, next) {
+    if (!count) return null;
+    return el('a', { class: 'link-btn life-books-line', href }, [`${count} ${noun}${next ? ` · next: ${next.title}` : ''}`]);
 }
 
+const booksLine = () => {
+    const waiting = toReadCount(booksState.books);
+    return tabLine('#/videos/books', waiting, waiting === 1 ? 'book to read' : 'books to read', nextToRead(booksState.books));
+};
+
+const screensLine = () => {
+    const waiting = toWatchCount(screensState.screens);
+    return tabLine('#/videos/screens', waiting, waiting === 1 ? 'movie or series to watch' : 'movies and series to watch', nextScreen(screensState.screens));
+};
+
+/** The Watch & Read room: videos lead (it is the section's first tab), with a line for each of the other two. */
 function videosBlock() {
     const videos = videosState.videos;
-    const books = booksLine();
+    const others = [screensLine(), booksLine()];
+    const title = 'Watch & read';
 
     if (!videos.length) {
-        return room('videos', 'Videos', { arc: { fraction: 0, label: '0' }, line: 'Something you want to watch', act: { label: 'Add', href: '#/videos/add' }, body: [books] });
+        return room('videos', title, { arc: { fraction: 0, label: '0' }, line: 'Videos, films and books to come back to', act: { label: 'Add', href: '#/videos/add' }, body: others });
     }
 
     const remaining = unwatchedCount(videos);
@@ -566,13 +577,13 @@ function videosBlock() {
     const arc = { fraction: (videos.length - remaining) / videos.length, label: String(remaining) };
 
     if (!remaining) {
-        return room('videos', 'Videos', { arc, line: 'All caught up', act: { label: 'Add', href: '#/videos/add' }, quietAct: true, body: [books] });
+        return room('videos', title, { arc, line: 'Videos: all caught up', act: { label: 'Add', href: '#/videos/add' }, quietAct: true, body: others });
     }
 
-    return room('videos', 'Videos', {
+    return room('videos', title, {
         arc,
-        line: next ? `${remaining} to watch · next: ${next.title}` : `${remaining} to watch`,
-        body: [books],
+        line: next ? `${remaining} video${remaining === 1 ? '' : 's'} to watch · next: ${next.title}` : `${remaining} to watch`,
+        body: others,
     });
 }
 

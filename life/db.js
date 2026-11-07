@@ -13,7 +13,7 @@ import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 import { standAsideForUpgrade } from './storage-errors.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 
 
 /** Fired on `window` after a write to something the game scores (never from an import, so a restore can't celebrate). */
@@ -140,6 +140,13 @@ class LifeDatabase {
                 // optional `author`/`topic`/`note`/`link`; `readAt` is what makes one read.
                 if (!db.objectStoreNames.contains('books')) {
                     db.createObjectStore('books', { keyPath: 'id' });
+                }
+
+                // v12 — Movies & TV (a tab of the Watch & Read section): `title`, `kind`
+                // ('movie' | 'series'), `addedAt`, optional `genre`/`where`/`progress`/`note`/
+                // `link`; `watchedAt` is what makes one watched.
+                if (!db.objectStoreNames.contains('screens')) {
+                    db.createObjectStore('screens', { keyPath: 'id' });
                 }
             };
         }).catch((error) => {

@@ -26,6 +26,7 @@ const SAMPLE = {
     journalEntries: { day: '2026-11-01', mood: 4, energy: null, note: 'Good session', dreams: 'Flying', morning: 'Slow start', afternoon: 'Gym', night: 'Early bed' },
     notes: { id: 'i1', text: 'Try a deload #gym', createdAt: '2026-10-01T10:00:00.000Z', pinned: true },
     books: { id: 'b1', title: 'Atomic Habits', author: 'James Clear', topic: 'Self-improvement', note: 'From Sam', link: 'https://shop.example/b', addedAt: '2026-10-01T10:00:00.000Z', readAt: '2026-10-20T10:00:00.000Z' },
+    screens: { id: 's1', title: 'Severance', kind: 'series', genre: 'Thriller', where: 'Apple TV', progress: 'S2 E4', note: 'From Sam', link: 'https://shop.example/s', addedAt: '2026-10-01T10:00:00.000Z', watchedAt: '2026-10-20T10:00:00.000Z' },
     wishlist: { id: 'w1', name: 'Headphones', price: 129.99, category: 'Tech', link: 'https://shop.example/h', note: 'Black', starred: true, boughtAt: '2026-10-20T10:00:00.000Z', createdAt: '2026-10-01T10:00:00.000Z' },
     savedMeals: { id: 'm1', name: 'Usual breakfast', items: [{ name: 'Oats', kcal: 150, proteinG: 5, carbsG: 27, fatG: 3 }], createdAt: '2026-10-01T10:00:00.000Z' },
     settings: { key: 'someSetting', value: 1 },
@@ -107,6 +108,7 @@ test('summarize counts what the import preview shows', () => {
     assert.equal(counts.savedMeals, 1);
     assert.equal(counts.wishlist, 1);
     assert.equal(counts.books, 1);
+    assert.equal(counts.screens, 1);
 });
 
 test('the backup reminder: needs data, then waits NUDGE_AFTER_DAYS from the last backup', () => {

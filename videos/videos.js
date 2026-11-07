@@ -14,15 +14,19 @@ import { groupByTopic, existingTopics, thumbnailUrl, isYouTubeUrl, isLikelyUrl, 
 import { fetchYouTubeTitle } from './oembed.js';
 import { loadBooks, state as booksState } from './books-store.js';
 import { booksView, bindBooks, addBookSheet } from './books.js';
+import { loadScreens, state as screensState } from './screens-store.js';
+import { screensView, bindScreens, addScreenSheet } from './screens.js';
+import { toWatchCount } from './screens-organize.js';
 
 /**
- * Recommended Videos: things worth watching, grouped into topics. Topics are
+ * Watch & Read. Its first tab, Videos: things worth watching, grouped into topics. Topics are
  * free text rather than a fixed list — add a video under any topic name and
  * the group appears; this is also where videos sent over chat land, sorted
  * into topics by hand rather than picked from a menu.
  *
- * The section has two tabs: **Videos** and **Books** (a reading list built the
- * same way, see books.js). Opening the section always starts on Videos.
+ * The section has three tabs: **Videos**, **Movies & TV** (films and series to
+ * watch, see screens.js) and **Books** (a reading list, see books.js). All three
+ * are lists built the same way. Opening the section always starts on Videos.
  *
  * Same conventions as the other sections: no reactivity, every write reloads
  * and re-renders. Pasting a YouTube link tries to fetch its title (no key,
@@ -32,7 +36,7 @@ import { booksView, bindBooks, addBookSheet } from './books.js';
 const TITLE_LOOKUP_DELAY_MS = 500;
 
 let ready = null;
-// Which tab is showing: 'videos' or 'books'.
+// Which tab is showing: 'videos', 'screens' or 'books'.
 let view = 'videos';
 
 /** Opens LifeDB. Safe to call repeatedly. */
@@ -47,20 +51,22 @@ export function initVideos() {
 /** Called each time the section is opened. `'add'` opens the add sheet straight away. */
 export async function enterVideos(action = null) {
     await initVideos();
-    await Promise.all([loadVideos(), loadBooks()]);
-    view = action === 'books' || action === 'book' ? 'books' : 'videos';
+    await Promise.all([loadVideos(), loadBooks(), loadScreens()]);
+    view = action === 'books' || action === 'book' ? 'books' : action === 'screens' || action === 'screen' ? 'screens' : 'videos';
     renderVideos();
     if (action === 'add') openVideoModal();
     if (action === 'book') addBookSheet();
+    if (action === 'screen') addScreenSheet();
 }
 
 async function refresh() {
-    await Promise.all([loadVideos(), loadBooks()]);
+    await Promise.all([loadVideos(), loadBooks(), loadScreens()]);
     renderVideos();
 }
 
-// The Books tab reloads and redraws through the same path after a write.
+// The other tabs reload and redraw through the same path after a write.
 bindBooks(refresh);
+bindScreens(refresh);
 
 /** Runs a write and reports a failure without losing the screen. Returns whether it worked. */
 async function attempt(action) {
@@ -82,6 +88,10 @@ export function renderVideos() {
 
     if (view === 'books') {
         body.append(...booksView());
+        return;
+    }
+    if (view === 'screens') {
+        body.append(...screensView());
         return;
     }
 
@@ -117,6 +127,7 @@ function viewSwitch() {
         });
     return el('div', { class: 'segmented videos-switch' }, [
         tab('videos', 'Videos', state.videos.filter((video) => !video.watched).length),
+        tab('screens', 'Movies & TV', toWatchCount(screensState.screens)),
         tab('books', 'Books', booksState.books.filter((book) => !book.readAt).length),
     ]);
 }

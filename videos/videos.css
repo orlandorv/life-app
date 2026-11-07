@@ -46,6 +46,24 @@
 
 .videos-switch button {
     flex: 1;
+    min-width: 0;
+    padding-inline: 4px;
+    white-space: nowrap;
+}
+
+/* Movies & TV: the kind filter and the kind picker in the sheet. */
+.screens-filter {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.screens-filter button,
+.screens-kind button {
+    flex: 1;
+}
+
+.screens-none {
+    margin: 12px 4px;
 }
 
 /* --- Row: watch toggle, thumbnail + text (opens the link), edit ------------ */
