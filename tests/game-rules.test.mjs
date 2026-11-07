@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    WEIGHTS, BONUS, GOOD_AT, FREEZE_EVERY, MAX_FREEZES, MAX_BASE_XP,
+    WEIGHTS, BONUS, BONUS_GOALS, GOAL_IDS, GOOD_AT, FREEZE_EVERY, MAX_FREEZES, MAX_BASE_XP,
     levelCost, xpForLevel, levelFromXp, scoreDay, walkStreak, buildGame, defaultGoals, withGoal,
 } from '../life/game-rules.js';
 import { addDays } from '../life/dates.js';
 
 const TODAY = '2026-11-05';
 const ON = (from = '2026-01-01') => ({ from, to: null });
-const ALL_ON = { habits: ON(), food: ON(), body: ON(), journal: ON(), workout: ON() };
+const ALL_ON = { habits: ON(), food: ON(), body: ON(), journal: ON(), workout: ON(), tasks: ON() };
 
 const habit = (id, extra = {}) => ({ id, name: id, days: [0, 1, 2, 3, 4, 5, 6], startDay: '2026-01-01', ...extra });
 const food = (meal, extra = {}) => ({ id: Math.random().toString(36), meal, kcal: 300, proteinG: 20, loggedAt: '2026-11-05T12:00:00Z', ...extra });
@@ -22,6 +22,7 @@ function ctx(over = {}) {
         journalByDay: new Map(),
         bodyByDay: new Map(),
         workoutDays: new Set(),
+        taskDays: new Set(),
         proteinTarget: null,
         ...over,
     };
@@ -248,7 +249,7 @@ test('streak invariants hold over random histories', () => {
 // --- The whole game ------------------------------------------------------------------
 
 test('buildGame covers every day from the first goal to today, and the XP is the sum of the days', () => {
-    const goals = { ...ALL_ON, habits: null, food: null, body: null, workout: null, journal: ON('2026-11-01') };
+    const goals = { ...ALL_ON, habits: null, food: null, body: null, workout: null, tasks: null, journal: ON('2026-11-01') };
     const journalByDay = new Map(['2026-11-01', '2026-11-02', '2026-11-04', '2026-11-05'].map((d) => [d, { day: d, mood: 4 }]));
     const game = buildGame(ctx({ goals, journalByDay }), TODAY);
     assert.equal(game.rows.length, 5);
@@ -333,4 +334,48 @@ test('switching a goal on starts today; off ends it yesterday; the past keeps it
     assert.equal(withGoal(on, 'journal', false, TODAY).journal, null, 'switched on and off the same day: it never counted');
     assert.equal(withGoal(start, 'food', false, TODAY).food, null);
     assert.deepEqual(withGoal(off, 'habits', true, TODAY).habits, { from: TODAY, to: null });
+});
+
+test('finishing a task is a bonus: one a day however many, never required, and only while the goal is on', () => {
+    const goals = { ...ALL_ON, habits: null, food: null, body: null, journal: null, workout: null };
+    const day = (taskDays, g = goals) => scoreDay(TODAY, ctx({ goals: g, taskDays }));
+    assert.deepEqual(day(new Set()).bonuses, []);
+    assert.deepEqual(day(new Set([TODAY])).bonuses, ['tasks']);
+    assert.equal(day(new Set([TODAY])).bonusXp, BONUS.tasks);
+    assert.deepEqual(day(new Set(['2026-11-04'])).bonuses, [], 'another day does not count');
+    assert.deepEqual(day(new Set([TODAY]), { ...goals, tasks: null }).bonuses, [], 'switched off');
+    assert.deepEqual(day(new Set([TODAY]), { ...goals, tasks: { from: '2026-11-06', to: null } }).bonuses, [], 'not started yet');
+    // Like the workout, it makes a day that nothing else applies to pay a little, but never a good day.
+    const only = day(new Set([TODAY]));
+    assert.equal(only.base, null);
+    assert.equal(only.good, false);
+    assert.equal(only.xp, BONUS.tasks);
+    // A day with nothing in the log (no taskDays at all) is fine.
+    assert.deepEqual(scoreDay(TODAY, { ...ctx({ goals }), taskDays: undefined }).bonuses, []);
+});
+
+test('a day can pay at most 100 plus every bonus, and the bonuses are exactly workout, tasks and protein', () => {
+    assert.deepEqual(Object.keys(BONUS).sort(), ['protein', 'tasks', 'workout']);
+    assert.deepEqual(BONUS_GOALS, ['workout', 'tasks']);
+    for (const id of BONUS_GOALS) assert.ok(GOAL_IDS.includes(id), id);
+    const full = scoreDay(TODAY, ctx({
+        habits: [habit('a')],
+        done: new Map([['a', new Set([TODAY])]]),
+        foodByDay: new Map([[TODAY, [food('breakfast', { proteinG: 100 }), food('dinner', { proteinG: 100 })]]]),
+        bodyByDay: new Map([[TODAY, { steps: 5000 }]]),
+        journalByDay: new Map([[TODAY, { mood: 4 }]]),
+        workoutDays: new Set([TODAY]),
+        taskDays: new Set([TODAY]),
+        proteinTarget: 150,
+    }));
+    assert.equal(full.base, 100);
+    assert.deepEqual(full.bonuses, ['workout', 'tasks', 'protein']);
+    assert.equal(full.xp, 100 + BONUS.workout + BONUS.tasks + BONUS.protein);
+});
+
+test('a first run with no data switches on every goal, tasks included; with data, from the first day used', () => {
+    for (const id of GOAL_IDS) assert.deepEqual(defaultGoals({}, TODAY)[id], { from: TODAY, to: null }, id);
+    const seeded = defaultGoals({ tasks: '2026-10-01', habits: '2026-10-05' }, TODAY);
+    assert.deepEqual(seeded.tasks, { from: '2026-10-01', to: null });
+    assert.equal(seeded.workout, null);
 });

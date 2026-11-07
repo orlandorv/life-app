@@ -13,12 +13,12 @@ import { LIFE_STORES, DEVICE_SETTINGS } from './backup-format.js';
 import { standAsideForUpgrade } from './storage-errors.js';
 
 const DB_NAME = 'LifeDB';
-const DB_VERSION = 12;
+const DB_VERSION = 13;
 
 
 /** Fired on `window` after a write to something the game scores (never from an import, so a restore can't celebrate). */
 export const DATA_CHANGED_EVENT = 'life-data-changed';
-const GAME_STORES = new Set(['habits', 'habitLogs', 'nutritionEntries', 'journalEntries', 'bodyEntries']);
+const GAME_STORES = new Set(['habits', 'habitLogs', 'nutritionEntries', 'journalEntries', 'bodyEntries', 'taskLogs']);
 
 function announce(storeNames) {
     if (storeNames.some((name) => GAME_STORES.has(name))) globalThis.dispatchEvent?.(new Event(DATA_CHANGED_EVENT));
@@ -147,6 +147,14 @@ class LifeDatabase {
                 // `link`; `watchedAt` is what makes one watched.
                 if (!db.objectStoreNames.contains('screens')) {
                     db.createObjectStore('screens', { keyPath: 'id' });
+                }
+
+                // v13 — a record of tasks finished (`taskId|day`), because ticked tasks are
+                // deleted after 24 hours and repeating ones keep no history. See
+                // tasks/completions.js; the game's Tasks bonus reads it.
+                if (!db.objectStoreNames.contains('taskLogs')) {
+                    const store = db.createObjectStore('taskLogs', { keyPath: 'id' });
+                    store.createIndex('day', 'day', { unique: false });
                 }
             };
         }).catch((error) => {

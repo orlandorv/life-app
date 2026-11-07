@@ -32,6 +32,7 @@ export const LIFE_STORES = {
     wishlist: 'id',
     books: 'id',
     screens: 'id',
+    taskLogs: 'id',
     settings: 'key',
 };
 
@@ -119,6 +120,7 @@ const ROW_CHECKS = {
         isOptionalText(row.note) &&
         isOptionalText(row.link) &&
         (row.readAt === undefined || isText(row.readAt)),
+    taskLogs: (row) => isText(row.id) && isText(row.taskId) && DAY.test(row.day),
     screens: (row) =>
         isText(row.id) &&
         isText(row.title) &&

@@ -5,7 +5,7 @@ import { playGoodDay, playLevelUp } from '../gym/js/sfx.js';
 import { icon } from './icons.js';
 import { localDayId, addDays, weekStartId, daysBetween } from './dates.js';
 import { computeGame, saveLedger } from './game-inputs.js';
-import { withGoal, WEIGHTS, BONUS, MAX_BASE_XP, GOOD_AT, FREEZE_EVERY, MAX_FREEZES } from './game-rules.js';
+import { withGoal, WEIGHTS, BONUS, BONUS_GOALS, MAX_BASE_XP, GOOD_AT, FREEZE_EVERY, MAX_FREEZES } from './game-rules.js';
 import { svg } from './svg.js';
 import { arcPath, segments, hourAngle, polar, daypart, dayLine } from './dial.js';
 
@@ -26,6 +26,7 @@ const GOALS = {
     body: { label: 'Body', icon: 'body', href: '#/body/log', tone: 'body', blurb: 'Log a weight, your sleep or your steps.' },
     journal: { label: 'Check-in', icon: 'journal', href: '#/journal', tone: 'journal', blurb: 'A mood, an energy level or a note.' },
     workout: { label: 'Workout', icon: 'gym', href: '#/gym/workout', tone: 'gym', blurb: 'A bonus for a finished workout. Never required, so rest days are fine.' },
+    tasks: { label: 'Tasks', icon: 'calendar', href: '#/tasks', tone: 'tasks', blurb: 'A bonus for finishing a task. One bonus a day, however many you finish.' },
 };
 const DAILY = ['habits', 'food', 'body', 'journal'];
 
@@ -73,12 +74,12 @@ function chip(id, state, pop = new Set()) {
     const meta = GOALS[id];
     const day = state.game.today;
     const goal = day.goals.find((g) => g.id === id);
-    const isBonus = id === 'workout';
-    const done = isBonus ? day.bonuses.includes('workout') : goal.fraction >= 1;
+    const isBonus = BONUS_GOALS.includes(id);
+    const done = isBonus ? day.bonuses.includes(id) : goal.fraction >= 1;
     const progress = goal?.of ? `${goal.done}/${goal.of}` : '';
-    const text = isBonus ? `+${BONUS.workout}` : progress;
+    const text = isBonus ? `+${BONUS[id]}` : progress;
     const spoken = isBonus
-        ? `Workout bonus, ${done ? 'earned' : 'not yet'}`
+        ? `${meta.label} bonus, ${done ? 'earned' : 'not yet'}`
         : `${meta.label}: ${goal.of ? `${goal.done} of ${goal.of}` : done ? 'done' : 'not yet'}`;
 
     return el('a', { class: `life-game-chip${done ? ' done' : ''}${pop.has(id) ? ' pop' : ''}`, href: meta.href, dataset: { goal: id }, 'aria-label': spoken }, [
@@ -185,7 +186,7 @@ export function gameCard(state = current, pop = new Set(), { enter = false } = {
     const day = game.today;
     const now = new Date();
     const hour = now.getHours() + now.getMinutes() / 60;
-    const chips = [...DAILY.filter((id) => day.goals.some((g) => g.id === id)), ...(ledger.goals.workout && goalOnToday(ledger.goals.workout, state.today) ? ['workout'] : [])];
+    const chips = [...DAILY.filter((id) => day.goals.some((g) => g.id === id)), ...BONUS_GOALS.filter((id) => ledger.goals[id] && goalOnToday(ledger.goals[id], state.today))];
 
     return el('section', { class: `life-game${day.good ? ' good' : ''}${enter ? ' enter' : ''}`, 'aria-label': 'Your day' }, [
         el('button', { class: 'life-dial', type: 'button', 'aria-label': dialLabel(game), onclick: () => openGameSheet() }, [dialSvg(state, hour)]),
@@ -329,7 +330,7 @@ function todaySection(day) {
     for (const id of day.bonuses) {
         rows.push(
             el('div', { class: 'life-game-row bonus' }, [
-                el('span', { class: 'life-game-row-label', text: id === 'workout' ? 'Workout bonus' : 'Protein target bonus' }),
+                el('span', { class: 'life-game-row-label', text: { workout: 'Workout bonus', tasks: 'Task bonus', protein: 'Protein target bonus' }[id] }),
                 el('span', { class: 'life-game-row-detail', text: 'Earned' }),
                 el('span', { class: 'life-game-row-xp', text: `+${BONUS[id]}` }),
             ]),
@@ -376,7 +377,7 @@ function goalToggle(id, ledger, today) {
         }
         await resyncGame(); // switching a goal is not an achievement
     });
-    const worth = id === 'workout' ? `+${BONUS.workout} bonus` : `${WEIGHTS[id]} of 100`;
+    const worth = BONUS_GOALS.includes(id) ? `+${BONUS[id]} bonus` : `${WEIGHTS[id]} of 100`;
     return el('label', { class: 'life-check life-game-goal' }, [
         box,
         el('span', { class: 'life-game-goal-text' }, [el('span', { text: `${meta.label} · ${worth}` }), el('small', { text: meta.blurb })]),
@@ -452,7 +453,7 @@ function justCompleted(before, after) {
     if (!before?.game.today || before.today !== after.today) return new Set();
     const done = (state, id) => {
         const day = state.game.today;
-        return id === 'workout' ? day.bonuses.includes('workout') : (day.goals.find((g) => g.id === id)?.fraction ?? 0) >= 1;
+        return BONUS_GOALS.includes(id) ? day.bonuses.includes(id) : (day.goals.find((g) => g.id === id)?.fraction ?? 0) >= 1;
     };
     return new Set(Object.keys(GOALS).filter((id) => !done(before, id) && done(after, id)));
 }

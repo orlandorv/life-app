@@ -2,6 +2,7 @@ import { lifeDb, uid } from '../life/db.js';
 import { localDayId } from '../life/dates.js';
 import { isDoneExpired } from './organize.js';
 import { rolledTask } from './recurrence.js';
+import { completionRow, completedDay, logId } from './completions.js';
 
 /**
  * In-memory mirror of Tasks, in the same style as the other sections' stores.
@@ -81,7 +82,15 @@ export async function updateTask(task, { title, date, time, note, repeat = null 
 
 export async function setDone(task, done) {
     const updated = { ...task, done, doneAt: done ? new Date().toISOString() : null };
-    await lifeDb.put('tasks', updated);
+    if (done) {
+        // The task and the record that it was finished today, in one transaction.
+        await lifeDb.putAll([['tasks', updated], ['taskLogs', completionRow(task.id, localDayId())]]);
+    } else {
+        await lifeDb.put('tasks', updated);
+        // Un-ticking takes back that day's completion (the day it was ticked, not necessarily today).
+        const day = completedDay(task);
+        if (day) await lifeDb.delete('taskLogs', logId(task.id, day));
+    }
     state.tasks = state.tasks.map((existing) => (existing.id === task.id ? updated : existing));
     return updated;
 }
@@ -94,7 +103,7 @@ export async function setDone(task, done) {
 export async function completeTask(task, today = localDayId()) {
     if (!task.repeat) return setDone(task, true);
     const rolled = rolledTask(task, today);
-    await lifeDb.put('tasks', rolled);
+    await lifeDb.putAll([['tasks', rolled], ['taskLogs', completionRow(task.id, today)]]);
     state.tasks = state.tasks.map((existing) => (existing.id === task.id ? rolled : existing));
     return rolled;
 }

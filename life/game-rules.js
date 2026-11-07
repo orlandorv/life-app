@@ -17,9 +17,11 @@ import { hasContent } from '../journal/insights.js';
  * restored backup is instantly right.
  *
  * Missing days never *take XP away*: a missed day pays 0, and only the streak
- * notices. The lists with no usable history (Tasks, Videos, Books, Wishlist,
+ * notices. The lists with no usable history (Videos, Books, Movies & TV, Wishlist,
  * Inbox) are deliberately not here: there is nothing to derive from, and paying
- * for them would pay you to farm, to spend, or to write junk.
+ * for them would pay you to farm, to spend, or to write junk. Tasks are the one
+ * exception, as a small capped bonus, because they keep their own log of the days
+ * a task was finished (tasks/completions.js).
  */
 
 // --- Tunable constants ---------------------------------------------------------------
@@ -27,8 +29,10 @@ import { hasContent } from '../journal/insights.js';
 /** What each goal is worth towards the day's 100. They are shares of the goals that *apply* that day. */
 export const WEIGHTS = { habits: 40, food: 25, body: 20, journal: 15 };
 /** Bonuses sit on top: they are never required, so a rest day can still be a good day. */
-export const BONUS = { workout: 20, protein: 10 };
-export const GOAL_IDS = ['habits', 'food', 'body', 'journal', 'workout'];
+export const BONUS = { workout: 20, protein: 10, tasks: 10 };
+/** The goals you can switch on or off. Workout and Tasks are bonuses (never in a day's 100); the other four are what a day is scored on. */
+export const GOAL_IDS = ['habits', 'food', 'body', 'journal', 'workout', 'tasks'];
+export const BONUS_GOALS = ['workout', 'tasks'];
 
 export const MAX_BASE_XP = 100;
 /** A day is "good" at this share of what applied to it. */
@@ -79,7 +83,7 @@ const hasBodyNumber = (entry) => Boolean(entry) && (hasNumber(entry.weightKg) ||
 /**
  * `ctx`: `goals` (id → `{ from, to }` or null), `habits`, `done` (habit id → Set of
  * ticked days), `foodByDay`, `journalByDay`, `bodyByDay` (Maps from day), `workoutDays`
- * (a Set), `proteinTarget` (a number, or null for none).
+ * and `taskDays` (Sets of days), `proteinTarget` (a number, or null for none).
  *
  * Returns `{ day, goals: [{ id, weight, fraction, done?, of? }], applies, base, bonuses,
  * bonusXp, xp, good }`. `goals` lists the goals that applied; `base` is 0–100, or null
@@ -113,10 +117,12 @@ export function scoreDay(day, ctx) {
     const earned = goals.reduce((sum, goal) => sum + goal.weight * goal.fraction, 0);
     const base = applicable ? Math.round((MAX_BASE_XP * earned) / applicable) : null;
 
-    // Bonuses: a finished workout, and the protein target reached. Never calories:
-    // paying for a number of calories would pay for under-eating.
+    // Bonuses: a finished workout, a task finished, and the protein target reached.
+    // Never calories: paying for a number of calories would pay for under-eating.
+    // A task is one bonus however many you finish (capped, so it can't be farmed).
     const bonuses = [];
     if (goalOn(ctx.goals.workout, day) && ctx.workoutDays.has(day)) bonuses.push('workout');
+    if (goalOn(ctx.goals.tasks, day) && ctx.taskDays?.has(day)) bonuses.push('tasks');
     if (goalOn(ctx.goals.food, day) && hasTarget(ctx.proteinTarget) && dayTotals(food).proteinG >= ctx.proteinTarget) bonuses.push('protein');
     const bonusXp = bonuses.reduce((sum, id) => sum + BONUS[id], 0);
 
@@ -206,7 +212,7 @@ export function defaultGoals(firstUse, today) {
         seeded[id] = first ? { from: first > earliest ? first : earliest, to: null } : null;
     }
     if (GOAL_IDS.every((id) => !seeded[id])) {
-        for (const id of ['habits', 'food', 'body', 'journal', 'workout']) seeded[id] = { from: today, to: null };
+        for (const id of GOAL_IDS) seeded[id] = { from: today, to: null };
     }
     return seeded;
 }

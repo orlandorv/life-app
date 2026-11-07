@@ -22,7 +22,7 @@ const LEDGER_VERSION = 1;
 const earliest = (days) => days.reduce((a, b) => (a && a < b ? a : b), null);
 
 /** The first day each goal has any data, so a first run can count what you already did. */
-function firstUse({ habits, foodByDay, journalByDay, bodyByDay, workoutDays }) {
+function firstUse({ habits, foodByDay, journalByDay, bodyByDay, workoutDays, taskDays }) {
     const keys = (map) => [...map.keys()];
     return {
         habits: earliest(habits.map((habit) => habit.startDay)),
@@ -30,18 +30,20 @@ function firstUse({ habits, foodByDay, journalByDay, bodyByDay, workoutDays }) {
         journal: earliest(keys(journalByDay)),
         body: earliest(keys(bodyByDay)),
         workout: earliest([...workoutDays]),
+        tasks: earliest([...taskDays]),
     };
 }
 
 /** Everything the rules read, grouped by day. Reads storage; changes nothing. */
 export async function gatherInputs() {
     await lifeDb.init();
-    const [habits, logs, food, journal, body] = await Promise.all([
+    const [habits, logs, food, journal, body, taskLogs] = await Promise.all([
         lifeDb.getAll('habits'),
         lifeDb.getAll('habitLogs'),
         lifeDb.getAll('nutritionEntries'),
         lifeDb.getAll('journalEntries'),
         lifeDb.getAll('bodyEntries'),
+        lifeDb.getAll('taskLogs'),
         loadTargets(),
     ]);
 
@@ -64,6 +66,8 @@ export async function gatherInputs() {
         bodyByDay: new Map(body.map((entry) => [entry.day, entry])),
         // Finished workouts only (Gym keeps unfinished ones out of its list), on the local day they started.
         workoutDays: new Set((gymState.workouts ?? []).map((workout) => localDayId(new Date(workout.startedAt)))),
+        // Days a task was finished (tasks/completions.js): the tasks themselves keep no history.
+        taskDays: new Set(taskLogs.map((log) => log.day)),
         proteinTarget: nutrition.targets.proteinG,
     };
 }
@@ -94,6 +98,14 @@ export async function computeGame(today = localDayId()) {
         ledger = { goals: ctx.goals, seenLevel: game.level.level, lastGoodDay: game.today?.good ? today : null };
         await saveLedger(ledger);
         return { game, ledger, ctx };
+    }
+
+    // A goal added after this ledger was written (Tasks, v13) isn't in it yet: switch it
+    // on from today, once, so it counts without rescoring a day that has passed.
+    const added = GOAL_IDS.filter((id) => !(id in ledger.goals));
+    if (added.length) {
+        ledger = { ...ledger, goals: { ...ledger.goals, ...Object.fromEntries(added.map((id) => [id, { from: today, to: null }])) } };
+        await saveLedger(ledger);
     }
 
     ctx.goals = { ...emptyGoals(), ...ledger.goals };
