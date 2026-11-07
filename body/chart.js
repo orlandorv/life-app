@@ -1,4 +1,4 @@
-import { svg } from '../life/svg.js';
+import { svg, areaUnder } from '../life/svg.js';
 
 /**
  * Draws the weight chart from a `chartLayout()` result: faint gridlines with
@@ -19,11 +19,18 @@ export function weightChart(layout, { width, height, formatTick, fromLabel, toLa
         root.append(svg('text', { class: 'body-tick', x: 2, y: tick.y - 3 }, formatTick(tick.kg)));
     });
 
+    // The trend as a shape: a soft fill down to the lowest gridline, then the dots, then the line.
+    const area = areaUnder(layout.line, Math.max(...layout.ticks.map((tick) => tick.y)));
+    if (area) root.append(svg('path', { class: 'body-area', d: area }));
+
     layout.dots.forEach((dot) => {
         root.append(svg('circle', { class: 'body-dot', cx: dot.x, cy: dot.y, r: 2.6 }));
     });
 
     root.append(svg('path', { class: 'body-trend', d: layout.line }));
+    // The latest point of the trend, ringed: where you are now.
+    const last = layout.line.match(/(-?[\d.]+) (-?[\d.]+)$/);
+    if (last) root.append(svg('circle', { class: 'body-now', cx: last[1], cy: last[2], r: 4.5 }));
 
     root.append(svg('text', { class: 'body-axis', x: 2, y: height - 3 }, fromLabel));
     root.append(svg('text', { class: 'body-axis', x: width - 2, y: height - 3, 'text-anchor': 'end' }, toLabel));
@@ -55,7 +62,7 @@ export function barChart(layout, { width, height, formatTick, fromLabel, toLabel
     });
 
     layout.bars.forEach((bar) => {
-        root.append(svg('rect', { class: 'body-bar', x: bar.x.toFixed(1), y: bar.y.toFixed(1), width: bar.w.toFixed(1), height: bar.h.toFixed(1), rx: Math.min(2, bar.w / 2) }));
+        root.append(svg('rect', { class: 'body-bar', x: bar.x.toFixed(1), y: bar.y.toFixed(1), width: bar.w.toFixed(1), height: bar.h.toFixed(1), rx: Math.min(3, bar.w / 2) }));
     });
 
     if (layout.line) root.append(svg('path', { class: 'body-avg', d: layout.line }));

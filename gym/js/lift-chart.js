@@ -1,4 +1,4 @@
-import { svg } from '../../life/svg.js';
+import { svg, areaUnder } from '../../life/svg.js';
 
 /**
  * Draws a lift's chart from a `liftChartLayout()` result: faint gridlines with
@@ -19,6 +19,8 @@ export function liftChart(layout, { width, height, formatTick, fromLabel, toLabe
         root.append(svg('text', { class: 'lift-tick', x: 2, y: tick.y - 3 }, formatTick(tick.value)));
     });
 
+    const area = areaUnder(layout.line, Math.max(...layout.ticks.map((tick) => tick.y)));
+    if (area) root.append(svg('path', { class: 'lift-area', d: area }));
     root.append(svg('path', { class: 'lift-line', d: layout.line }));
 
     layout.dots.forEach((dot) => {

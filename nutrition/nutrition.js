@@ -268,7 +268,7 @@ function weekChart(summary, today) {
 
     layout.bars.forEach((bar, i) => {
         if (bar.value !== null) {
-            root.append(svg('rect', { class: 'nutrition-week-bar', x: bar.x.toFixed(1), y: bar.y.toFixed(1), width: bar.w.toFixed(1), height: bar.h.toFixed(1), rx: 3 }));
+            root.append(svg('rect', { class: `nutrition-week-bar${bar.day === today ? ' today' : ''}`, x: bar.x.toFixed(1), y: bar.y.toFixed(1), width: bar.w.toFixed(1), height: bar.h.toFixed(1), rx: Math.min(6, bar.w / 2) }));
             // The number above the bar; its halo keeps the target line from cutting through it.
             root.append(svg('text', { class: 'nutrition-week-value', x: bar.centre.toFixed(1), y: (bar.y - 4).toFixed(1), 'text-anchor': 'middle' }, fmt(bar.value)));
         }

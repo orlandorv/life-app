@@ -620,8 +620,11 @@
 }
 
 .nutrition-week-base {
-    stroke: var(--border);
-    stroke-width: 1;
+    stroke: var(--text-secondary);
+    stroke-opacity: 0.35;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-dasharray: 0 6;
 }
 
 /* The target is a dashed line, so it reads without colour. */
@@ -633,6 +636,12 @@
 
 .nutrition-week-bar {
     fill: var(--primary);
+    opacity: 0.55;
+}
+
+/* Today stands out from the days before it. */
+.nutrition-week-bar.today {
+    opacity: 1;
 }
 
 .nutrition-week-label,

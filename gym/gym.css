@@ -2874,9 +2874,16 @@ button.badge-tile:active {
 }
 
 .lift-grid {
-    stroke: var(--border);
-    stroke-width: 1;
-    stroke-dasharray: 3 4;
+    stroke: var(--text-secondary);
+    stroke-opacity: 0.35;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-dasharray: 0 6;
+}
+
+.lift-area {
+    fill: var(--primary);
+    opacity: 0.1;
 }
 
 .lift-tick,
@@ -2889,25 +2896,25 @@ button.badge-tile:active {
 .lift-line {
     fill: none;
     stroke: var(--primary);
-    stroke-width: 2;
+    stroke-width: 2.5;
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.55;
 }
 
 .lift-dot {
     fill: var(--primary);
 }
 
+/* A new best is earned, so it is the seal's gold — the colour every reward in
+   the app wears — and a ring, so it isn't only a colour difference. */
 .lift-dot.best {
-    fill: var(--primary);
+    fill: var(--seal);
 }
 
-/* A ring round a new best: a shape, so it isn't only a colour difference. */
 .lift-best-ring {
     fill: none;
-    stroke: var(--primary);
-    stroke-width: 1.5;
+    stroke: var(--seal);
+    stroke-width: 1.8;
 }
 
 .lift-chart-note,
