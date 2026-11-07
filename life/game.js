@@ -179,7 +179,7 @@ function dialLabel(game) {
 }
 
 /** The dial for the top of Today, or null when no goal is switched on. */
-export function gameCard(state = current, pop = new Set()) {
+export function gameCard(state = current, pop = new Set(), { enter = false } = {}) {
     if (!state?.game.today) return null;
     const { game, ledger } = state;
     const day = game.today;
@@ -187,7 +187,7 @@ export function gameCard(state = current, pop = new Set()) {
     const hour = now.getHours() + now.getMinutes() / 60;
     const chips = [...DAILY.filter((id) => day.goals.some((g) => g.id === id)), ...(ledger.goals.workout && goalOnToday(ledger.goals.workout, state.today) ? ['workout'] : [])];
 
-    return el('section', { class: `life-game${day.good ? ' good' : ''}`, 'aria-label': 'Your day' }, [
+    return el('section', { class: `life-game${day.good ? ' good' : ''}${enter ? ' enter' : ''}`, 'aria-label': 'Your day' }, [
         el('button', { class: 'life-dial', type: 'button', 'aria-label': dialLabel(game), onclick: () => openGameSheet() }, [dialSvg(state, hour)]),
         el('div', { class: 'life-dial-under' }, [
             el('span', { class: `life-dial-streak${game.streak ? '' : ' none'}` }, [icon('flame', { size: 16 }), el('span', { text: game.streak ? unit(game.streak, 'day') : 'No streak yet' })]),
@@ -481,6 +481,8 @@ async function update() {
             current.ledger = seen;
         }
         redrawGame(justCompleted(before, state));
+        // The moment the day turns good, the gold halo draws itself in and the seal stamps.
+        if (goodDay) document.querySelector('.life-game')?.classList.add('sealing');
 
         // Over another sheet (Gym's workout summary, say) it stays a toast, and quiet, so the two don't talk over each other.
         const busy = Boolean(document.querySelector('.modal.active'));
@@ -503,10 +505,33 @@ async function update() {
     }
 }
 
+/**
+ * The level-up moment: the gold level ring closes all the way round, a ring of
+ * short rays flares once from it, and the new number rises into the middle. The
+ * resting state (no animation, as with Reduce Motion) is the finished picture:
+ * a closed gold ring with the new level in it.
+ */
+function levelUpRing(level) {
+    const root = svg('svg', { viewBox: '0 0 200 200', class: 'life-up-ring', 'aria-hidden': 'true', focusable: 'false' });
+    for (let i = 0; i < 16; i += 1) {
+        const deg = i * 22.5;
+        const [x1, y1] = polar(100, 100, 90, deg);
+        const [x2, y2] = polar(100, 100, 99, deg);
+        root.append(svg('line', { x1, y1, x2, y2, class: 'life-up-ray', style: `--i:${i}` }));
+    }
+    root.append(
+        svg('circle', { cx: 100, cy: 100, r: 76, class: 'life-up-track' }),
+        svg('path', { d: arcPath(100, 100, 76, 0, 360), pathLength: 1, 'stroke-dasharray': '1 1', class: 'life-up-fill' }),
+        svg('text', { x: 100, y: 124, class: 'life-up-num' }, String(level)),
+    );
+    return root;
+}
+
 function showLevelUp(game) {
     const { level, into, span } = game.level;
     clear($('#levelup-body')).append(
         el('div', { class: 'life-game-up' }, [
+            levelUpRing(level),
             el('div', { class: 'life-game-up-level', text: `Level ${level}` }),
             el('p', { class: 'life-game-up-sub', text: `${(span - into).toLocaleString()} XP to level ${level + 1}` }),
             bar(into / span, `Level progress: ${into} of ${span} XP`, 'big'),

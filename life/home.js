@@ -109,7 +109,7 @@ export async function renderHome() {
     if (token !== renderToken) return;
 
     document.getElementById('life-today').replaceChildren(
-        ...[gameCard(), weighInReminder(), reviewCard(today, weekFood)].filter(Boolean),
+        ...[gameCard(undefined, undefined, { enter: true }), weighInReminder(), reviewCard(today, weekFood)].filter(Boolean),
         // Every section as a room in one list: the same arc, the same anatomy.
         el('h2', { class: 'life-eyebrow life-rooms-title', text: 'Your rooms' }),
         el('div', { class: 'life-rooms life-surface' }, [
