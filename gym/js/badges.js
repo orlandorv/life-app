@@ -112,7 +112,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `workouts-${count}`,
             group: 'Consistency',
-            icon: index === 0 ? '🌱' : '🏋️',
+            icon: index === 0 ? 'sprout' : 'gym',
             name: count === 1 ? 'First session' : `${count} sessions`,
             hint: count === 1 ? 'Finish your first workout' : `Finish ${count} workouts`,
             earnedAt: (ctx) => nth(ctx.sessions, count)?.workout.startedAt || null,
@@ -123,7 +123,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `streak-${weeks}`,
             group: 'Streak',
-            icon: weeks >= 12 ? '🔥' : '📅',
+            icon: weeks >= 12 ? 'flame' : 'calendar',
             name: weeks === 1 ? 'On plan' : `${weeks}-week streak`,
             hint:
                 weeks === 1
@@ -137,7 +137,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `strength-${kg}`,
             group: 'Strength',
-            icon: '💪',
+            icon: 'gym',
             name: `${formatWeight(kg)} club`,
             hint: `Log a single set at ${formatWeight(kg)} or more`,
             earnedAt: (ctx) => firstSession(ctx.sessions, (session) => session.heaviestKg >= kg),
@@ -148,7 +148,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `session-tonnage-${kg}`,
             group: 'Volume',
-            icon: '🧱',
+            icon: 'stack',
             name: `${bigWeight(kg)} in a session`,
             hint: `Move ${bigWeight(kg)} of total volume in one workout`,
             earnedAt: (ctx) => firstSession(ctx.sessions, (session) => session.tonnageKg >= kg),
@@ -159,7 +159,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `lifetime-tonnage-${kg}`,
             group: 'Volume',
-            icon: '🌍',
+            icon: 'map',
             name: `${bigWeight(kg)} lifted`,
             hint: `Move ${bigWeight(kg)} across every workout`,
             earnedAt: (ctx) => firstSession(ctx.sessions, (session) => session.cumTonnageKg >= kg),
@@ -169,7 +169,7 @@ function buildCatalogue() {
     catalogue.push({
         id: 'breadth-all-muscles',
         group: 'Breadth',
-        icon: '🧭',
+        icon: 'compass',
         name: 'Full sweep',
         hint: `Train all ${MUSCLE_GROUPS.length} muscle groups inside one week`,
         earnedAt: (ctx) => ctx.allMuscleWeeks[0]?.end.toISOString() || null,
@@ -179,7 +179,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `exercises-${count}`,
             group: 'Breadth',
-            icon: '🗺️',
+            icon: 'map',
             name: `${count} exercises`,
             hint: `Log ${count} different exercises`,
             earnedAt: (ctx) => firstSession(ctx.sessions, (session) => session.cumExercises >= count),
@@ -190,7 +190,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `records-${count}`,
             group: 'Records',
-            icon: '🏆',
+            icon: 'trophy',
             name: `${count} records`,
             hint: `Beat your own best ${count} times`,
             earnedAt: (ctx) => nth(ctx.prEvents.all, count, 'date'),
@@ -201,7 +201,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `level-${level}`,
             group: 'Level',
-            icon: '⚡',
+            icon: 'level',
             name: `Level ${level}`,
             hint: `Reach level ${level}`,
             earnedAt: (ctx) => ctx.levelReachedAt.get(level) || null,
@@ -212,7 +212,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `sets-${count}`,
             group: 'Volume',
-            icon: '🔢',
+            icon: 'hash',
             name: `${count.toLocaleString()} sets`,
             hint: `Log ${count.toLocaleString()} working sets`,
             earnedAt: (ctx) => firstCumulative(ctx.sessions, 'sets', count),
@@ -222,7 +222,7 @@ function buildCatalogue() {
     catalogue.push({
         id: `session-sets-${BIG_SESSION_SETS}`,
         group: 'Volume',
-        icon: '🧗',
+        icon: 'mountain',
         name: 'Long haul',
         hint: `Log ${BIG_SESSION_SETS} working sets in one workout`,
         earnedAt: (ctx) => firstSession(ctx.sessions, (session) => session.sets >= BIG_SESSION_SETS),
@@ -232,7 +232,7 @@ function buildCatalogue() {
         catalogue.push({
             id: `improved-lifts-${count}`,
             group: 'Records',
-            icon: '🎯',
+            icon: 'target',
             name: `${count} lifts improved`,
             hint: `Beat your best on ${count} different exercises`,
             earnedAt: (ctx) => nthImprovedExercise(ctx.prEvents, count),
@@ -242,7 +242,7 @@ function buildCatalogue() {
     catalogue.push({
         id: `session-prs-${MULTI_PR_SESSION}`,
         group: 'Records',
-        icon: '✨',
+        icon: 'spark',
         name: 'Purple patch',
         hint: `Set ${MULTI_PR_SESSION} records in a single workout`,
         earnedAt: (ctx) => firstSession(ctx.sessions, (session) => session.prs >= MULTI_PR_SESSION),
@@ -252,7 +252,7 @@ function buildCatalogue() {
         {
             id: 'double-day',
             group: 'Consistency',
-            icon: '🔁',
+            icon: 'repeat',
             name: 'Twice in a day',
             hint: 'Finish two workouts on the same day',
             earnedAt: (ctx) => firstGap(ctx.sessions, (days) => days === 0),
@@ -260,7 +260,7 @@ function buildCatalogue() {
         {
             id: 'back-to-back',
             group: 'Consistency',
-            icon: '🔗',
+            icon: 'link',
             name: 'Back to back',
             hint: 'Train two days running',
             earnedAt: (ctx) => firstGap(ctx.sessions, (days) => days === 1),
@@ -268,7 +268,7 @@ function buildCatalogue() {
         {
             id: 'comeback',
             group: 'Consistency',
-            icon: '🔄',
+            icon: 'repeat',
             name: 'Comeback',
             hint: `Return to training after ${COMEBACK_DAYS} days or more away`,
             earnedAt: (ctx) => firstGap(ctx.sessions, (days) => days >= COMEBACK_DAYS),
@@ -276,7 +276,7 @@ function buildCatalogue() {
         {
             id: 'weekend-double',
             group: 'Consistency',
-            icon: '🗓️',
+            icon: 'calendar',
             name: 'Weekend double',
             hint: 'Train on both Saturday and Sunday of the same week',
             earnedAt: (ctx) => firstWeekendDouble(ctx.sessions),
@@ -287,7 +287,7 @@ function buildCatalogue() {
         {
             id: 'early-bird',
             group: 'Odd hours',
-            icon: '🌅',
+            icon: 'sun',
             name: 'Early bird',
             hint: `Start ${ODD_HOUR_SESSIONS} workouts before 7am`,
             earnedAt: (ctx) => nth(ctx.earlySessions, ODD_HOUR_SESSIONS),
@@ -295,7 +295,7 @@ function buildCatalogue() {
         {
             id: 'night-owl',
             group: 'Odd hours',
-            icon: '🌙',
+            icon: 'moon',
             name: 'Night owl',
             hint: `Start ${ODD_HOUR_SESSIONS} workouts after 9pm`,
             earnedAt: (ctx) => nth(ctx.lateSessions, ODD_HOUR_SESSIONS),

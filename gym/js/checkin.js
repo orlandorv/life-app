@@ -1,4 +1,5 @@
 import { database } from './db.js';
+import { icon } from '../../life/icons.js';
 import { state, loadCheckins } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast, noteField } from '../../life/dom.js';
 import { stepper } from '../../life/stepper.js';
@@ -323,7 +324,7 @@ export function renderCheckin(container) {
     if (trend) section.append(trend);
 
     if (checkin.note?.trim()) {
-        section.append(el('div', { class: 'note-banner-text', text: `📌 ${checkin.note.trim()}` }));
+        section.append(el('div', { class: 'note-banner-text' }, [icon('pin', { size: 14, className: 'note-banner-pin' }), checkin.note.trim()]));
     }
 
     container.append(section);

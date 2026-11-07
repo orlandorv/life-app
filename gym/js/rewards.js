@@ -1,5 +1,6 @@
 import { state } from './store.js';
 import { $, el, clear, toast, openModal } from '../../life/dom.js';
+import { icon } from '../../life/icons.js';
 import { weekStart } from './volume.js';
 import { toDisplay, getUnit } from './units.js';
 import { playLevelUp, playBadgeEarned } from './sfx.js';
@@ -75,13 +76,12 @@ function streakCard(progress) {
                 class: 'volume-range',
                 // Freezes are only worth mentioning when you hold one — the
                 // point is reassurance, not another counter to manage.
-                text: progress.freezes ? `${progress.freezes} skip${progress.freezes > 1 ? 's' : ''} banked ❄️` : `Best: ${progress.longestStreak}`,
-            }),
+            }, progress.freezes ? [`${progress.freezes} skip${progress.freezes > 1 ? 's' : ''} banked `, icon('snow', { size: 13 })] : [`Best: ${progress.longestStreak}`]),
         ]),
         el('div', { class: 'streak-figure' }, [
             el('span', { class: 'streak-value', text: String(progress.streak) }),
             el('span', { class: 'streak-unit', text: progress.streak === 1 ? 'week' : 'weeks' }),
-            el('span', { class: 'streak-flame', text: progress.streak > 0 ? '🔥' : '' }),
+            el('span', { class: 'streak-flame' }, progress.streak > 0 ? [icon('flame', { size: 22 })] : []),
         ]),
         el('div', { class: 'volume-row-top' }, [
             el('span', { class: 'volume-muscle', text: 'This week' }),
@@ -126,7 +126,7 @@ function questRow(quest) {
     return el('div', { class: `quest-row${quest.done ? ' done' : ''}` }, [
         el('div', { class: 'quest-row-top' }, [
             el('span', { class: 'quest-label' }, [
-                el('span', { class: 'quest-tick', text: quest.done ? '✓' : '○' }),
+                el('span', { class: 'quest-tick' }, [icon(quest.done ? 'check' : 'circle', { size: 14 })]),
                 questLabel(quest),
             ]),
             el('span', { class: `volume-count${quest.done ? ' met' : ''}`, text: questProgress(quest) }),
@@ -229,7 +229,7 @@ function badgeTile(badge, unseen) {
         type: 'button',
         dataset: { badge: badge.id },
     }, [
-        el('span', { class: 'badge-icon', text: badge.icon }),
+        el('span', { class: 'badge-icon' }, [icon(badge.icon, { size: 24 })]),
         el('span', { class: 'badge-name', text: badge.name }),
         el('span', { class: 'badge-sub', text: badge.earnedAt ? shortDate(badge.earnedAt) : 'Locked' }),
     ]);
@@ -324,6 +324,9 @@ function xpLine(label, xp, className = '') {
     ]);
 }
 
+/** A highlight line in the workout summary: a line icon in gold (an achievement) and its words. */
+const highlight = (name, text) => el('p', { class: 'summary-highlight' }, [icon(name, { size: 18 }), el('span', { text })]);
+
 /**
  * Shown only when the session actually produced something — a level, a badge,
  * a record or a cleared quest. An ordinary workout gets a toast instead, so
@@ -391,27 +394,24 @@ export async function showWorkoutSummary(before, after, workout, { goalsReached 
     );
 
     if (weekCompleted) {
-        body.append(el('p', {
-            class: 'summary-highlight',
-            text: `🔥 Week complete — ${after.streak} week${after.streak > 1 ? 's' : ''} running`,
-        }));
+        body.append(highlight('flame', `Week complete — ${after.streak} week${after.streak > 1 ? 's' : ''} running`));
     }
 
-    goalsReached.forEach((label) => body.append(el('p', { class: 'summary-highlight', text: `✅ Goal reached: ${label}` })));
+    goalsReached.forEach((label) => body.append(highlight('check', `Goal reached: ${label}`)));
 
     if (records > 0) {
-        body.append(el('p', { class: 'summary-highlight', text: `🏆 ${records} new personal record${records > 1 ? 's' : ''}` }));
+        body.append(highlight('trophy', `${records} new personal record${records > 1 ? 's' : ''}`));
     }
 
     if (questsCleared > 0) {
-        body.append(el('p', { class: 'summary-highlight', text: `🎯 ${questsCleared} quest${questsCleared > 1 ? 's' : ''} cleared` }));
+        body.append(highlight('target', `${questsCleared} quest${questsCleared > 1 ? 's' : ''} cleared`));
     }
 
     if (fresh.length) {
         body.append(
             el('div', { class: 'badge-grid summary-badges' }, fresh.map((badge) =>
                 el('div', { class: 'badge-tile' }, [
-                    el('span', { class: 'badge-icon', text: badge.icon }),
+                    el('span', { class: 'badge-icon' }, [icon(badge.icon, { size: 24 })]),
                     el('span', { class: 'badge-name', text: badge.name }),
                     el('span', { class: 'badge-sub', text: 'New badge' }),
                 ]),

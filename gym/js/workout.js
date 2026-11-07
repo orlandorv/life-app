@@ -376,7 +376,6 @@ function carriedNote(entry) {
         class: 'note-done',
         type: 'button',
         'aria-label': 'Mark note as done',
-        text: '✓',
         onclick: async () => {
             // Flag it on the workout it came from, so it stops surfacing without
             // erasing the record of what you wrote.
@@ -390,10 +389,10 @@ function carriedNote(entry) {
             banner.remove();
             toast('Note cleared');
         },
-    });
+    }, [icon('check', { size: 16 })]);
 
     const banner = el('div', { class: 'note-banner' }, [
-        el('span', { class: 'note-pin', text: '📌' }),
+        el('span', { class: 'note-pin' }, [icon('pin', { size: 15 })]),
         el('div', { class: 'note-banner-body' }, [
             el('div', { class: 'note-banner-label', text: `Note from ${when}` }),
             el('div', { class: 'note-banner-text', text: previous.note }),
@@ -556,8 +555,7 @@ function setRow(entry, set, index, label, refreshSets, refreshProgress, weightCo
         class: `set-check${set.done ? ' done' : ''}`,
         type: 'button',
         'aria-label': `Mark set ${label} done`,
-        text: '✓',
-    });
+    }, [icon('check', { size: 20 })]);
 
     // The index cell doubles as the delete control while the block is in edit
     // mode. A permanent delete column doesn't fit at 375px — it squeezes the
@@ -1107,7 +1105,7 @@ function exerciseBlock(entry, entryIndex) {
         class: 'exercise-drag-handle',
         'aria-label': `Reorder ${entry.exerciseName}`,
         role: 'button',
-    }, ['☰']);
+    }, [icon('grip', { size: 20 })]);
 
     const block = el('div', { class: 'exercise-block', dataset: { entryKey: entry.exerciseId } }, [
         el('div', { class: 'exercise-block-head' }, [
@@ -1379,7 +1377,7 @@ function swapExercise(index) {
                     // What the swap will set, so it's no surprise afterwards.
                     el('div', { class: 'rec-line', text: `Sets to ${repsAndRir(targets.reps, targets.rir)}` }),
                 ]),
-                el('span', { class: 'picker-add', text: '⇄' }),
+                el('span', { class: 'picker-add' }, [icon('swap', { size: 20 })]),
             ]),
         );
     });

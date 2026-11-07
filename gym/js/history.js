@@ -1,4 +1,5 @@
 import { database } from './db.js';
+import { icon } from '../../life/icons.js';
 import { state, loadWorkouts, findExercise } from './store.js';
 import { $, el, clear, openModal, closeModal, confirmSheet, toast } from '../../life/dom.js';
 import { formatWeight, formatDuration } from './units.js';
@@ -138,7 +139,7 @@ function openDetail(workoutId) {
         }
 
         if (entry.note?.trim()) {
-            block.append(el('div', { class: 'note-banner-text', text: `📌 ${entry.note.trim()}` }));
+            block.append(el('div', { class: 'note-banner-text' }, [icon('pin', { size: 14, className: 'note-banner-pin' }), entry.note.trim()]));
         }
 
         body.append(block);
