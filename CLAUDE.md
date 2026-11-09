@@ -19,6 +19,7 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 - `life/storage-errors.js` — pure: `isStorageError()` (is this thrown value a failed IndexedDB/quota write?) and `mayWarnAboutSave`, a 30-second gate shared by every "couldn't save" toast. Unit-tested.
 - `life/review.js` — the Sunday weekly review: pure, builds the week's numbers from what the sections already keep and words them as one row per section (see Today). Unit-tested.
 - `life/categories.js` — pure: `makeCategories({ presets, noneLabel, max })`, the free-text-category rules (one group per name in any case, preset spelling wins, presets first, none last) shared by Wishlist and Wardrobe, each bound to its own presets. Unit-tested.
+- `life/pager.js` + `life/pager.css` + `life/achievements.js` — the home screen's side-by-side pages and the Achievements page (see Home pages). `achievements.js` is pure and unit-tested.
 - `life/svg.js` — `svg()`, the one createElementNS helper behind every hand-built chart (Body's, the lift history's, the Nutrition week's). Import it; don't write another.
 - `life/updates.js` — registers the service worker, looks for a new version when the app returns to the foreground, and shows the "A new version is ready · Reload" banner (see PWA / offline layer).
 - `life/daybar.js` — the shared ‹ label › day/week switcher (`dayBar()`); its styles, plus `.life-main`, live in `life.css`.
@@ -155,6 +156,14 @@ A habit is either on **fixed days** (`days`, Monday=0…Sunday=6) or has a **wee
 - **The week grid has no "missed" for a weekly habit** (nothing was due on a given day): a ticked day is `done`, an unticked past or present one is `free` (an outlined circle, still tappable to backfill), later days `future`.
 - **Fixed-day habits are untouched.** `tests/habits-streaks.test.mjs` holds the current code to verbatim copies of the old daily streak and week-cell functions over 4,000 random habits.
 - **The Sunday review** counts a weekly habit as its ticks against its target (a week still to finish simply shows short of it), not as per-day misses.
+
+### Home pages (`life/pager.js`, `life/achievements.js`)
+
+The home screen is a row of pages you swipe between: **Today** (everything below), **Achievements** on its right, and a **To be continued** placeholder beyond that, kept for whatever comes next. `#life-pager` is a horizontal scroll container with scroll-snap (`pager.css`), each page `flex: 0 0 100%`; a pill of three dots at the bottom (`#life-pager-dots`, position fixed inside `#life-home`) shows the page and jumps to one. Opening the home screen always starts on Today (`resetPager()` from `route()`); nothing about the page is remembered.
+
+- **Each page scrolls up and down by itself** (`overflow-y: auto`, `height: 100dvh` on `#life-home`), so the document no longer scrolls on the home screen. That is deliberate: with one document scroll, being half way down Today would leave the top of Achievements scrolled out of sight. Consequences to keep in mind: `window.scrollTo` doesn't move Today (use the page's `scrollTop`; `resetPager()` does); the daypart wash is `.life-page-today::before` and scrolls with Today; bottom padding is 64px so the dots never cover the last row. Page markup and ids (`#life-today`, `#life-date`, `#life-dayline`, `#life-backup-banner`) are unchanged, so everything that finds them by id still works.
+- **Adding a page:** add a `<section class="life-page">` and a dot button in `index.html` and fill it from `renderHome()`; the dots and snap need no change.
+- **Achievements are derived, never counted** (`achievements.js`, pure): four **ladders**, each one number that rises and some steps along it — good days (1, 7, 30, 100, 365), best streak (3, 7, 14, 30, 60, 100), Life level (2, 5, 10, 20, 30) and finished Gym workouts (1, 10, 25, 50, 100, 250) — read from the game (`currentGame().game`: `goodDays`, `best`, `level`) and `gymState.workouts`. A step is earned when the number reaches it, shown as a solid gold ring against a dashed outline (shape, not only colour), with a bar and "Next: 30 days · 22 to go". The page also lists Gym's own badges that are earned (`evaluateBadges(computeProgress())`, newest first, 12 shown) with "N of M earned"; those stay Gym's. Because it is all derived, deleting data takes an achievement back, and nothing is stored (no store, no backup change). Gold is `--seal`, the one colour for what you've earned. Not in the game's XP and not in the Sunday review.
 
 ### Today (`life/home.js`)
 

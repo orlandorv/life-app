@@ -27,21 +27,55 @@
     <link rel="stylesheet" href="inbox/inbox.css">
     <link rel="stylesheet" href="wishlist/wishlist.css">
     <link rel="stylesheet" href="wardrobe/wardrobe.css">
+    <link rel="stylesheet" href="life/pager.css">
     <link rel="stylesheet" href="life/game.css">
 </head>
 <body>
-    <!-- Today: the home screen, a live summary of the day rendered by life/home.js -->
+    <!-- The home screen: a row of pages you swipe between (life/pager.js). Today is the
+         first, rendered by life/home.js; Achievements is on its right and a placeholder
+         page beyond that. Each page scrolls up and down on its own. -->
     <div id="life-home" class="life-home">
-        <header class="life-home-header">
-            <div>
-                <div id="life-date" class="life-eyebrow life-date"></div>
-                <h1 id="life-greeting" class="life-greeting">Today</h1>
-                <p id="life-dayline" class="life-dayline"></p>
-            </div>
-            <button id="life-settings-btn" class="icon-btn" type="button" aria-label="Backup and restore"><span data-icon="settings"></span></button>
-        </header>
-        <div id="life-backup-banner" class="life-banner" hidden></div>
-        <div id="life-today" class="life-today"></div>
+        <div id="life-pager" class="life-pager">
+            <!-- Today: a live summary of the day -->
+            <section id="life-page-today" class="life-page life-page-today" aria-label="Today">
+                <header class="life-home-header">
+                    <div>
+                        <div id="life-date" class="life-eyebrow life-date"></div>
+                        <h1 id="life-greeting" class="life-greeting">Today</h1>
+                        <p id="life-dayline" class="life-dayline"></p>
+                    </div>
+                    <button id="life-settings-btn" class="icon-btn" type="button" aria-label="Backup and restore"><span data-icon="settings"></span></button>
+                </header>
+                <div id="life-backup-banner" class="life-banner" hidden></div>
+                <div id="life-today" class="life-today"></div>
+            </section>
+
+            <!-- Achievements: milestones read from what the app already keeps -->
+            <section id="life-page-achievements" class="life-page" aria-label="Achievements">
+                <header class="life-home-header">
+                    <div>
+                        <div class="life-eyebrow life-date">Achievements</div>
+                        <h1 class="life-greeting">What you’ve earned</h1>
+                        <p id="life-achievements-line" class="life-dayline"></p>
+                    </div>
+                </header>
+                <div id="life-achievements" class="life-today"></div>
+            </section>
+
+            <!-- Room for whatever comes next -->
+            <section id="life-page-next" class="life-page" aria-label="To be continued">
+                <div class="life-empty life-page-empty">
+                    <span class="life-empty-icon"><span data-icon="spark" data-icon-size="26"></span></span>
+                    <p class="life-empty-title">To be continued</p>
+                    <p class="life-empty-text">Something new is coming here.</p>
+                </div>
+            </section>
+        </div>
+        <nav id="life-pager-dots" class="life-pager-dots" aria-label="Home pages">
+            <button type="button" class="active" aria-current="true" aria-label="Today"></button>
+            <button type="button" aria-label="Achievements"></button>
+            <button type="button" aria-label="To be continued"></button>
+        </nav>
     </div>
 
     <!-- Gym section. Hidden as a whole (main, rest bar and nav are all inside)

@@ -34,6 +34,8 @@ import { state as wardState, loadWardrobe } from '../wardrobe/store.js';
 import { splitItems, totalOf, formatPrice } from '../wishlist/organize.js';
 import { buildWeeklyReview, reviewRows, isReviewDay } from './review.js';
 import { loadGame, gameCard, currentGame, openGameSheet, paintDayLine } from './game.js';
+import { renderAchievements } from './pager.js';
+import { evaluateBadges } from '../gym/js/badges.js';
 import { daypart, arcPath } from './dial.js';
 import { svg } from './svg.js';
 
@@ -133,6 +135,26 @@ export async function renderHome() {
         ]),
     );
     paintDayLine();
+    paintAchievements();
+}
+
+/**
+ * The Achievements page, beside Today: the numbers the game and Gym already keep, and the
+ * Gym badges earned. A failure here leaves that page as it was; Today is already drawn.
+ */
+function paintAchievements() {
+    try {
+        const game = currentGame()?.game;
+        const workouts = gymState.workouts.length;
+        const all = workouts ? evaluateBadges(computeProgress()) : [];
+        renderAchievements({
+            stats: { goodDays: game?.goodDays ?? 0, bestStreak: game?.best ?? 0, level: game?.level?.level ?? 1, workouts },
+            badges: all.filter((badge) => badge.earnedAt),
+            badgesTotal: all.length,
+        });
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 // --- Pieces -----------------------------------------------------------------

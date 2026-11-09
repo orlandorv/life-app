@@ -1,0 +1,227 @@
+/* The home screen as a row of pages (life/pager.js): Today, Achievements and a placeholder.
+   Tokens, .life-surface, .life-empty and the header type come from life.css. */
+
+.life-home {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+/* A row you swipe along, snapping to a page; no scrollbar. */
+.life-pager {
+    display: flex;
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.life-pager::-webkit-scrollbar {
+    display: none;
+}
+
+/* A page is as wide as the screen and scrolls up and down by itself. Its side padding keeps
+   the content to 600px on a wide screen, as Today always was. */
+.life-page {
+    position: relative;
+    isolation: isolate;
+    flex: 0 0 100%;
+    min-width: 0;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    padding: max(18px, env(safe-area-inset-top)) max(20px, calc((100% - 600px) / 2)) calc(64px + env(safe-area-inset-bottom));
+}
+
+/* The light of the hour behind the top of Today (the daypart tokens are in life.css). */
+.life-page-today::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 560px;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(130% 75% at 50% 0%, var(--wash), transparent 72%);
+}
+
+/* --- The dots: where you are, and a way to jump ------------------------------------- */
+
+.life-pager-dots {
+    position: fixed;
+    left: 50%;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--card-shadow);
+}
+
+.life-pager-dots button {
+    position: relative;
+    width: 44px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.life-pager-dots button::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-pill);
+    background: var(--text-secondary);
+    opacity: 0.45;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s ease, opacity 0.2s ease;
+}
+
+.life-pager-dots button.active::before {
+    width: 20px;
+    opacity: 1;
+    background: var(--text-primary);
+}
+
+/* --- Achievements ------------------------------------------------------------------------ */
+
+.life-ladder {
+    padding: 16px;
+}
+
+.life-ladder-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.life-ladder-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--display-s);
+    font-weight: 600;
+}
+
+.life-ladder-value {
+    font-family: var(--font-rounded);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.life-ladder-blurb {
+    margin: 2px 0 14px;
+    font-size: var(--text-s);
+    color: var(--text-secondary);
+}
+
+.life-ladder-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* A step you haven't reached is a dashed outline; one you have is a solid gold ring, the colour
+   the whole app keeps for what you've earned. The shape differs too, not only the colour. */
+.life-ladder-ring {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 10px;
+    border: 1.5px dashed color-mix(in srgb, var(--text-secondary) 55%, transparent);
+    border-radius: 22px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.life-ladder-step.earned .life-ladder-ring {
+    border: 2px solid var(--seal);
+    background: color-mix(in srgb, var(--seal) 14%, var(--bg-raised));
+    color: var(--text-primary);
+}
+
+.life-ladder-way {
+    margin-top: 14px;
+}
+
+.life-ladder-bar {
+    display: block;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+
+.life-ladder-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--seal);
+}
+
+.life-ladder-next {
+    margin: 8px 0 0;
+    font-size: var(--text-s);
+    color: var(--text-secondary);
+}
+
+.life-badge-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.life-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px 4px 5px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-secondary);
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.life-badge-icon {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 1.5px solid var(--seal);
+    border-radius: 50%;
+    color: var(--seal);
+}
+
+/* --- To be continued -------------------------------------------------------------------- */
+
+.life-page-empty {
+    padding-top: 22vh;
+}

@@ -424,13 +424,6 @@ body[data-section]::before {
 
 /* --- Today (home) ------------------------------------------------------- */
 
-.life-home {
-    width: 100%;
-    max-width: 640px;
-    margin: 0 auto;
-    padding: max(18px, env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));
-}
-
 .life-home-header {
     display: flex;
     align-items: flex-start;
@@ -474,20 +467,7 @@ body[data-daypart="afternoon"] { --wash: var(--wash-afternoon); }
 body[data-daypart="evening"] { --wash: var(--wash-evening); }
 body[data-daypart="night"] { --wash: var(--wash-night); }
 
-.life-home {
-    position: relative;
-    isolation: isolate;
-}
-
-.life-home::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 560px;
-    z-index: -1;
-    pointer-events: none;
-    background: radial-gradient(130% 75% at 50% 0%, var(--wash), transparent 72%);
-}
+/* The home screen's container, its pages and the wash behind Today are in pager.css. */
 
 .life-home-header .icon-btn {
     color: var(--text-primary);

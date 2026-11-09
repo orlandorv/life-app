@@ -4,6 +4,7 @@ import { isStorageError, mayWarnAboutSave, SAVE_FAILED } from './storage-errors.
 import { registerServiceWorker } from './updates.js';
 import { hydrateIcons } from './icons.js';
 import { initHome, renderHome } from './home.js';
+import { initPager, resetPager } from './pager.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
 import { enterHabits } from '../habits/habits.js';
 import { enterBody } from '../body/body.js';
@@ -75,6 +76,8 @@ function route() {
         if (action) history.replaceState(null, '', `#/${section.id}`);
         Promise.resolve(section.enter?.(action)).catch(showFatal);
     } else {
+        // Home always opens on Today, each page at its top.
+        resetPager();
         renderHome();
         if (gymReady) renderBackupBanner();
     }
@@ -144,6 +147,7 @@ async function start() {
     hydrateIcons();
     gymBoot = bootGym();
     initBackup({ gymReady: () => gymBoot, reloadGym });
+    initPager();
     initHome({ gymReady: () => gymBoot });
     initGame();
     initSound();
