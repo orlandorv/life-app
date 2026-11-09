@@ -13,7 +13,7 @@
 export const LADDERS = [
     { id: 'good-days', title: 'Good days', blurb: 'Days you scored 70 or more', unit: 'day', steps: [1, 7, 30, 100, 365], read: (stats) => stats.goodDays },
     { id: 'streak', title: 'Best streak', blurb: 'Good days in a row', unit: 'day', steps: [3, 7, 14, 30, 60, 100], read: (stats) => stats.bestStreak },
-    { id: 'level', title: 'Life level', blurb: 'From everything you log', unit: 'level', steps: [2, 5, 10, 20, 30], read: (stats) => stats.level },
+    { id: 'level', title: 'Life level', blurb: 'From everything you log', unit: 'level', base: 1, steps: [2, 5, 10, 20, 30], read: (stats) => stats.level },
     { id: 'workouts', title: 'Workouts', blurb: 'Finished in Gym', unit: 'workout', steps: [1, 10, 25, 50, 100, 250], read: (stats) => stats.workouts },
 ];
 
@@ -37,7 +37,8 @@ export function ladderAt(def, rawValue) {
     const steps = def.steps.map((at) => ({ at, label: amountLabel(def, at), earned: value >= at }));
     const reached = steps.filter((step) => step.earned);
     const next = steps.find((step) => !step.earned)?.at ?? null;
-    const from = reached.length ? reached[reached.length - 1].at : 0;
+    // Progress counts from the last step reached, else from where the number starts (a level starts at 1, not 0).
+    const from = reached.length ? reached[reached.length - 1].at : (def.base ?? 0);
     return {
         id: def.id,
         title: def.title,

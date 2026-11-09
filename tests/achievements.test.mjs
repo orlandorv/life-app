@@ -73,3 +73,11 @@ test('the page adds ladders and Gym badges into one count, and copes with having
 test('the badge total is never smaller than the badges earned', () => {
     assert.deepEqual(achievements({}, { badgesEarned: 5, badgesTotal: 2 }).badges, { earned: 5, total: 5 });
 });
+
+test('a level starts at 1, so level 1 is no progress towards level 2', () => {
+    const level = LADDERS.find((ladder) => ladder.id === 'level');
+    assert.equal(ladderAt(level, 1).fraction, 0);
+    assert.equal(ladderAt(level, 1).toGo, 1);
+    assert.equal(ladderAt(level, 2).fraction, 0, 'just reached 2: nothing yet towards 5');
+    assert.equal(ladderAt(level, 3).fraction, 1 / 3);
+});
