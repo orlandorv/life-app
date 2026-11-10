@@ -3,17 +3,18 @@ import { icon } from './icons.js';
 import { achievements } from './achievements.js';
 
 /**
- * The home screen's pages: Today, Achievements, and a placeholder, side by side in a row
+ * The home screen's pages: Explore, Today, and Achievements, side by side in a row
  * you swipe along (`#life-pager`, a horizontal scroll container that snaps to a page).
  * Each page scrolls up and down on its own, so being half way down Today never hides the
  * top of Achievements. The dots under it say where you are and jump to a page.
  *
- * Nothing here is remembered: opening the home screen always starts on Today.
+ * Nothing here is remembered: opening the home screen always starts on Today in the centre.
  */
 
 const pager = () => document.getElementById('life-pager');
 const pages = () => [...document.querySelectorAll('#life-pager > .life-page')];
 const dots = () => [...document.querySelectorAll('#life-pager-dots button')];
+const todayIndex = () => pages().findIndex((page) => page.id === 'life-page-today');
 
 /** Which page is showing: the nearest one to where the row is scrolled. */
 function pageIndex() {
@@ -38,11 +39,11 @@ export function goToPage(n) {
     row.scrollTo({ left: n * row.clientWidth, behavior: calm ? 'auto' : 'smooth' });
 }
 
-/** Back to Today, each page at its top. */
+/** Back to Today in the centre, each page at its top. */
 export function resetPager() {
     const row = pager();
     if (!row) return;
-    row.scrollLeft = 0;
+    row.scrollLeft = Math.max(0, todayIndex()) * row.clientWidth;
     pages().forEach((page) => {
         page.scrollTop = 0;
     });
@@ -109,6 +110,18 @@ function badgesCard(badges, total) {
 export function renderAchievements({ stats, badges = [], badgesTotal = 0 }) {
     const result = achievements(stats, { badgesEarned: badges.length, badgesTotal });
     const line = document.getElementById('life-achievements-line');
-    if (line) line.textContent = result.earned ? `${result.earned} earned so far` : 'Nothing yet — the first one is close.';
+    if (line) line.textContent = result.earned ? 'Keep building on what you’ve done.' : 'Every journey starts somewhere.';
+    const next = result.ladders.find((ladder) => ladder.next !== null);
+    document.getElementById('life-achievements-hero')?.replaceChildren(
+        el('span', { class: 'life-achievements-hero-kicker', text: 'Your collection' }),
+        el('div', { class: 'life-achievements-hero-main' }, [
+            el('span', { class: 'life-achievements-hero-number', text: String(result.earned) }),
+            el('span', { class: 'life-achievements-hero-label', text: result.earned === 1 ? 'milestone earned' : 'milestones earned' }),
+        ]),
+        el('div', { class: 'life-achievements-hero-next' }, [
+            icon('spark', { size: 20 }),
+            el('span', { text: next ? `Up next · ${next.title}: ${next.nextLabel}` : 'Every listed milestone reached.' }),
+        ]),
+    );
     document.getElementById('life-achievements')?.replaceChildren(...result.ladders.map(ladderCard), badgesCard(badges, result.badges.total));
 }

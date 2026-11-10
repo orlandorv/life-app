@@ -8,6 +8,8 @@ Life — a mobile-first, offline-capable personal app, installable as a home-scr
 
 ### Layout
 
+- `README.md` — the short human-facing project overview, local setup and repository map; this file remains the detailed engineering handbook.
+- `AGENTS.md` — a concise Codex entry point that points here as the single source of truth; keep architecture and feature rules here rather than duplicating them.
 - `index.html` — the Life shell: `#life-home` (section grid) and `#gym-section` (all Gym markup: tabs, rest bar, bottom nav). Gym's modals sit after it, at body level.
 - `life/life.js` + `life/life.css` — router, home grid, service-worker registration, and the modal chrome shared by every section (close buttons, backdrop tap, Escape, delegated from `document`); `life.css` also holds the shared foundation (reset, `:root` design tokens, body rules).
 - `life/dom.js`, `life/stepper.js` — shared UI primitives used by every section (element builder, modal stack, toast, `confirmSheet`, −/+ stepper). Import these, don't copy them.
@@ -160,7 +162,7 @@ A habit is either on **fixed days** (`days`, Monday=0…Sunday=6) or has a **wee
 
 ### Home pages (`life/pager.js`, `life/achievements.js`)
 
-The home screen is a row of pages you swipe between: **Today** (everything below), **Achievements** on its right, and a **To be continued** placeholder beyond that, kept for whatever comes next. `#life-pager` is a horizontal scroll container with scroll-snap (`pager.css`), each page `flex: 0 0 100%`; a pill of three dots at the bottom (`#life-pager-dots`, position fixed inside `#life-home`) shows the page and jumps to one. Opening the home screen always starts on Today (`resetPager()` from `route()`); nothing about the page is remembered.
+The home screen is a row of pages you swipe between: **Explore** on the left, **Today** in the centre (everything below), and **Achievements** on the right. Explore is a small launchpad of real routes into Gym, Wardrobe outfits, and Watch & Read, with room to grow; Achievements opens with a derived milestone summary above its ladders. `#life-pager` is a horizontal scroll container with scroll-snap (`pager.css`), each page `flex: 0 0 100%`; a pill of three dots at the bottom (`#life-pager-dots`, position fixed inside `#life-home`) shows the page and jumps to one. Opening the home screen always starts on Today in the centre (`resetPager()` from `route()`); nothing about the page is remembered.
 
 - **Each page scrolls up and down by itself** (`overflow-y: auto`, `height: 100dvh` on `#life-home`), so the document no longer scrolls on the home screen. That is deliberate: with one document scroll, being half way down Today would leave the top of Achievements scrolled out of sight. Consequences to keep in mind: `window.scrollTo` doesn't move Today (use the page's `scrollTop`; `resetPager()` does); the daypart wash is `.life-page-today::before` and scrolls with Today; bottom padding is 64px so the dots never cover the last row. Page markup and ids (`#life-today`, `#life-date`, `#life-dayline`, `#life-backup-banner`) are unchanged, so everything that finds them by id still works.
 - **Adding a page:** add a `<section class="life-page">` and a dot button in `index.html` and fill it from `renderHome()`; the dots and snap need no change.

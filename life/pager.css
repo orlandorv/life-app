@@ -1,4 +1,4 @@
-/* The home screen as a row of pages (life/pager.js): Today, Achievements and a placeholder.
+/* The home screen as a row of pages (life/pager.js): Explore, Today and Achievements.
    Tokens, .life-surface, .life-empty and the header type come from life.css. */
 
 .life-home {
@@ -51,6 +51,189 @@
     pointer-events: none;
     background: radial-gradient(130% 75% at 50% 0%, var(--wash), transparent 72%);
 }
+
+/* Explore is an inviting launchpad, with the same restrained section colours
+   as the rooms on Today. Each path leads straight into a real part of Life. */
+.life-explore-mark,
+.life-explore-icon,
+.life-explore-bottom-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+}
+
+.life-explore-mark {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--card-border);
+    border-radius: 50%;
+    color: var(--text-primary);
+    background: var(--bg-raised);
+    box-shadow: var(--card-shadow);
+}
+
+.life-explore-intro {
+    position: relative;
+    overflow: hidden;
+    min-height: 170px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 22px;
+    background: radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--seal) 18%, transparent), transparent 58%), var(--bg-raised);
+}
+
+.life-explore-intro::before {
+    content: "";
+    position: absolute;
+    top: -48px;
+    right: -30px;
+    width: 155px;
+    height: 155px;
+    border: 1px solid color-mix(in srgb, var(--seal) 35%, transparent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 24px color-mix(in srgb, var(--seal) 5%, transparent), 0 0 0 48px color-mix(in srgb, var(--seal) 4%, transparent);
+    pointer-events: none;
+}
+
+.life-explore-kicker,
+.life-achievements-hero-kicker {
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--seal);
+}
+
+.life-explore-intro p {
+    position: relative;
+    max-width: 300px;
+    font-family: var(--font-display);
+    font-size: clamp(23px, 6vw, 30px);
+    line-height: 1.18;
+    color: var(--text-primary);
+}
+
+.life-explore-heading {
+    margin: 26px 4px 12px;
+}
+
+.life-explore-paths {
+    display: grid;
+    gap: 10px;
+}
+
+.life-explore-path {
+    --path-tone: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 88px;
+    padding: 13px 15px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    box-shadow: var(--card-shadow);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.life-explore-path[data-tone="gym"] { --path-tone: var(--gym); }
+.life-explore-path[data-tone="wardrobe"] { --path-tone: var(--wardrobe); }
+.life-explore-path[data-tone="videos"] { --path-tone: var(--videos); }
+
+.life-explore-path:active { transform: scale(.99); }
+.life-explore-path:focus-visible { outline: 2px solid var(--path-tone); outline-offset: 3px; }
+
+.life-explore-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    color: var(--path-tone);
+    background: color-mix(in srgb, var(--path-tone) 12%, var(--bg-raised));
+}
+
+.life-explore-path-copy {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    gap: 3px;
+}
+
+.life-explore-path-copy strong {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 650;
+}
+
+.life-explore-path-copy span {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.life-explore-path > .life-icon:last-child {
+    color: var(--text-secondary);
+}
+
+.life-explore-bottom {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 16px;
+}
+
+.life-explore-bottom-icon {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--card-border);
+    border-radius: 50%;
+    color: var(--seal);
+}
+
+.life-explore-bottom strong { font-size: 14px; }
+.life-explore-bottom p { margin-top: 2px; font-size: 13px; color: var(--text-secondary); }
+
+/* The achievements summary gives the page a focal point before the detailed ladders. */
+.life-achievements-hero {
+    overflow: hidden;
+    padding: 22px;
+    background: radial-gradient(circle at 90% 5%, color-mix(in srgb, var(--seal) 20%, transparent), transparent 65%), var(--bg-raised);
+}
+
+.life-achievements-hero-main {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 12px 0 20px;
+}
+
+.life-achievements-hero-number {
+    font-family: var(--font-display);
+    font-size: clamp(64px, 20vw, 92px);
+    line-height: .9;
+    color: var(--seal);
+}
+
+.life-achievements-hero-label {
+    max-width: 115px;
+    font-size: 15px;
+    line-height: 1.25;
+    color: var(--text-primary);
+}
+
+.life-achievements-hero-next {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.life-achievements-hero-next .life-icon { flex: none; color: var(--seal); }
 
 /* Quick Add sits beside Settings on Today; both remain honest 42px controls. */
 .life-home-tools {
@@ -306,10 +489,4 @@
     border: 1.5px solid var(--seal);
     border-radius: 50%;
     color: var(--seal);
-}
-
-/* --- To be continued -------------------------------------------------------------------- */
-
-.life-page-empty {
-    padding-top: 22vh;
 }

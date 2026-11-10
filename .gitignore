@@ -1,6 +1,9 @@
 .DS_Store
 .claude/settings.local.json
 
+# Local installers
+*.dmg
+
 # Personal data: backups and import files (routines, video links, etc.)
 # generated for this user's own phone stay on this machine, not the repo.
 *-backup-*.json

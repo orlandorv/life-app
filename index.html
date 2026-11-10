@@ -31,11 +31,46 @@
     <link rel="stylesheet" href="life/game.css">
 </head>
 <body>
-    <!-- The home screen: a row of pages you swipe between (life/pager.js). Today is the
-         first, rendered by life/home.js; Achievements is on its right and a placeholder
-         page beyond that. Each page scrolls up and down on its own. -->
+    <!-- Three independent home pages: Explore, Today and Achievements. Today opens
+         in the centre; each page scrolls up and down on its own. -->
     <div id="life-home" class="life-home">
         <div id="life-pager" class="life-pager">
+            <section id="life-page-explore" class="life-page life-page-explore" aria-label="Explore">
+                <header class="life-home-header">
+                    <div>
+                        <div class="life-eyebrow life-date">Your space</div>
+                        <h1 class="life-greeting">Explore</h1>
+                        <p class="life-dayline">A little room for what’s next.</p>
+                    </div>
+                    <span class="life-explore-mark" aria-hidden="true"><span data-icon="compass" data-icon-size="26"></span></span>
+                </header>
+                <div class="life-explore-intro life-surface">
+                    <span class="life-explore-kicker">A fresh direction</span>
+                    <p>Make a plan. Find something good. Put a look together. Start anywhere.</p>
+                </div>
+                <h2 class="life-eyebrow life-explore-heading">Pick a path</h2>
+                <div class="life-explore-paths">
+                    <a class="life-explore-path" data-tone="gym" href="#/gym/workout">
+                        <span class="life-explore-icon"><span data-icon="gym" data-icon-size="23"></span></span>
+                        <span class="life-explore-path-copy"><strong>Get moving</strong><span>Start a workout</span></span>
+                        <span data-icon="chevron" data-icon-size="20"></span>
+                    </a>
+                    <a class="life-explore-path" data-tone="wardrobe" href="#/wardrobe/outfits">
+                        <span class="life-explore-icon"><span data-icon="hanger" data-icon-size="23"></span></span>
+                        <span class="life-explore-path-copy"><strong>Make a look</strong><span>Try your wardrobe</span></span>
+                        <span data-icon="chevron" data-icon-size="20"></span>
+                    </a>
+                    <a class="life-explore-path" data-tone="videos" href="#/videos">
+                        <span class="life-explore-icon"><span data-icon="play" data-icon-size="23"></span></span>
+                        <span class="life-explore-path-copy"><strong>Find a story</strong><span>Watch or read something</span></span>
+                        <span data-icon="chevron" data-icon-size="20"></span>
+                    </a>
+                </div>
+                <div class="life-explore-bottom life-surface">
+                    <span class="life-explore-bottom-icon"><span data-icon="spark" data-icon-size="20"></span></span>
+                    <div><strong>More to come</strong><p>This space will grow with your ideas.</p></div>
+                </div>
+            </section>
             <!-- Today: a live summary of the day -->
             <section id="life-page-today" class="life-page life-page-today" aria-label="Today">
                 <header class="life-home-header">
@@ -62,22 +97,15 @@
                         <p id="life-achievements-line" class="life-dayline"></p>
                     </div>
                 </header>
+                <div id="life-achievements-hero" class="life-achievements-hero life-surface"></div>
+                <h2 class="life-eyebrow life-explore-heading">Milestones</h2>
                 <div id="life-achievements" class="life-today"></div>
-            </section>
-
-            <!-- Room for whatever comes next -->
-            <section id="life-page-next" class="life-page" aria-label="To be continued">
-                <div class="life-empty life-page-empty">
-                    <span class="life-empty-icon"><span data-icon="spark" data-icon-size="26"></span></span>
-                    <p class="life-empty-title">To be continued</p>
-                    <p class="life-empty-text">Something new is coming here.</p>
-                </div>
             </section>
         </div>
         <nav id="life-pager-dots" class="life-pager-dots" aria-label="Home pages">
+            <button type="button" aria-label="Explore"></button>
             <button type="button" class="active" aria-current="true" aria-label="Today"></button>
             <button type="button" aria-label="Achievements"></button>
-            <button type="button" aria-label="To be continued"></button>
         </nav>
     </div>
 
