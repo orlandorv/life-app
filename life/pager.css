@@ -52,6 +52,94 @@
     background: radial-gradient(130% 75% at 50% 0%, var(--wash), transparent 72%);
 }
 
+/* Quick Add sits beside Settings on Today; both remain honest 42px controls. */
+.life-home-tools {
+    display: flex;
+    flex: none;
+    gap: 8px;
+}
+
+.life-home-header .life-quick-add-btn {
+    color: var(--on-accent);
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+}
+
+/* --- Quick Add sheet -------------------------------------------------------------- */
+
+.quick-add-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.quick-add-option {
+    --quick: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 76px;
+    padding: 12px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    box-shadow: var(--card-shadow);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.quick-add-option:active {
+    transform: scale(0.98);
+}
+
+.quick-add-option[data-section="nutrition"] { --quick: var(--nutrition); }
+.quick-add-option[data-section="tasks"] { --quick: var(--tasks); }
+.quick-add-option[data-section="inbox"] { --quick: var(--inbox); }
+.quick-add-option[data-section="journal"] { --quick: var(--journal); }
+.quick-add-option[data-section="habits"] { --quick: var(--habits); }
+.quick-add-option[data-section="body"] { --quick: var(--body); }
+.quick-add-option[data-section="wishlist"] { --quick: var(--wishlist); }
+.quick-add-option[data-section="wardrobe"] { --quick: var(--wardrobe); }
+
+.quick-add-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--quick) 12%, var(--bg-secondary));
+    color: var(--quick);
+}
+
+.quick-add-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.quick-add-label {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.quick-add-detail {
+    font-size: 12px;
+    line-height: 1.25;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 360px) {
+    .quick-add-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* --- The dots: where you are, and a way to jump ------------------------------------- */
 
 .life-pager-dots {

@@ -44,7 +44,10 @@
                         <h1 id="life-greeting" class="life-greeting">Today</h1>
                         <p id="life-dayline" class="life-dayline"></p>
                     </div>
-                    <button id="life-settings-btn" class="icon-btn" type="button" aria-label="Backup and restore"><span data-icon="settings"></span></button>
+                    <div class="life-home-tools">
+                        <button id="life-quick-add-btn" class="icon-btn life-quick-add-btn" type="button" aria-label="Quick add"><span data-icon="plus"></span></button>
+                        <button id="life-settings-btn" class="icon-btn" type="button" aria-label="Backup and restore"><span data-icon="settings"></span></button>
+                    </div>
                 </header>
                 <div id="life-backup-banner" class="life-banner" hidden></div>
                 <div id="life-today" class="life-today"></div>
@@ -348,6 +351,20 @@
                 <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
             </div>
             <div id="ward-outfit-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Quick Add — each choice hands off to a section's existing add flow -->
+    <div id="quick-add-modal" class="modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <div>
+                    <h2>Quick add</h2>
+                    <div class="modal-subtitle">What do you want to capture?</div>
+                </div>
+                <button class="modal-close icon-btn" type="button" aria-label="Close">&times;</button>
+            </div>
+            <div id="quick-add-body" class="modal-body"></div>
         </div>
     </div>
 

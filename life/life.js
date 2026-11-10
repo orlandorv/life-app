@@ -5,6 +5,7 @@ import { registerServiceWorker } from './updates.js';
 import { hydrateIcons } from './icons.js';
 import { initHome, renderHome } from './home.js';
 import { initPager, resetPager } from './pager.js';
+import { initQuickAdd } from './quick-add.js';
 import { enterNutrition } from '../nutrition/nutrition.js';
 import { enterHabits } from '../habits/habits.js';
 import { enterBody } from '../body/body.js';
@@ -148,6 +149,7 @@ async function start() {
     gymBoot = bootGym();
     initBackup({ gymReady: () => gymBoot, reloadGym });
     initPager();
+    initQuickAdd();
     initHome({ gymReady: () => gymBoot });
     initGame();
     initSound();
